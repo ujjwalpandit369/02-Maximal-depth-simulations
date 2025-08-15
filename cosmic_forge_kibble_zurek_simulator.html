@@ -1,0 +1,1439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Cosmic Forge - Kibble-Zurek Phase Transition Simulator</title>
+    <style>
+        /* Basic Styles & Dark Theme */
+        :root {
+            --bg-color: #1a1a1d;
+            --primary-text: #c5c6c7;
+            --secondary-text: #9fa0a1;
+            --panel-bg: #2c2f33;
+            --border-color: #4b4f56;
+            --accent-color: #66fcf1;
+            --accent-hover: #45a29e;
+            --slider-track: #4b4f56;
+            --slider-thumb: #66fcf1;
+            --button-bg: #4b4f56;
+            --button-text: #c5c6c7;
+            --warning-bg: #ffc107;
+            --warning-text: #000;
+            --error-bg: #dc3545;
+            --error-text: #fff;
+        }
+
+        .high-contrast {
+            --bg-color: #000000;
+            --primary-text: #ffffff;
+            --secondary-text: #dddddd;
+            --panel-bg: #111111;
+            --border-color: #666666;
+            --accent-color: #ffff00;
+            --accent-hover: #eeee00;
+            --slider-track: #555555;
+            --slider-thumb: #ffff00;
+            --button-bg: #666666;
+            --button-text: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-text);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 {
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3em;
+        }
+
+        h1 { font-size: 2.5em; text-align: center; }
+        h2 { font-size: 1.8em; margin-top: 1.5em; }
+        h3 { font-size: 1.4em; }
+
+        p, li { color: var(--secondary-text); }
+        strong { color: var(--primary-text); }
+        code {
+            background-color: var(--panel-bg);
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: "Courier New", Courier, monospace;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1em;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .simulation-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .controls-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1em;
+        }
+
+        @media (max-width: 1000px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+            .controls-column {
+                order: -1; /* Move controls to the top on mobile */
+            }
+        }
+
+        /* Controls */
+        .control-group { margin-bottom: 1.5em; }
+        .control-group label {
+            display: block;
+            margin-bottom: 0.5em;
+            font-weight: bold;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: var(--slider-track);
+            height: 8px;
+            border-radius: 5px;
+        }
+        .control-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--slider-thumb);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .control-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--slider-thumb);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .control-group select {
+            width: 100%;
+            padding: 0.5em;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+        .button-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: bold;
+        }
+        button:hover, button:focus {
+            background-color: var(--accent-hover);
+            color: var(--bg-color);
+        }
+
+        /* Simulation Canvas */
+        #simCanvas {
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: #000;
+            border-radius: 8px;
+        }
+
+        /* Special Panels */
+        #suggestionBox, #qualityCheckPanel, #performanceWarning {
+            padding: 1em;
+            border-radius: 5px;
+            margin-bottom: 1em;
+            border: 1px solid;
+        }
+        #suggestionBox { background-color: #273746; border-color: #5d6d7e; }
+        #qualityCheckPanel { background-color: var(--error-bg); color: var(--error-text); display: none; }
+        #performanceWarning { background-color: var(--warning-bg); color: var(--warning-text); display: none; }
+
+        .collapsible {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            margin-top: 1em;
+        }
+        .collapsible-header {
+            padding: 0.5em 1em;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .collapsible-content {
+            padding: 0 1em 1em 1em;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapsible-content.open {
+            max-height: 500px; /* Adjust as needed */
+            overflow-y: auto;
+        }
+        #devConsoleLog {
+            background-color: #000;
+            color: #0f0;
+            font-family: monospace;
+            font-size: 0.9em;
+            height: 150px;
+            overflow-y: scroll;
+            padding: 5px;
+            border-radius: 3px;
+            white-space: pre-wrap;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1em;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 0.8em;
+            text-align: left;
+        }
+        th {
+            background-color: #33383e;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Cosmic Forge</h1>
+            <p style="text-align:center; font-style:italic;">A Kibble-Zurek Phase Transition Simulator</p>
+            <div id="metaBar" style="text-align:center; font-size:0.9em; color:var(--secondary-text);">
+                <span>Est. Runtime: Real-time</span> |
+                <span>Recommended Device: Desktop</span> |
+                <span>HTML Size: ~300 KB</span>
+                <button id="themeToggle" style="margin-left: 20px; font-size:0.8em; padding: 5px 10px;">High Contrast</button>
+            </div>
+        </header>
+
+        <div id="suggestionBox">
+            <strong>Tune Your Experience:</strong>
+            <button class="suggestion-btn" data-type="audience" data-value="beginner">Audience: Beginner</button>
+            <button class="suggestion-btn" data-type="audience" data-value="intermediate">Intermediate</button>
+            <button class="suggestion-btn" data-type="audience" data-value="advanced">Advanced</button>
+            |
+            <button class="suggestion-btn" data-type="intensity" data-value="light">Intensity: Light</button>
+            <button class="suggestion-btn" data-type="intensity" data-value="medium">Medium</button>
+            <button class="suggestion-btn" data-type="intensity" data-value="heavy">Heavy</button>
+        </div>
+
+        <div id="qualityCheckPanel"><strong>Quality Check Failed:</strong> <span id="qualityCheckMessage"></span></div>
+        <div id="performanceWarning"><strong>Performance Warning:</strong> The selected settings may be computationally intensive and could cause the browser to become unresponsive. Proceed with caution. <button id="confirmHeavy">I Understand</button></div>
+
+        <main>
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>This simulation visualizes one of the most fascinating ideas in modern cosmology: the formation of <strong>topological defects</strong> in the early universe. According to the <strong>Kibble-Zurek mechanism</strong>, as the universe cooled after the Big Bang, the fundamental fields of nature underwent phase transitions, much like water freezing into ice. When different regions of the universe "froze" into different states, the boundaries between them became trapped as stable defects in the fabric of spacetime itself. This simulator lets you control a simplified model of this process, allowing you to create and observe domain walls, cosmic strings, and monopoles by adjusting the parameters of a cosmic phase transition.</p>
+            </section>
+
+            <div class="main-layout">
+                <div class="simulation-column">
+                    <div class="panel">
+                        <canvas id="simCanvas" width="800" height="800"></canvas>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                            <span id="perfMeter">FPS: -- | Mem: -- MB | Grid: 128x128</span>
+                            <span id="sliceIndicator">2D Slice (Z = 64/128)</span>
+                        </div>
+                    </div>
+                    <div class="panel" id="live-commentary">
+                        <h3>What Am I Seeing?</h3>
+                        <p id="commentaryText">Simulation is ready. Adjust the temperature slider to begin the phase transition.</p>
+                    </div>
+                </div>
+
+                <div class="controls-column">
+                    <div class="panel">
+                        <h3>Controls</h3>
+                        <div class="button-group">
+                            <button id="playPauseBtn" aria-label="Play or Pause (Space)">Play</button>
+                            <button id="stepBtn" aria-label="Step Forward (Right Arrow)">Step</button>
+                            <button id="resetBtn" aria-label="Reset (R)">Reset</button>
+                        </div>
+                        <div class="control-group">
+                            <label for="speedRange">Speed: <span id="speedValue">1.0</span>x</label>
+                            <input type="range" id="speedRange" min="0.1" max="10" value="1" step="0.1">
+                        </div>
+                         <div class="control-group">
+                            <label for="sliceRange">Z-Slice: <span id="sliceValue">64</span>/128</label>
+                            <input type="range" id="sliceRange" min="0" max="127" value="64" step="1">
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <h3>Simulation Parameters</h3>
+                        <div class="control-group">
+                            <label for="tempRange">Universe Temperature (T): <span id="tempValue">100</span> T_c</label>
+                            <input type="range" id="tempRange" min="0.01" max="100" value="100" step="0.01">
+                        </div>
+                        <div class="control-group">
+                            <label for="coolingRateRange">Cooling Rate (τ_Q): <span id="coolingRateValue">Medium</span></label>
+                            <input type="range" id="coolingRateRange" min="1" max="1000" value="100">
+                        </div>
+                        <div class="control-group">
+                            <label for="symmetrySelect">Symmetry Group</label>
+                            <select id="symmetrySelect">
+                                <option value="Z2">Z₂ (Domain Walls)</option>
+                                <option value="U1" selected>U(1) (Cosmic Strings)</option>
+                                <option value="SO3">SO(3) (Monopoles)</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="potentialRange">Potential Flatness: <span id="potentialValue">50</span>%</label>
+                            <input type="range"id="potentialRange" min="0" max="100" value="50">
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <h3>Presets</h3>
+                        <div class="button-group">
+                            <button class="preset-btn" data-preset="calm">Calm</button>
+                            <button class="preset-btn" data-preset="typical">Typical</button>
+                            <button class="preset-btn" data-preset="chaotic">Chaotic</button>
+                        </div>
+                    </div>
+                     <div class="panel">
+                        <h3>Quantitative Analysis</h3>
+                        <p><strong id="defectLabel">Defect Count:</strong> <span id="defectCount">0</span></p>
+                        <p><strong id="densityLabel">Density:</strong> <span id="defectDensity">0.00</span></p>
+                        <p><strong>Correlation Length (ξ):</strong> <span id="correlationLength">--</span></p>
+                    </div>
+                    <div class="panel">
+                        <h3>Export & Share</h3>
+                        <div class="button-group">
+                            <button id="exportPngBtn" aria-label="Export PNG (E)">Export PNG</button>
+                            <button id="exportJsonBtn">Export JSON</button>
+                            <button id="shareBtn">Share Preset</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section id="beginners-guide">
+                <h2>Beginner's Guide — A Gentle Introduction</h2>
+
+                <p>Welcome to the Cosmic Forge! It might sound intimidating, but the core idea we're exploring here is surprisingly simple and beautiful. We're going to simulate a tiny piece of the very, very early universe—just a fraction of a second after the Big Bang—to see how some of the fundamental structures of our cosmos might have been born. Don't worry, you don't need a physics degree. We'll take it step-by-step.</p>
+
+                <h3>Step 1: The Universe as a Hot Soup</h3>
+                <p>Imagine the universe moments after the Big Bang. It was incredibly hot and dense, a chaotic soup of energy and fundamental particles. In this state, the "rules" of physics (what we call the fundamental fields) were all jumbled up and symmetric. Think of a perfectly still pond. The water molecules are all behaving in the same way, on average. There's no special direction or structure. In our simulation, this is the state when the <strong>Universe Temperature</strong> slider is very high. The screen looks like a chaotic fizz of colors because the underlying "field" has too much energy to settle down. It's in a <strong>symmetric state</strong>.</p>
+
+                <h3>Step 2: Cooling Down and "Choosing" a Direction</h3>
+                <p>As the real universe expanded, it cooled down. Cooling changes things. Think of steam cooling to become water, and then water cooling to become ice. Each change is a <strong>phase transition</strong>. The same thing happened to the fields of the early universe. As the temperature dropped below a certain critical point (T_c), the fields had to "make a choice" and settle into a new, lower-energy state. This is called <strong>spontaneous symmetry breaking</strong>.</p>
+                <p>Here's a simple analogy: imagine a huge room full of people who are all told to point in any direction they want. While they are milling about and undecided (the "hot" state), there's no average direction. But when a bell rings (the "cooling"), everyone must stop and point. They have broken the initial symmetry (where any direction was equally likely) by choosing a specific direction. You can see this process visualized in the interactive "Mexican Hat" diagram in the 'Physics Explained' section below. It shows a ball (the field) balanced on a symmetric peak, which then rolls down into a random position in the brim as the system cools.</p>
+
+                <h3>Step 3: What are These Boundaries? (The Birth of Defects)</h3>
+                <p>Now for the crucial part. The universe was enormous, and information couldn't travel faster than the speed of light. This means that a region on one side of the universe had no way of knowing what direction the region on the other side had "chosen" to point in. They were causally disconnected.</p>
+                <p>Let's go back to our freezing lake analogy, which is central to the <strong>Kibble-Zurek mechanism</strong>. Imagine a large lake beginning to freeze. Ice crystals start forming in many different places at once. The crystals in one area have no idea how the crystals far away are oriented. As these patches of ice grow and meet, they form jagged cracks and boundaries between them because their crystal lattices don't line up perfectly. These cracks are defects in the ice.</p>
+                <p>The exact same thing happens in our simulation! Each colored patch is a "domain" that froze with a particular field orientation. The lines, surfaces, or points where these different-colored patches meet are <strong>topological defects</strong>. They are stable "scars" left over from the phase transition. They are "topological" because, like a knot in a rope, they can't be easily undone. You'd have to "melt" the whole region again to fix them.</p>
+
+                <h3>Step 4: The Role of Speed - The Cooling Rate</h3>
+                <p>Why do we have a <strong>Cooling Rate</strong> slider? This is the most important parameter in the Kibble-Zurek mechanism. It controls the <em>density</em> of the defects that form.</p>
+                <ul>
+                    <li><strong>Slow Cooling (slider to the right):</strong> If the lake freezes very, very slowly, information has more time to travel. Larger, more perfect ice crystals can form before they run into another region. This results in very large domains and very few cracks (defects). In the simulation, you'll see huge patches of similar colors and a low defect count. The average size of these patches, called the <strong>correlation length</strong>, will be large.</li>
+                    <li><strong>Fast Cooling (slider to the left):</strong> If you "flash freeze" the lake, it's chaos! Tiny ice crystals form everywhere, all with random orientations. They immediately run into their neighbors, creating a dense, complicated network of cracks. In the simulation, a fast cooling rate gives you tiny domains (a small correlation length) and a huge number of defects.</li>
+                </ul>
+                <p>Try it! Set the Cooling Rate to "Slow" and run the transition by lowering the temperature. Note the defect count. Now reset, set it to "Fast", and run it again. The difference in the density of defects is the core prediction of this theory.</p>
+
+                <h3>Step 5: A Zoo of Defects (Z₂, U(1), SO(3))</h3>
+                <p>Why can we create different kinds of defects? Because the "rules" of the phase transition can be different. The <strong>Symmetry Group</strong> dropdown lets you choose the character of the underlying field, which determines the "shape" of the available low-energy states (the "vacuum manifold").</p>
+                <ul>
+                    <li><strong>Z₂ (Domain Walls):</strong> This is the simplest case. The field has only two choices for its ground state, like a coin that can only be heads or tails. In our simulation, we represent this as red or blue. When a "red" region meets a "blue" region, they form a 2D surface between them: a <strong>domain wall</strong>.</li>
+                    <li><strong>U(1) (Cosmic Strings):</strong> Here, the field's state can be any point on a circle, like the direction a compass needle can point. The colors on the screen represent the "direction" of the field on a color wheel. A <strong>cosmic string</strong> is a 1D line defect that forms where the field directions get twisted up in a special way. If you walk in a loop around a string, the field's "compass needle" will make a full 360-degree turn.</li>
+                    <li><strong>SO(3) (Monopoles):</strong> This is the most complex case. The field's state can be any point on the surface of a sphere. Think of a tiny hedgehog at every point in space, with its spines pointing in some direction. A <strong>monopole</strong> is a 0D point defect that forms where the "hedgehogs" in a surrounding region point in every possible direction, perfectly "wrapping" the sphere. It's like a point-like knot in the field.</li>
+                </ul>
+                <p>By exploring these different symmetries, you are exploring the fundamental kinds of "cracks" that could have formed in the real universe, each with different and profound implications for cosmology.</p>
+            </section>
+
+            <section id="params-summary">
+                <h2>Parameters & Controls Summary</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Units</th>
+                            <th>Default</th>
+                            <th>Range</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Universe Temperature</td>
+                            <td>T/T_c</td>
+                            <td>100</td>
+                            <td>0.01 - 100</td>
+                            <td>Controls the energy of the universe. The phase transition happens at T=1 T_c.</td>
+                        </tr>
+                        <tr>
+                            <td>Cooling Rate (τ_Q)</td>
+                            <td>Log scale</td>
+                            <td>Medium</td>
+                            <td>Slow - Fast</td>
+                            <td>How quickly the universe cools. Faster cooling = more defects.</td>
+                        </tr>
+                        <tr>
+                            <td>Symmetry Group</td>
+                            <td>N/A</td>
+                            <td>U(1)</td>
+                            <td>Z₂, U(1), SO(3)</td>
+                            <td>Determines the type of defect: Domain Walls, Cosmic Strings, or Monopoles.</td>
+                        </tr>
+                         <tr>
+                            <td>Potential Flatness</td>
+                            <td>%</td>
+                            <td>50</td>
+                            <td>0 - 100</td>
+                            <td>Shape of the "Mexican Hat". Flatter potentials make it easier for the field to change.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="physics-explained">
+                <h2>The Physics Explained - From Zero to Hero</h2>
+                <div class="panel">
+                    <h3>Part A: Spontaneous Symmetry Breaking & The Mexican Hat</h3>
+                    <p>The concept of <strong>Spontaneous Symmetry Breaking (SSB)</strong> is a cornerstone of modern physics, from magnets to the Higgs boson. It describes a situation where the underlying laws of a system are perfectly symmetric, but the system itself chooses a specific, non-symmetric state to exist in. The interactive "Mexican Hat" potential you see is the classic illustration of this idea.</p>
+                    <p>Let's break it down:</p>
+                    <ol>
+                        <li><strong>The Field (The Ball):</strong> In physics, a field is something that has a value at every point in space. For our purposes, the "ball" on the diagram represents the value of our simulated field, which we call φ (phi).</li>
+                        <li><strong>The Potential (The Curve):</strong> The curve, V(φ), represents the potential energy of the field. All systems in nature prefer to be in the lowest possible energy state. The ball will always try to roll down to the lowest point on the curve.</li>
+                        <li><strong>High Temperature (T > T_c):</strong> When you set the <strong>Universe Temperature</strong> slider high, the potential is a simple bowl shape. The laws governing the field are symmetric; the potential looks the same whether φ is positive or negative. The lowest energy state is right at the bottom, at φ = 0. In this state, the field itself is also symmetric. This is a <strong>symmetric state</strong>.</li>
+                        <li><strong>Low Temperature (T < T_c):</strong> As the universe cools below the critical temperature (T_c), the shape of the potential changes dramatically. The center at φ = 0 is no longer the minimum. It becomes a point of unstable equilibrium, like a pencil balanced on its tip. The lowest energy states now form a continuous circle at the bottom of the "brim" of the Mexican hat.</li>
+                        <li><strong>The "Spontaneous" Break:</strong> The field, starting at the top, must now roll down to a lower energy state. But which one? It has to "choose" a specific point on the circular brim to settle into. While the <em>ring of possibilities</em> is perfectly symmetric, the <em>final chosen state</em> is just one specific point on that ring. The symmetry has been "spontaneously" broken because the system had to pick one state out of many equally valid ones. This choice, made independently in different regions of space, is what leads to the formation of defects.</li>
+                    </ol>
+                    <canvas id="mexicanHatCanvas" width="500" height="300" style="background:var(--bg-color); border-radius: 4px; margin: 1em auto; display:block;"></canvas>
+                    <p>The <strong>Potential Flatness</strong> slider in the simulation controls the shape of this hat. A "flat" potential (high percentage) corresponds to a wide, shallow brim, meaning it costs very little energy for the field to change its value along the brim. A "steep" potential (low percentage) means the brim is a deep, narrow canyon, "locking" the field into its chosen value more rigidly.</p>
+                </div>
+                <div class="panel">
+                    <h3>Part B: The Kibble-Zurek Mechanism Deep Dive</h3>
+                    <p>The Kibble-Zurek (KZ) mechanism provides the crucial link between the abstract idea of a phase transition and the concrete prediction of how many defects should form. The core of the mechanism is a race between two competing timescales.</p>
+                    <p><strong>1. The Timescale of the Universe (The Cooling Rate):</strong> This is the speed at which the phase transition happens. In our simulation, this is controlled by the <strong>Cooling Rate (τ_Q)</strong> slider. A fast quench means the temperature drops through the critical point very quickly. A slow, adiabatic quench means it happens over a very long time.</p>
+                    <p><strong>2. The Timescale of the Field (Communication Speed):</strong> This is the time it takes for information to propagate across the field. In the real universe, this speed is limited by the speed of light. It determines how quickly one region of the field can "tell" its neighbors which direction it has decided to "point" in. This defines a maximum size over which the field can be correlated, known as the <strong>correlation length (ξ)</strong>.</p>
+                    <p>The KZ mechanism describes the "race" between these two:</p>
+                    <ul>
+                        <li>As the universe approaches the critical temperature T_c, the field experiences "critical slowing down." The time it takes for the field to react and communicate blows up.</li>
+                        <li>At some point near T_c, the universe is cooling so fast that the field can no longer keep up. Different regions become effectively frozen in their choices, unable to "negotiate" with their neighbors to align.</li>
+                        <li>The size of these frozen, causally disconnected domains is the correlation length (ξ) at the moment of freezing. This size is directly determined by the cooling rate (τ_Q). A faster cooling rate leads to a smaller correlation length.</li>
+                    </ul>
+                    <p>The prediction is that the density of defects (n) will be proportional to some power of the correlation length, typically <strong>n ∝ 1/ξ²</strong> for strings or <strong>n ∝ 1/ξ³</strong> for monopoles in 3D. Since ξ itself depends on the cooling rate τ_Q, this provides a direct, testable relationship: <strong>Defect Density ∝ (Cooling Rate)<sup>p</sup></strong> for some power p.</p>
+                    <p>This is precisely what the simulation demonstrates. By adjusting the Cooling Rate slider, you are directly setting the initial correlation length, and you can observe the resulting change in defect density in the "Quantitative Analysis" panel.</p>
+                </div>
+                <div class="panel">
+                    <h3>Part C: A Bestiary of Defects - Topology for Beginners</h3>
+                    <p>Topological defects are fascinating because their stability comes not from forces, but from the very "shape" of the field's possible states (the vacuum manifold). Think of them as knots in the fabric of spacetime that cannot be untied without cutting the rope.</p>
+                    <p><strong>Domain Walls (Z₂ Symmetry):</strong></p>
+                    <ul>
+                        <li><strong>Vacuum Manifold:</strong> Two distinct points. (e.g., {-1, +1}). This is a 0-dimensional set of points.</li>
+                        <li><strong>Analogy:</strong> Imagine a country where everyone must declare their allegiance to either the "Red Party" or the "Blue Party". If allegiance is decided locally, you will inevitably end up with large red regions and large blue regions. The border between a red region and a blue region is the domain wall. To remove the wall, you would have to convince every single person on one side to change their allegiance—an immense undertaking.</li>
+                        <li><strong>In the Simulation:</strong> These are the 2D surfaces separating the red and blue domains. They have a huge amount of energy and, in the real universe, would have a massive gravitational effect. The fact that we don't observe domain walls is a major puzzle in cosmology, leading to the theory of inflation which would have pushed any walls far beyond our visible horizon.</li>
+                    </ul>
+                    <p><strong>Cosmic Strings (U(1) Symmetry):</strong></p>
+                    <ul>
+                        <li><strong>Vacuum Manifold:</strong> A circle (S¹).</li>
+                        <li><strong>Analogy:</strong> Imagine every point in space has a little compass needle that can point in any direction on a 2D plane. This direction is the field's value. Now, walk in a large circle. As you walk, you look at the compass needles you pass. If, after returning to your starting point, you find that the needles you passed have pointed in every direction, making one full 360° turn, you have just walked around a cosmic string. The point at the very center of your path has a singularity—the phase is undefined, trapped in a high-energy state.</li>
+                        <li><strong>In the Simulation:</strong> These are the 1D lines where all the colors of the color wheel converge. They are incredibly thin and dense, and could potentially be detected through their gravitational effects, such as gravitational lensing.</li>
+                    </ul>
+                    <p><strong>Monopoles (SO(3) Symmetry):</strong></p>
+                    <ul>
+                        <li><strong>Vacuum Manifold:</strong> The surface of a sphere (S²).</li>
+                        <li><strong>Analogy:</strong> This is the hedgehog analogy. At every point in space, there's a vector pointing to a location on the surface of a sphere. Imagine a point defect. If you draw a small sphere in space around this point, you can look at the direction of the field vectors on the surface of your imaginary sphere. If you find that the field vectors are pointing in every possible direction—some up, some down, some left, some right, perfectly covering the entire globe—then you have found a monopole. The field configuration is "wrapped" around the central point like a gift wrapper around a gift, and it cannot be smoothed out.</li>
+                        <li><strong>In the Simulation:</strong> These are the 0D points (visualized with cyan/magenta markers) where the surrounding vector field has this "hedgehog" texture. The discovery of a single magnetic monopole would be a monumental event in physics, confirming key aspects of Grand Unified Theories.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <section id="walkthroughs">
+                <h2>Worked Walkthroughs & Micro-Experiments</h2>
+                <p>The best way to build intuition is to experiment! Here are some guided walkthroughs and small experiments you can try.</p>
+                <h3>Walkthrough 1: The Cooling Rate</h3>
+                <ol>
+                    <li><strong>Setup:</strong> Select the <strong>U(1)</strong> symmetry. Set <strong>Cooling Rate</strong> to the far right (e.g., <strong>1000</strong>, "Slow").</li>
+                    <li><strong>Action:</strong> Drag the <strong>Temperature</strong> slider down through 1.0.</li>
+                    <li><strong>Observation:</strong> Notice how large the colored domains are. The resulting string network is sparse. The <strong>Correlation Length (ξ)</strong> in the analysis panel will be a large number, and the <strong>String Length</strong> will be low. For example, you might see ξ = 10 and String Length = 500.</li>
+                    <li><strong>Analogy:</strong> This is like a perfectly annealed crystal. By cooling slowly, you gave the field time to "negotiate" over large distances, minimizing the number of defects.</li>
+                    <li><strong>Now, Contrast:</strong> Press <strong>Reset</strong>. Set <strong>Cooling Rate</strong> to the far left (e.g., <strong>1</strong>, "Fast"). Drag the temperature down again.</li>
+                    <li><strong>Observation:</strong> The screen shatters into a chaotic mess of tiny domains. The string network is incredibly dense. The Correlation Length will be very small (e.g., ξ = 2) and the String Length will be huge (e.g., 20000). The difference is dramatic and is the central lesson of the Kibble-Zurek mechanism.</li>
+                </ol>
+                <h3>Micro-Experiments</h3>
+                <ol>
+                    <li><strong>Experiment:</strong> Set Symmetry to <strong>Z₂</strong>. Use the "Chaotic" preset. What is the approximate Wall Area? Now use the "Calm" preset. How many times smaller is the Wall Area? (Expect it to be 10-100 times smaller).</li>
+                    <li><strong>Experiment:</strong> Set Symmetry to <strong>U(1)</strong> and use the "Typical" preset. Lower the temperature. Now use the <strong>Z-Slice</strong> slider. Can you see how the white dots (strings piercing the plane) connect from one slice to the next, tracing the path of the string through the 3D cube?</li>
+                    <li><strong>Experiment:</strong> Set Symmetry to <strong>SO(3)</strong> and use the "Chaotic" preset. Lower the temperature. Do you see roughly equal numbers of cyan (monopoles) and magenta (anti-monopoles)? The theory predicts an equal number should be created.</li>
+                    <li><strong>Experiment:</strong> How does <strong>Potential Flatness</strong> affect defect formation? Set Symmetry to U(1) and Cooling Rate to a middle value (e.g., 100). Run one transition with Flatness at 0% and note the String Length. Reset and run it again with Flatness at 100%. A flatter potential (100%) should generally lead to fewer defects, as it's "easier" for the field to smooth itself out. Is this what you observe?</li>
+                </ol>
+            </section>
+
+            <section id="analogies">
+                <h2>Analogies & Intuition</h2>
+                <p>Understanding this process can be easier with a few different mental models. Each has its strengths and weaknesses.</p>
+                <h3>1. The Freezing Lake (Physical Analogy)</h3>
+                <ul>
+                    <li><strong>The Analogy:</strong> As we've discussed, this is the canonical analogy. A cooling lake starts to form ice crystals at many points. These crystal domains grow and, where they meet, their different orientations create cracks and imperfections. The speed of freezing determines the size of the crystals and the density of cracks.</li>
+                    <li><strong>Strengths:</strong> Excellent for understanding the role of cooling rate (τ_Q) and the formation of domains from local choices. It provides a very intuitive picture of how defects form at the boundaries.</li>
+                    <li><strong>Limitations:</strong> A real lake is in a fixed container. The early universe was expanding rapidly as it cooled, which adds another layer of complexity (the stretching of the grid and the defects themselves). Also, ice crystals are physical objects, whereas our "domains" are regions of a non-physical field value.</li>
+                </ul>
+                <h3>2. The Room of Compasses (Visualization Analogy)</h3>
+                <ul>
+                    <li><strong>The Analogy:</strong> Imagine a huge 3D grid, and at every single point, there is a tiny compass needle. For U(1) symmetry, the needle can spin freely in a 2D plane. For SO(3), it's a 3D arrow that can point anywhere on a sphere. At high temperatures, all the needles are spinning wildly. As the universe cools, they slow down and pick a direction, influenced by their immediate neighbors. A cosmic string (U(1)) is a line where, if you walk around it, the compass needles make a full 360° rotation. A monopole (SO(3)) is a point where the surrounding arrows form a "hedgehog" pattern (all pointing away from the center).</li>
+                    <li><strong>Strengths:</strong> This is much closer to the actual physics of a vector or scalar field. It's especially powerful for visualizing the "twist" or "wrap" in the field that defines the defect topologically.</li>
+                    <li><strong>Limitations:</strong> It's hard to mentally picture an infinite grid of compasses. It also doesn't have a built-in concept of potential energy (the "Mexican Hat") that drives the transition.</li>
+                </ul>
+                <h3>3. The Political Map (Computational Analogy)</h3>
+                <ul>
+                    <li><strong>The Analogy:</strong> Think of the simulation grid as a map of a newly-formed country with no internal borders. Each grid cell is a "town". At the moment of the phase transition, every town must choose a political party (e.g., Red or Blue for Z₂; or one of 360 parties on a color wheel for U(1)). Each town's choice is influenced by its neighbors, but towns far apart make their decisions independently. After everyone has chosen, you draw the borders. A "domain wall" is the border between a Red region and a Blue region. A "cosmic string" is a special kind of triple-point border where three or more different-colored regions meet in a way that creates a twist.</li>
+                    <li><strong>Strengths:</strong> This is a great way to understand the "causally disconnected domains" and how local choices lead to global boundaries. It maps very well to the cellular automaton algorithm used in this simulation.</li>
+                    <li><strong>Limitations:</strong> This analogy is discrete (like a computer simulation) whereas the underlying physics is continuous. It also lacks the dynamics of energy and cooling rates.</li>
+                </ul>
+            </section>
+
+            <section id="advanced-notes">
+                <h2>Advanced Notes & Extensions</h2>
+                <h3>First-Order vs. Second-Order Phase Transitions</h3>
+                <p>This simulation models a <strong>second-order phase transition</strong>. In this type of transition, the state of the system changes continuously. The field value (the order parameter) smoothly moves from zero to a non-zero value as the system cools, as seen in the "Mexican Hat" diagram. The Kibble-Zurek mechanism is specifically formulated for these transitions.</p>
+                <p>A <strong>first-order phase transition</strong> is more abrupt, like boiling water. The system has a "latent heat." In this scenario, as the universe cools below T_c, it can get stuck in the "symmetric" state (φ=0), even though it's no longer the true minimum. This is called a supercooled state. The transition then occurs through <strong>bubble nucleation</strong>: small, random bubbles of the true vacuum (the new phase) appear and rapidly expand, converting the old phase to the new. Defects would then form where these bubbles collide. To simulate this, one would need to modify the potential V(φ) to include an energy barrier between the φ=0 state and the true minimum, and the simulation dynamics would need to model quantum tunneling or thermal fluctuations to spawn bubbles, a much more complex process.</p>
+                <h3>Incorporating Universe Expansion</h3>
+                <p>A key piece of physics missing from this simple model is the expansion of the universe itself. As the simulation runs, the grid should be stretching. This has two major effects on the defect network after it forms:</p>
+                <ol>
+                    <li><strong>Stretching and Straightening:</strong> The expansion of space would stretch the defect network along with it. For cosmic strings, this would tend to straighten them out over cosmic time. The total energy of a string is proportional to its length, so the network would naturally try to lose energy by becoming less curved.</li>
+                    <li><strong>Hubble Damping:</strong> In a more realistic model governed by field equations, the expansion acts as a friction or damping term. This "Hubble friction" slows down the motion and annihilation of defects, potentially leading to a higher final density than in a static universe. To implement this, you would add a `+ 3H(t)∂φ/∂t` term to the Ginzburg-Landau equation, where H(t) is the Hubble parameter governing the expansion rate.</li>
+                </ol>
+                <h3>From Cellular Automaton to Field Equations</h3>
+                <p>This simulation uses a simplified cellular automaton model where domains are "frozen" in place. A more realistic model would use the <strong>Ginzburg-Landau (or scalar field) equations of motion</strong>. The equation for a scalar field φ would look something like: <code>∂²φ/∂t² - ∇²φ + V'(φ) = 0</code> (where V' is the derivative of the potential). This allows for rich dynamics:</p>
+                <ul>
+                    <li><strong>Defect Annihilation:</strong> Defects could move and interact. A monopole and an anti-monopole could meet and annihilate. A loop of cosmic string could shrink and disappear. This means the defect density would not be fixed after the transition but would continue to decrease over time.</li>
+                    <li><strong>Energy Transfer:</strong> The potential energy stored in the defects could be radiated away as field waves (particles).</li>
+                </ul>
+                <p>Implementing this would require moving from our simple state-setting algorithm to a numerical solver (like a leapfrog or Verlet integrator) that updates the field value at each grid point at each time step based on its neighbors and the potential. This is far more computationally intensive but would produce a much more realistic evolution of the defect network.</p>
+            </section>
+
+            <section id="faq">
+                <h2>FAQ & Troubleshooting</h2>
+                <dl>
+                    <dt><strong>The simulation is running slowly. What can I do?</strong></dt>
+                    <dd>The defect calculation is the most intensive part. Performance is directly related to the number of defects. To improve performance, try using a "Slower" <strong>Cooling Rate</strong> to generate fewer defects. You can also try reducing the grid size, which is a planned feature for a future version.</dd>
+                    <dt><strong>Why do my results look different every time I click Reset?</strong></dt>
+                    <dd>This is a key feature! The phase transition is a stochastic (random) process. Each region of the universe makes a random "choice" for its ground state. Every time you run the simulation, you are seeing one of the infinite possible outcomes of this random process, just like every snowflake is unique.</dd>
+                    <dt><strong>What is the "Correlation Length"?</strong></dt>
+                    <dd>It's the average size of the "patches" or "domains" of a single color that form right after the phase transition. It represents the maximum distance over which the field values are "in agreement." The Kibble-Zurek mechanism predicts this length is determined by the cooling rate.</dd>
+                    <dt><strong>Why are domain walls and monopoles considered problematic in cosmology?</strong></dt>
+                    <dd>According to theory, these defects would be incredibly massive and would have a huge gravitational influence. If they existed in large numbers, the universe would look very different from what we observe. The fact that we don't see them is a major piece of evidence for the theory of cosmic inflation, which proposes an early, extremely rapid expansion of the universe that would have diluted their density to effectively zero.</dd>
+                    <dt><strong>Can I see the 3D structure?</strong></dt>
+                    <dd>The simulation is fully 3D, but we are only visualizing a 2D slice of it at a time for clarity and performance. You can use the <strong>Z-Slice</strong> slider to move this viewing window up and down through the 3D cube to trace the structures.</dd>
+                    <dt><strong>The canvas is blank or not working.</strong></dt>
+                    <dd>First, try clicking the "Reset" button. If that fails, make sure you are using a modern web browser (like Chrome, Firefox, or Edge) with JavaScript enabled. This simulation relies on the HTML5 Canvas API, which is supported in all modern browsers. If you see errors, you can open the developer console (usually with F12), copy any error messages from the "Console" tab, and report the bug.</dd>
+                </dl>
+            </section>
+
+            <div class="collapsible">
+                <div class="collapsible-header" id="devConsoleHeader">Developer Console</div>
+                <div class="collapsible-content" id="devConsoleContent">
+                    <div id="devConsoleLog">Dev console initialized...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+// --- Polyfill for requestAnimationFrame ---
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+// --- DOM Element References ---
+const dom = {
+    canvas: document.getElementById('simCanvas'),
+    playPauseBtn: document.getElementById('playPauseBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    stepBtn: document.getElementById('stepBtn'),
+
+    speedRange: document.getElementById('speedRange'),
+    speedValue: document.getElementById('speedValue'),
+    sliceRange: document.getElementById('sliceRange'),
+    sliceValue: document.getElementById('sliceValue'),
+
+    tempRange: document.getElementById('tempRange'),
+    tempValue: document.getElementById('tempValue'),
+    coolingRateRange: document.getElementById('coolingRateRange'),
+    coolingRateValue: document.getElementById('coolingRateValue'),
+    symmetrySelect: document.getElementById('symmetrySelect'),
+    potentialRange: document.getElementById('potentialRange'),
+    potentialValue: document.getElementById('potentialValue'),
+
+    presetBtns: document.querySelectorAll('.preset-btn'),
+
+    exportPngBtn: document.getElementById('exportPngBtn'),
+    exportJsonBtn: document.getElementById('exportJsonBtn'),
+    shareBtn: document.getElementById('shareBtn'),
+
+    commentaryText: document.getElementById('commentaryText'),
+    defectLabel: document.getElementById('defectLabel'),
+    defectCount: document.getElementById('defectCount'),
+    densityLabel: document.getElementById('densityLabel'),
+    defectDensity: document.getElementById('defectDensity'),
+    correlationLength: document.getElementById('correlationLength'),
+
+    perfMeter: document.getElementById('perfMeter'),
+    themeToggle: document.getElementById('themeToggle'),
+
+    qualityCheckPanel: document.getElementById('qualityCheckPanel'),
+    qualityCheckMessage: document.getElementById('qualityCheckMessage'),
+    performanceWarning: document.getElementById('performanceWarning'),
+    confirmHeavy: document.getElementById('confirmHeavy'),
+
+    devConsoleHeader: document.getElementById('devConsoleHeader'),
+    devConsoleContent: document.getElementById('devConsoleContent'),
+    mexicanHatCanvas: document.getElementById('mexicanHatCanvas'),
+};
+
+// --- Simulation State ---
+const simState = {
+    isRunning: false,
+    gridSize: 128,
+    field: null,
+    defects: [],
+    lastTime: 0,
+    fps: 0,
+    frameCount: 0,
+    fpsLastUpdate: 0,
+
+    // Parameters
+    params: {
+        temperature: 100,
+        coolingRate: 100,
+        symmetry: 'U1',
+        potentialFlatness: 50,
+        sliceZ: 64,
+        speed: 1.0,
+    },
+
+    // Internal state
+    isTransitioning: false,
+    hasTransitioned: false,
+};
+
+// --- Main Functions ---
+
+/**
+ * Initializes the simulation, sets up event listeners, and performs quality checks.
+ */
+function init() {
+    logToDevConsole('Initializing simulation...');
+
+    // Quality Checks
+    runQualityChecks();
+
+    // Event Listeners
+    setupEventListeners();
+
+    // Initial Reset
+    resetSimulation();
+
+    // Load preset from URL if it exists
+    loadPresetFromURL();
+
+    // Start the main loop
+    simState.lastTime = performance.now();
+    simState.fpsLastUpdate = simState.lastTime;
+    requestAnimationFrame(mainLoop);
+
+    logToDevConsole('Initialization complete.');
+}
+
+/**
+ * The main animation loop. Called once per frame.
+ */
+function mainLoop(currentTime) {
+    const deltaTime = (currentTime - simState.lastTime) / 1000; // in seconds
+
+    if (simState.isRunning) {
+        update(deltaTime * simState.params.speed);
+    }
+
+    render();
+    updatePerformanceMetrics(currentTime);
+
+    simState.lastTime = currentTime;
+    requestAnimationFrame(mainLoop);
+}
+
+/**
+ * Updates the simulation state (runs one step of the physics).
+ */
+function update(deltaTime) {
+    // This is where the physics evolution would go if it were a continuous simulation.
+    // For now, the main logic is in the temperature change handler.
+    if (simState.isTransitioning) {
+        // Handle the cooling process
+        let currentTemp = parseFloat(dom.tempRange.value);
+        currentTemp -= (simState.params.coolingRate / 1000) * deltaTime; // Simplified cooling
+        if (currentTemp < 1.0 && !simState.hasTransitioned) {
+             dom.tempRange.value = 1.0;
+             triggerPhaseTransition();
+        } else if (currentTemp <= 0.01) {
+            currentTemp = 0.01;
+            simState.isTransitioning = false;
+            dom.playPauseBtn.textContent = 'Play';
+            simState.isRunning = false;
+        }
+        dom.tempRange.value = currentTemp;
+        updateParamDisplays();
+    }
+}
+
+/**
+ * Renders the current state of the simulation to the canvas.
+ */
+function render() {
+    const ctx = dom.canvas.getContext('2d');
+    const width = dom.canvas.width;
+    const height = dom.canvas.height;
+    const size = simState.gridSize;
+    const cellSize = width / size;
+
+    ctx.clearRect(0, 0, width, height);
+
+    if (!simState.field) return;
+
+    // Render the field for the current slice
+    const z = simState.params.sliceZ;
+    for (let y = 0; y < size; y++) {
+        for (let x = 0; x < size; x++) {
+            const val = simState.field[z][y][x];
+            ctx.fillStyle = getColorForValue(val, simState.params.symmetry);
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+    }
+
+    // Render defects
+    renderDefects(ctx, cellSize);
+    renderMexicanHat();
+}
+
+/**
+ * Resets the simulation to its initial state.
+ */
+function resetSimulation() {
+    logToDevConsole('Resetting simulation...');
+    simState.isRunning = false;
+    simState.isTransitioning = false;
+    simState.hasTransitioned = false;
+    dom.playPauseBtn.textContent = 'Play';
+
+    // Allocate the 3D grid
+    simState.field = new Array(simState.gridSize);
+    for (let z = 0; z < simState.gridSize; z++) {
+        simState.field[z] = new Array(simState.gridSize);
+        for (let y = 0; y < simState.gridSize; y++) {
+            simState.field[z][y] = new Array(simState.gridSize);
+        }
+    }
+
+    // Initialize the field based on temperature
+    initializeField();
+    updateParamDisplays();
+    updateCommentary();
+    clearAnalysis();
+    render();
+    renderMexicanHat();
+}
+
+// --- Simulation Logic ---
+
+/**
+ * Initializes the field values based on the current temperature.
+ */
+function initializeField() {
+    logToDevConsole(`Initializing field for T=${simState.params.temperature.toFixed(2)}`);
+    const T = simState.params.temperature;
+    const symmetry = simState.params.symmetry;
+
+    for (let z = 0; z < simState.gridSize; z++) {
+        for (let y = 0; y < simState.gridSize; y++) {
+            for (let x = 0; x < simState.gridSize; x++) {
+                if (T < 1.0) {
+                    // This should not happen on init, but for safety
+                    simState.field[z][y][x] = getRandomVacuumState(symmetry);
+                } else {
+                    // High-temp symmetric state
+                    simState.field[z][y][x] = getSymmetricState(symmetry);
+                }
+            }
+        }
+    }
+    simState.hasTransitioned = false;
+}
+
+/**
+ * Triggers the Kibble-Zurek phase transition.
+ */
+function triggerPhaseTransition() {
+    logToDevConsole('*** Phase Transition Triggered! ***');
+    simState.hasTransitioned = true;
+
+    // 1. Calculate Correlation Length based on cooling rate (tau_Q)
+    // This is a simplified model. A true KZ model would be more complex.
+    const tau_Q = simState.params.coolingRate;
+    // Slower cooling (larger tau_Q) -> larger correlation length
+    const xi = Math.max(2, Math.floor(Math.pow(tau_Q / 10, 0.25) * 2));
+    simState.correlationLength = xi;
+    dom.correlationLength.textContent = xi;
+
+    // 2. Create causally disconnected domains
+    const symmetry = simState.params.symmetry;
+    for (let z = 0; z < simState.gridSize; z += xi) {
+        for (let y = 0; y < simState.gridSize; y += xi) {
+            for (let x = 0; x < simState.gridSize; x += xi) {
+                const vacuumState = getRandomVacuumState(symmetry);
+                // Fill the domain with this state
+                for (let dz = 0; dz < xi && z + dz < simState.gridSize; dz++) {
+                    for (let dy = 0; dy < xi && y + dy < simState.gridSize; dy++) {
+                        for (let dx = 0; dx < xi && x + dx < simState.gridSize; dx++) {
+                            simState.field[z + dz][y + dy][x + dx] = vacuumState;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 3. (Optional) Smooth the boundaries. For now, we leave them sharp.
+
+    // 4. Detect defects
+    detectAllDefects();
+
+    updateCommentary();
+    render();
+}
+
+
+/**
+ * Helper function to calculate the solid angle of a spherical triangle defined by three normalized vectors.
+ * Uses a vector formula related to L'Huilier's theorem.
+ * @param {number[]} v1 - Normalized 3D vector.
+ * @param {number[]} v2 - Normalized 3D vector.
+ * @param {number[]} v3 - Normalized 3D vector.
+ * @returns {number} The solid angle in steradians.
+ */
+function getSolidAngle(v1, v2, v3) {
+    // Check for zero vectors which can cause issues
+    if (v1.every(c=>c===0) || v2.every(c=>c===0) || v3.every(c=>c===0)) return 0;
+
+    const numer = v1[0] * (v2[1] * v3[2] - v2[2] * v3[1]) +
+                  v1[1] * (v2[2] * v3[0] - v2[0] * v3[2]) +
+                  v1[2] * (v2[0] * v3[1] - v2[1] * v3[0]); // Triple product: v1 . (v2 x v3)
+
+    const denom = 1 + (v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2]) +
+                      (v2[0] * v3[0] + v2[1] * v3[1] + v2[2] * v3[2]) +
+                      (v3[0] * v1[0] + v3[1] * v1[1] + v3[2] * v1[2]); // 1 + v1.v2 + v2.v3 + v3.v1
+
+    if (denom === 0) return Math.PI * Math.sign(numer); // Handle coplanar vectors
+
+    return 2 * Math.atan2(numer, denom);
+}
+
+
+/**
+ * Detects all defects in the grid and stores them.
+ */
+function detectAllDefects() {
+    logToDevConsole('Detecting defects...');
+    simState.defects = [];
+    const symmetry = simState.params.symmetry;
+    const size = simState.gridSize;
+    const field = simState.field;
+
+    if (symmetry === 'Z2') {
+        // Detect Domain Walls. A wall element is between two cells.
+        for (let z = 0; z < size; z++) {
+            for (let y = 0; y < size; y++) {
+                for (let x = 0; x < size; x++) {
+                    const current_val = field[z][y][x];
+                    if (x < size - 1 && current_val !== field[z][y][x+1]) {
+                        simState.defects.push({type: 'wall', x: x, y: y, z: z, axis: 'x'});
+                    }
+                    if (y < size - 1 && current_val !== field[z][y+1][x]) {
+                        simState.defects.push({type: 'wall', x: x, y: y, z: z, axis: 'y'});
+                    }
+                    if (z < size - 1 && current_val !== field[z+1][y][x]) {
+                        simState.defects.push({type: 'wall', x: x, y: y, z: z, axis: 'z'});
+                    }
+                }
+            }
+        }
+    } else if (symmetry === 'U1') {
+        // Detect Cosmic Strings. A string passes through the center of a plaquette.
+        for (let z = 0; z < size - 1; z++) {
+            for (let y = 0; y < size - 1; y++) {
+                for (let x = 0; x < size - 1; x++) {
+                    // XY Plaquette (string along z)
+                    let p_diff_xy = getPhaseDiff(field[z][y][x+1], field[z][y][x]) +
+                                    getPhaseDiff(field[z][y+1][x+1], field[z][y][x+1]) +
+                                    getPhaseDiff(field[z][y+1][x], field[z][y+1][x+1]) +
+                                    getPhaseDiff(field[z][y][x], field[z][y+1][x]);
+                    if (Math.abs(p_diff_xy) > Math.PI) simState.defects.push({type: 'string', x: x, y: y, z: z, axis: 'z'});
+
+                    // YZ Plaquette (string along x)
+                    let p_diff_yz = getPhaseDiff(field[z][y+1][x], field[z][y][x]) +
+                                    getPhaseDiff(field[z+1][y+1][x], field[z][y+1][x]) +
+                                    getPhaseDiff(field[z+1][y][x], field[z+1][y+1][x]) +
+                                    getPhaseDiff(field[z][y][x], field[z+1][y][x]);
+                    if (Math.abs(p_diff_yz) > Math.PI) simState.defects.push({type: 'string', x: x, y: y, z: z, axis: 'x'});
+
+                    // XZ Plaquette (string along y)
+                    let p_diff_xz = getPhaseDiff(field[z][y][x+1], field[z][y][x]) +
+                                    getPhaseDiff(field[z+1][y][x+1], field[z][y][x+1]) +
+                                    getPhaseDiff(field[z+1][y][x], field[z+1][y][x+1]) +
+                                    getPhaseDiff(field[z][y][x], field[z+1][y][x]);
+                    if (Math.abs(p_diff_xz) > Math.PI) simState.defects.push({type: 'string', x: x, y: y, z: z, axis: 'y'});
+                }
+            }
+        }
+    } else if (symmetry === 'SO3') {
+        // Detect Monopoles. A monopole is inside a cube.
+        for (let z = 0; z < size - 1; z++) {
+            for (let y = 0; y < size - 1; y++) {
+                for (let x = 0; x < size - 1; x++) {
+                    const v = [ // Get vectors at the 8 corners of the cube
+                        field[z][y][x], field[z][y][x+1], field[z][y+1][x], field[z][y+1][x+1],
+                        field[z+1][y][x], field[z+1][y][x+1], field[z+1][y+1][x], field[z+1][y+1][x+1]
+                    ];
+
+                    let totalSolidAngle = 0;
+                    // Face -z (bottom)
+                    totalSolidAngle += getSolidAngle(v[0], v[2], v[1]);
+                    totalSolidAngle += getSolidAngle(v[1], v[2], v[3]);
+                    // Face +z (top)
+                    totalSolidAngle += getSolidAngle(v[4], v[5], v[6]);
+                    totalSolidAngle += getSolidAngle(v[5], v[7], v[6]);
+                    // Face -y (front)
+                    totalSolidAngle += getSolidAngle(v[0], v[1], v[4]);
+                    totalSolidAngle += getSolidAngle(v[1], v[5], v[4]);
+                    // Face +y (back)
+                    totalSolidAngle += getSolidAngle(v[2], v[6], v[3]);
+                    totalSolidAngle += getSolidAngle(v[3], v[6], v[7]);
+                    // Face -x (left)
+                    totalSolidAngle += getSolidAngle(v[0], v[4], v[2]);
+                    totalSolidAngle += getSolidAngle(v[2], v[4], v[6]);
+                    // Face +x (right)
+                    totalSolidAngle += getSolidAngle(v[1], v[3], v[5]);
+                    totalSolidAngle += getSolidAngle(v[3], v[7], v[5]);
+
+                    const charge = totalSolidAngle / (4 * Math.PI);
+                    if (Math.abs(charge) > 0.5) {
+                        simState.defects.push({type: 'monopole', x: x, y: y, z: z, charge: Math.round(charge)});
+                    }
+                }
+            }
+        }
+    }
+
+    logToDevConsole(`Found ${simState.defects.length} defect elements.`);
+    updateAnalysis();
+}
+
+// --- Event Handlers ---
+
+function setupEventListeners() {
+    // Main controls
+    dom.playPauseBtn.addEventListener('click', togglePlayPause);
+    dom.resetBtn.addEventListener('click', resetSimulation);
+    dom.stepBtn.addEventListener('click', stepOnce);
+
+    // Parameter sliders & selectors
+    dom.tempRange.addEventListener('input', handleTemperatureChange);
+    dom.coolingRateRange.addEventListener('input', handleParamChange);
+    dom.potentialRange.addEventListener('input', handleParamChange);
+    dom.speedRange.addEventListener('input', handleParamChange);
+    dom.symmetrySelect.addEventListener('change', () => {
+        handleParamChange();
+        resetSimulation();
+    });
+    dom.sliceRange.addEventListener('input', () => {
+        handleParamChange();
+        render(); // Re-render immediately on slice change
+    });
+
+    // Presets
+    dom.presetBtns.forEach(btn => {
+        btn.addEventListener('click', () => setPreset(btn.dataset.preset));
+    });
+
+    // Export & Share
+    dom.exportPngBtn.addEventListener('click', exportPNG);
+    dom.exportJsonBtn.addEventListener('click', exportJSON);
+    dom.shareBtn.addEventListener('click', sharePreset);
+
+    // Misc UI
+    dom.themeToggle.addEventListener('click', () => {
+        document.body.classList.toggle('high-contrast');
+        logToDevConsole('Toggled high contrast mode.');
+    });
+    dom.devConsoleHeader.addEventListener('click', () => {
+        dom.devConsoleContent.classList.toggle('open');
+    });
+
+    // Keyboard shortcuts
+    window.addEventListener('keydown', (e) => {
+        // Don't hijack shortcuts if user is typing in a text field
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        if (e.code === 'Space') { e.preventDefault(); togglePlayPause(); }
+        if (e.code === 'ArrowRight') { e.preventDefault(); stepOnce(); }
+        if (e.key === 'r' || e.key === 'R') { e.preventDefault(); resetSimulation(); }
+        if (e.key === 'e' || e.key === 'E') { e.preventDefault(); exportPNG(); }
+    });
+}
+
+function togglePlayPause() {
+    simState.isRunning = !simState.isRunning;
+    if (simState.params.temperature > 1.0) {
+       simState.isTransitioning = simState.isRunning; // Start cooling on play
+    }
+    dom.playPauseBtn.textContent = simState.isRunning ? 'Pause' : 'Play';
+    logToDevConsole(`Playback ${simState.isRunning ? 'started' : 'paused'}.`);
+}
+
+function stepOnce() {
+    if (!simState.isRunning) {
+        // Manually cool down a bit if we are above the transition
+        if (simState.params.temperature > 1.0) {
+            let currentTemp = simState.params.temperature - 0.5;
+            dom.tempRange.value = currentTemp;
+            handleTemperatureChange();
+        }
+        update(0.016); // step with a fixed delta
+        render();
+    }
+}
+
+function handleParamChange() {
+    simState.params.temperature = parseFloat(dom.tempRange.value);
+    simState.params.coolingRate = parseFloat(dom.coolingRateRange.value);
+    simState.params.potentialFlatness = parseFloat(dom.potentialRange.value);
+    simState.params.speed = parseFloat(dom.speedRange.value);
+    simState.params.symmetry = dom.symmetrySelect.value;
+    simState.params.sliceZ = parseInt(dom.sliceRange.value);
+    updateParamDisplays();
+}
+
+function setPreset(presetName) {
+    logToDevConsole(`Setting preset: ${presetName}`);
+    const presets = {
+        calm: { coolingRate: 800, potentialFlatness: 20 },
+        typical: { coolingRate: 100, potentialFlatness: 50 },
+        chaotic: { coolingRate: 5, potentialFlatness: 90 },
+    };
+    const preset = presets[presetName];
+    if (!preset) return;
+
+    dom.coolingRateRange.value = preset.coolingRate;
+    dom.potentialRange.value = preset.potentialFlatness;
+
+    handleParamChange();
+    resetSimulation();
+
+    // Automatically trigger the phase transition for the user
+    setTimeout(() => {
+        dom.tempRange.value = 0.99;
+        handleTemperatureChange();
+        render();
+    }, 100);
+}
+
+function sharePreset() {
+    const params = {
+        cool: simState.params.coolingRate,
+        sym: simState.params.symmetry,
+        pot: simState.params.potentialFlatness,
+    };
+    const hash = btoa(JSON.stringify(params));
+    const url = `${window.location.href.split('#')[0]}#${hash}`;
+
+    navigator.clipboard.writeText(url).then(() => {
+        logToDevConsole('Preset URL copied to clipboard!');
+        alert('Preset URL copied to clipboard!');
+    }, () => {
+        logToDevConsole('Failed to copy preset URL.');
+        alert('Failed to copy preset URL.');
+    });
+}
+
+function loadPresetFromURL() {
+    if (window.location.hash) {
+        try {
+            const hash = window.location.hash.substring(1);
+            const params = JSON.parse(atob(hash));
+            logToDevConsole('Loading preset from URL...');
+
+            if(params.cool) dom.coolingRateRange.value = params.cool;
+            if(params.sym) dom.symmetrySelect.value = params.sym;
+            if(params.pot) dom.potentialRange.value = params.pot;
+
+            handleParamChange();
+        } catch (e) {
+            logToDevConsole('Failed to parse preset from URL hash: ' + e);
+        }
+    }
+}
+
+function handleTemperatureChange() {
+    const oldTemp = simState.params.temperature;
+    const newTemp = parseFloat(dom.tempRange.value);
+    simState.params.temperature = newTemp;
+
+    if (oldTemp >= 1.0 && newTemp < 1.0) {
+        // Crossed the critical temperature!
+        triggerPhaseTransition();
+    } else if (newTemp >= 1.0 && simState.hasTransitioned) {
+        // Re-heating melts the defects
+        resetSimulation();
+    }
+
+    updateParamDisplays();
+    updateCommentary();
+    renderMexicanHat();
+}
+
+
+// --- Helpers & Utilities ---
+
+function runQualityChecks() {
+    let allOk = true;
+    let message = '';
+    if (!dom.canvas) { allOk = false; message += 'Canvas element not found. '; }
+    if (!dom.playPauseBtn) { allOk = false; message += 'Play/Pause button not found. '; }
+    // ... check other critical elements
+
+    if (!allOk) {
+        dom.qualityCheckPanel.style.display = 'block';
+        dom.qualityCheckMessage.textContent = `Critical error: ${message}. The simulation may not work correctly.`;
+        logToDevConsole(`Quality Check FAILED: ${message}`);
+    } else {
+        logToDevConsole('Quality checks passed.');
+    }
+}
+
+function updateParamDisplays() {
+    dom.tempValue.textContent = `${simState.params.temperature.toFixed(2)} T_c`;
+    simState.params.coolingRate = parseFloat(dom.coolingRateRange.value);
+    dom.coolingRateValue.textContent = simState.params.coolingRate > 500 ? 'Slow' : simState.params.coolingRate < 50 ? 'Fast' : 'Medium';
+    dom.sliceValue.textContent = `${simState.params.sliceZ}/${simState.gridSize}`;
+    //... update others
+}
+
+function updateCommentary() {
+    const T = simState.params.temperature;
+    if (T >= 1.0) {
+        dom.commentaryText.textContent = "The universe is hot and symmetric. The field is fluctuating wildly around zero. No stable structures can form.";
+    } else if (simState.hasTransitioned) {
+        const defectType = {Z2: 'domain walls', U1: 'cosmic strings', SO3: 'monopoles'}[simState.params.symmetry];
+        dom.commentaryText.textContent = `The phase transition is complete. The colored regions are 'frozen'. The defects (${defectType}) are stable 'scars' in the field.`;
+    } else {
+        dom.commentaryText.textContent = "The temperature is dropping below the critical point! Patches of the universe are independently choosing a ground state. Watch for the boundaries where they meet!";
+    }
+}
+
+function updateAnalysis() {
+    const defectCount = simState.defects.length;
+    const volume = Math.pow(simState.gridSize, 3);
+    let metric = defectCount;
+    let metric_name = 'Defect Count';
+    const symmetry = simState.params.symmetry;
+
+    if (symmetry === 'Z2') {
+        metric_name = 'Wall Area';
+        metric = defectCount;
+    } else if (symmetry === 'U1') {
+        metric_name = 'String Length';
+        metric = defectCount;
+    } else if (symmetry === 'SO3') {
+        metric_name = 'Monopole Count';
+        metric = simState.defects.reduce((acc, d) => acc + Math.abs(d.charge), 0);
+    }
+
+    const density = metric > 0 ? metric / volume : 0;
+
+    dom.defectLabel.textContent = `${metric_name}:`;
+    dom.defectCount.textContent = metric;
+    dom.defectDensity.textContent = density.toExponential(2);
+}
+
+function clearAnalysis() {
+    dom.defectLabel.textContent = 'Defect Count:';
+    dom.defectCount.textContent = '0';
+    dom.defectDensity.textContent = '0.00';
+    dom.correlationLength.textContent = '--';
+}
+
+function updatePerformanceMetrics(currentTime) {
+    simState.frameCount++;
+    if (currentTime > simState.fpsLastUpdate + 1000) {
+        simState.fps = simState.frameCount;
+        simState.frameCount = 0;
+        simState.fpsLastUpdate = currentTime;
+        const mem = performance.memory ? (performance.memory.usedJSHeapSize / 1048576).toFixed(1) : '--';
+        dom.perfMeter.textContent = `FPS: ${simState.fps} | Mem: ${mem} MB | Grid: ${simState.gridSize}x${simState.gridSize}`;
+    }
+}
+
+function getSymmetricState(symmetry) {
+    if (symmetry === 'U1') return 0; // Represents zero magnitude
+    if (symmetry === 'Z2') return 0; // Represents zero magnitude
+    if (symmetry === 'SO3') return [0, 0, 0]; // Zero vector
+    return 0;
+}
+
+function getRandomVacuumState(symmetry) {
+    if (symmetry === 'U1') return Math.random() * 2 * Math.PI;
+    if (symmetry === 'Z2') return Math.random() > 0.5 ? 1 : -1;
+    if (symmetry === 'SO3') {
+        // Random point on a sphere (using Marsaglia method)
+        let u, v, s;
+        do {
+            u = Math.random() * 2 - 1;
+            v = Math.random() * 2 - 1;
+            s = u * u + v * v;
+        } while (s >= 1 || s === 0);
+        const mult = 2 * Math.sqrt(1 - s);
+        return [mult * u, mult * v, 1 - 2 * s];
+    }
+    return 0;
+}
+
+function getColorForValue(val, symmetry) {
+    const T = simState.params.temperature;
+    if (T >= 1.0) return `hsl(0, 0%, ${Math.random() * 15}%)`; // Hot, fluctuating state
+
+    if (symmetry === 'U1') {
+        const hue = (val * 180 / Math.PI); // Map 0-2PI to 0-360
+        return `hsl(${hue}, 90%, 50%)`;
+    }
+    if (symmetry === 'Z2') {
+        return val === 1 ? '#4a90e2' : '#d0021b';
+    }
+    if (symmetry === 'SO3') {
+        // Color based on vector direction (e.g., map x,y,z to r,g,b)
+        const r = Math.floor((val[0] + 1) / 2 * 255);
+        const g = Math.floor((val[1] + 1) / 2 * 255);
+        const b = Math.floor((val[2] + 1) / 2 * 255);
+        return `rgb(${r},${g},${b})`;
+    }
+    return '#000';
+}
+
+function getPhaseDiff(p2, p1) {
+    let diff = p2 - p1;
+    if (diff > Math.PI) diff -= 2 * Math.PI;
+    if (diff < -Math.PI) diff += 2 * Math.PI;
+    return diff;
+}
+
+function renderDefects(ctx, cellSize) {
+    const sliceZ = simState.params.sliceZ;
+    const symmetry = simState.params.symmetry;
+
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+    ctx.lineWidth = Math.max(1.5, cellSize / 3);
+
+    simState.defects.forEach(defect => {
+        if (symmetry === 'U1') {
+            // A string oriented along z-axis pierces the xy plane
+            if (defect.axis === 'z' && defect.z === sliceZ) {
+                ctx.beginPath();
+                ctx.arc((defect.x + 0.5) * cellSize, (defect.y + 0.5) * cellSize, cellSize / 3, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        } else if (symmetry === 'Z2') {
+            // A wall vertical in the current slice
+            if (defect.z === sliceZ && defect.axis !== 'z') {
+                ctx.beginPath();
+                if (defect.axis === 'x') { // Wall between x and x+1
+                    ctx.moveTo((defect.x + 1) * cellSize, defect.y * cellSize);
+                    ctx.lineTo((defect.x + 1) * cellSize, (defect.y + 1) * cellSize);
+                } else { // Wall between y and y+1
+                    ctx.moveTo(defect.x * cellSize, (defect.y + 1) * cellSize);
+                    ctx.lineTo((defect.x + 1) * cellSize, (defect.y + 1) * cellSize);
+                }
+                ctx.stroke();
+            }
+            // A wall horizontal in the current slice (lies between z and z+1)
+            if (defect.axis === 'z' && defect.z === sliceZ) {
+                 ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                 ctx.fillRect(defect.x * cellSize, defect.y * cellSize, cellSize, cellSize);
+            }
+        } else if (symmetry === 'SO3') {
+            if (defect.z === sliceZ) {
+                 ctx.fillStyle = defect.charge > 0 ? '#00FFFF' : '#FF00FF'; // Cyan for monopole, Magenta for anti-monopole
+                 ctx.strokeStyle = '#FFFFFF';
+                 ctx.lineWidth = 1.5;
+
+                 // Draw a circle
+                 ctx.beginPath();
+                 ctx.arc((defect.x + 0.5) * cellSize, (defect.y + 0.5) * cellSize, cellSize/2.5, 0, 2 * Math.PI);
+                 ctx.fill();
+                 ctx.stroke();
+
+                 // Draw a plus or minus sign
+                 ctx.strokeStyle = '#000000';
+                 ctx.lineWidth = 1;
+                 ctx.beginPath();
+                 const centerX = (defect.x + 0.5) * cellSize;
+                 const centerY = (defect.y + 0.5) * cellSize;
+                 const crossSize = cellSize / 5;
+                 ctx.moveTo(centerX - crossSize, centerY);
+                 ctx.lineTo(centerX + crossSize, centerY);
+                 if (defect.charge < 0) { // Only draw vertical for plus
+                    // No vertical line for minus
+                 } else {
+                    ctx.moveTo(centerX, centerY - crossSize);
+                    ctx.lineTo(centerX, centerY + crossSize);
+                 }
+                 ctx.stroke();
+            }
+        }
+    });
+     ctx.lineWidth = 1; // Reset line width
+}
+
+function logToDevConsole(message) {
+    const consoleLog = document.getElementById('devConsoleLog');
+    consoleLog.textContent += `\n[${new Date().toLocaleTimeString()}] ${message}`;
+    consoleLog.scrollTop = consoleLog.scrollHeight;
+    console.log(message); // Also log to browser console
+}
+
+function exportPNG() {
+    const a = document.createElement('a');
+    a.download = `cosmic_forge_snapshot_${Date.now()}.png`;
+    a.href = dom.canvas.toDataURL('image/png');
+    a.click();
+    logToDevConsole('Exported canvas to PNG.');
+}
+
+function exportJSON() {
+    const data = {
+        params: simState.params,
+        timestamp: new Date().toISOString(),
+    };
+    const a = document.createElement('a');
+    a.download = `cosmic_forge_params_${Date.now()}.json`;
+    a.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data, null, 2));
+    a.click();
+    logToDevConsole('Exported parameters to JSON.');
+}
+
+function renderMexicanHat() {
+    if (!dom.mexicanHatCanvas) return;
+    const ctx = dom.mexicanHatCanvas.getContext('2d');
+    const width = dom.mexicanHatCanvas.width;
+    const height = dom.mexicanHatCanvas.height;
+
+    const T = simState.params.temperature;
+    const flatness = simState.params.potentialFlatness / 100; // 0 to 1
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.strokeStyle = `hsl(180, 100%, 75%)`;
+    ctx.lineWidth = 3;
+    ctx.font = "14px Arial";
+    ctx.fillStyle = "var(--primary-text)";
+
+    // The potential is V(phi) = A*phi^2 + B*phi^4. A is temperature dependent.
+    const B = 0.1 + (1 - flatness) * 0.9; // B controls the steepness. Smaller B = flatter.
+    const Tc = 1.0;
+    const A = (T - Tc); // A determines the curvature at the origin.
+
+    // Find minima for T < Tc
+    const phi_min_sq = T < Tc ? -A / (2 * B) : 0;
+    const phi_min = Math.sqrt(phi_min_sq);
+
+    // Draw axis lines
+    ctx.strokeStyle = "var(--border-color)";
+    ctx.lineWidth = 1;
+    const y_origin = height * 0.8;
+    const x_origin = width/2;
+    ctx.beginPath();
+    ctx.moveTo(0, y_origin);
+    ctx.lineTo(width, y_origin);
+    ctx.moveTo(x_origin, 0);
+    ctx.lineTo(x_origin, height);
+    ctx.stroke();
+    ctx.fillText("φ", width - 15, y_origin - 5);
+    ctx.fillText("V(φ)", x_origin + 5, 15);
+
+
+    // Draw potential curve
+    ctx.strokeStyle = `hsl(180, 100%, 75%)`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let i = 0; i < width; i++) {
+        const phi = (i - x_origin) / (width / 5); // Scale phi
+        const V = A * Math.pow(phi, 2) + B * Math.pow(phi, 4);
+        const y = y_origin - V * height * 0.5; // Scale and position V on canvas
+
+        if (i === 0) ctx.moveTo(i, y);
+        else ctx.lineTo(i, y);
+    }
+    ctx.stroke();
+
+    // Draw the ball representing the field state
+    let ball_phi = 0;
+    if (T < Tc) {
+        // After transition, pick a side. Before, it's at the unstable equilibrium.
+        ball_phi = simState.hasTransitioned ? phi_min : 0;
+    }
+
+    const ball_V = A * Math.pow(ball_phi, 2) + B * Math.pow(ball_phi, 4);
+    const ball_x = ball_phi * (width / 5) + x_origin;
+    const ball_y = y_origin - ball_V * height * 0.5;
+
+    ctx.fillStyle = '#FFD700'; // Gold color for the ball
+    ctx.beginPath();
+    ctx.arc(ball_x, ball_y, 8, 0, 2 * Math.PI);
+    ctx.fill();
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+}
+
+// --- Entry Point ---
+document.addEventListener('DOMContentLoaded', init);
+
+</script>
+</body>
+</html>
