@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapping the Big Bang: The FLRW Cosmologies</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; background-color: #111; color: #eee; }
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+        .panel { background-color: #222; border-radius: 8px; padding: 20px; }
+        canvas { background-color: #000; border-radius: 4px; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h2>3D Geometry</h2>
+            <canvas id="geometry-canvas" height="400"></canvas>
+            <h3>Controls</h3>
+            <label for="omega-slider">Matter Density (Ω_m):</label>
+            <input type="range" id="omega-slider" min="0.5" max="2" step="0.01" value="1">
+            <button id="launch-observer">Launch Comoving Observer</button>
+            <button id="launch-light-ray">Launch Light Ray</button>
+        </div>
+        <div class="panel">
+            <h2>Penrose Diagram</h2>
+            <canvas id="penrose-canvas" height="400"></canvas>
+        </div>
+        <div class="panel" style="grid-column: 1 / 3;">
+            <h2>A Tale of Three Universes</h2>
+            <div id="universe-tale">Select a matter density to see the story of that universe.</div>
+        </div>
+        <div class="panel" style="grid-column: 1 / 3;">
+            <h2>The Physics of FLRW Spacetimes</h2>
+            <div id="flrw-physics">
+                <h3>The Cosmological Principle</h3>
+                <p>The FLRW models are based on the assumption that on large scales, the universe is homogeneous (the same everywhere) and isotropic (looks the same in all directions). This principle dramatically simplifies Einstein's equations, leading to the Friedmann equations.</p>
+                <h3>The Friedmann Equations</h3>
+                <p>These equations describe a cosmic tug-of-war. The expansion of the universe (the "Hubble flow") is constantly fighting against the inward pull of gravity from the matter and energy within it. The density parameter Ω_m determines the winner of this battle.</p>
+                <h3>Spacelike vs. Timelike Singularities</h3>
+                <p>In a closed universe (Ω_m > 1), the Big Bang and Big Crunch are <strong>spacelike singularities</strong>. They are moments in time that everyone in the universe experiences. In contrast, the singularity inside a black hole is <strong>timelike</strong>—it's a place in space that one could theoretically avoid.</p>
+            </div>
+        </div>
+        <div class="panel" style="grid-column: 1 / 3;">
+            <h2>Cosmic Diagnostics</h2>
+            <div id="cosmic-diagnostics">
+                <h4>Scale Factor a(t)</h4>
+                <canvas id="scale-factor-canvas" height="150"></canvas>
+            </div>
+        </div>
+        <div class="panel" style="grid-column: 1 / 3;">
+            <h2>Maximal Depth</h2>
+            <div id="maximal-depth">
+                <h3>Advanced Controls</h3>
+                <label for="lambda-slider">Cosmological Constant (Λ):</label>
+                <input type="range" id="lambda-slider" min="-1" max="1" step="0.01" value="0">
+                <label for="radiation-toggle">Include Radiation (w=1/3):</label>
+                <input type="checkbox" id="radiation-toggle">
+
+                <h3>Non-Comoving Observer</h3>
+                <button id="launch-peculiar-observer">Launch Peculiar Observer</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const geometryCanvas = document.getElementById('geometry-canvas');
+            const gCtx = geometryCanvas.getContext('2d');
+            const penroseCanvas = document.getElementById('penrose-canvas');
+            const pCtx = penroseCanvas.getContext('2d');
+            const omegaSlider = document.getElementById('omega-slider');
+
+            let omega_m = 1.0;
+            let observers = [];
+            let lightRays = [];
+
+            function draw() {
+                drawGeometry();
+                drawPenrose();
+                updateExplanations();
+            }
+
+            function drawGeometry() {
+                gCtx.clearRect(0, 0, geometryCanvas.width, geometryCanvas.height);
+                const w = geometryCanvas.width;
+                const h = geometryCanvas.height;
+                gCtx.strokeStyle = '#6a7dff';
+
+                if (omega_m > 1) { // Closed
+                    gCtx.beginPath();
+                    gCtx.arc(w/2, h/2, w/4, 0, 2 * Math.PI);
+                    gCtx.stroke();
+                    gCtx.fillText("Closed (Sphere)", 10, 20);
+                } else if (omega_m < 1) { // Open
+                    gCtx.beginPath();
+                    gCtx.moveTo(w/4, h/2 + 20);
+                    gCtx.quadraticCurveTo(w/2, h/2 - 80, 3*w/4, h/2 + 20);
+                    gCtx.stroke();
+                     gCtx.fillText("Open (Hyperboloid)", 10, 20);
+                } else { // Flat
+                    gCtx.strokeRect(w/4, h/4, w/2, h/2);
+                    gCtx.fillText("Flat (Plane)", 10, 20);
+                }
+            }
+
+            function drawPenrose() {
+                pCtx.clearRect(0, 0, penroseCanvas.width, penroseCanvas.height);
+                 const w = penroseCanvas.width;
+                const h = penroseCanvas.height;
+                pCtx.strokeStyle = 'white';
+                pCtx.beginPath();
+
+                if (omega_m > 1) { // Closed
+                    pCtx.moveTo(w/2, 50); pCtx.lineTo(50, h/2);
+                    pCtx.lineTo(w/2, h-50); pCtx.lineTo(w-50, h/2);
+                    pCtx.closePath();
+                } else { // Flat & Open
+                    pCtx.moveTo(50, h-50); pCtx.lineTo(w/2, 50);
+                    pCtx.lineTo(w-50, h-50);
+                }
+                pCtx.stroke();
+            }
+
+            function updateExplanations() {
+                const taleDiv = document.getElementById('universe-tale');
+                if (omega_m > 1) {
+                    taleDiv.innerHTML = "<p>You have created a closed universe. Gravity will eventually halt the expansion and cause a Big Crunch.</p>";
+                } else if (omega_m < 1) {
+                    taleDiv.innerHTML = "<p>You have created an open universe. The expansion will continue forever.</p>";
+                } else {
+                    taleDiv.innerHTML = "<p>You have created a flat, critical universe. The expansion will slow down but never stop.</p>";
+                }
+            }
+
+            omegaSlider.addEventListener('input', (e) => {
+                omega_m = parseFloat(e.target.value);
+                draw();
+            });
+
+            draw();
+        });
+    </script>
+</body>
+</html>
