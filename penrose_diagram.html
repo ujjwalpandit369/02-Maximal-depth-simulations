@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Penrose Cartographer: Mapping Infinite Spacetime</title>
+    <style>
+        :root { --bg-color: #ffffff; --text-color: #212529; --primary-color: #0077b6; --secondary-color: #00b4d8; --accent-color: #fca311; --panel-bg-color: #f8f9fa; --border-color: #dee2e6; --font-sans: 'Georgia', 'Times New Roman', serif; }
+        body { font-family: var(--font-sans); background-color: var(--bg-color); color: var(--text-color); line-height: 1.7; margin: 0; padding: 0 20px; }
+        header, main, section, footer { max-width: 1200px; margin: 20px auto; }
+        section { background-color: var(--panel-bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        h1, h2, h3, h4 { color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        h1 { text-align: center; }
+        .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+        .sim-panel h2 { text-align: center; margin-top: 0; font-size: 1.2em;}
+        .sim-container { display: flex; justify-content: center; align-items: center; background: #e9ecef; border-radius: 4px; }
+        #physical-canvas, #penrose-canvas { max-width: 100%; height: auto; }
+        .controls-main { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; align-items: center; }
+        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .data-panel { background-color: #fff; }
+        ul { padding-left: 20px; }
+        button { background-color: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 0.9em; }
+        button:hover { background-color: var(--secondary-color); }
+        code { background-color: #e9ecef; padding: 2px 5px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>The Penrose Cartographer: Mapping Infinite Spacetime</h1>
+        <p class="subtitle" style="text-align:center;">An interactive tool to build and understand Penrose diagrams, which map infinite spacetimes onto finite canvases.</p>
+    </header>
+
+    <main>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>Spacetimes, like the de Sitter universe studied in cosmology, are often infinite in extent and duration. How can one possibly draw a map of such a thing? This simulation introduces the powerful tool of <strong>Penrose diagrams</strong>. Invented by Roger Penrose, these diagrams use a clever mathematical trick called a conformal transformation to "squish" an infinite spacetime into a finite, manageable picture. The magic of this technique is that it preserves causal relationships: the paths of light rays on the diagram are always straight lines at 45-degree angles. By launching particles and light rays in a familiar "physical" view of an expanding universe and then mapping them to the Penrose diagram, you will build an intuition for how these essential tools of theoretical physics work and what they tell us about the nature of infinity and causality.</p>
+        </section>
+
+        <section id="simulation-area">
+            <div class="sim-grid">
+                <div class="sim-panel"><h2>Physical de Sitter Space</h2><div class="sim-container"><canvas id="physical-canvas" width="500" height="500"></canvas></div></div>
+                <div class="sim-panel"><h2>Penrose Diagram</h2><div class="sim-container"><canvas id="penrose-canvas" width="500" height="500"></canvas></div></div>
+            </div>
+            <div class="controls-main">
+                <button id="launch-timelike-btn">Launch Timelike Geodesic</button>
+                <button id="launch-null-btn">Launch Null Geodesic (Light)</button>
+                <button id="map-btn">Map Last Geodesic</button>
+                <button id="clear-btn">Clear Mapped Lines</button>
+                <div class="label-toggles" style="margin-left: 20px; border-left: 2px solid var(--border-color); padding-left: 20px;">
+                    <strong>Show Labels:</strong>
+                    <label><input type="checkbox" class="label-toggle" data-label="i+"> i⁺</label>
+                    <label><input type="checkbox" class="label-toggle" data-label="i-"> i⁻</label>
+                    <label><input type="checkbox" class="label-toggle" data-label="i0"> i⁰</label>
+                    <label><input type="checkbox" class="label-toggle" data-label="scri+"> ℐ⁺</label>
+                    <label><input type="checkbox" class="label-toggle" data-label="scri-"> ℐ⁻</label>
+                </div>
+            </div>
+        </section>
+
+        <section id="data-panels">
+            <div class="data-grid">
+                <div class="data-panel"><h3>Reading the Map</h3><div id="map-reading-content"><p>Launch a geodesic and press "Map It!" to see commentary here.</p></div></div>
+                <div class="data-panel"><h3>Diagram Legend & Properties</h3><ul id="geodesic-legend"></ul><h4>Causal Rules:</h4><ul><li>Light travels at 45 degrees.</li><li>Massive particles travel at angles steeper than 45°.</li><li>You can only be affected by events in your past light cone (the V-shape below you).</li><li>You can only affect events in your future light cone (the ^-shape above you).</li></ul></div>
+            </div>
+        </section>
+
+        <section id="theory">
+            <h2>The Physics of Conformal Mapping</h2>
+            <h3>Part A: The Problem of Infinity</h3><p>General Relativity describes spacetime as a dynamic, four-dimensional manifold. Often, the solutions to Einstein's equations describe spacetimes that are infinite. For example, simple Minkowski space (the flat spacetime of special relativity) extends infinitely in all directions and for all time. The de Sitter universe is infinite in the same way. This poses a practical problem: how can we draw a map of the whole thing to study its global properties and causal structure? If we just use standard graph paper (Cartesian coordinates), our map would have to be infinitely large.</p><h3>Part B: Conformal Transformations</h3><p>The solution is to perform a **conformal transformation**. This is a mathematical change of coordinates that "squishes" the infinite spacetime into a finite region. The key property of a conformal transformation is that it preserves **angles**. It wildly distorts distances—sending points infinitely far away to a finite distance on our map—but it guarantees that the local angle between any two intersecting lines is the same on the map as it was in the real spacetime. This is crucial because in relativity, the paths of light rays define the causal structure of spacetime. Light rays form "light cones" at 45-degree angles on a standard spacetime diagram. By preserving angles, a Penrose diagram ensures that light rays remain straight lines at 45 degrees. This means we can still easily see what parts of spacetime can and cannot communicate with each other, even after squishing the whole infinite structure onto a small piece of paper.</p><h3>Part C: Anatomy of the de Sitter Square</h3><p>The Penrose diagram for de Sitter space is a square. Each boundary of this square represents a different kind of infinity:<ul><li><strong>i⁻ (Past Timelike Infinity):</strong> This is the single point at the bottom corner. It represents the "origin" for all massive particles; it's where any observer on a timelike geodesic "began" in the infinite past.</li><li><strong>i⁺ (Future Timelike Infinity):</strong> The single point at the top corner. It's the "destination" for all massive particles that continue forever.</li><li><strong>i⁰ (Spacelike Infinity):</strong> The left and right corners. These represent points infinitely far away in space. You would need to travel infinitely fast (which is impossible) to reach them.</li><li><strong>ℐ⁻ (Past Null Infinity):</strong> The two bottom edges of the square. This is the "place" where all incoming light rays originate in the infinite past.</li><li><strong>ℐ⁺ (Future Null Infinity):</strong> The two top edges of the square. This is the "place" where all outgoing light rays end up in the infinite future.</li></ul></p>
+        </section>
+
+        <section id="advanced-notes">
+             <h2>Maximal Depth: Advanced Topics & Extensions</h2>
+            <h3>Static Patch vs. Global Diagram</h3><p>The square diagram represents the entire, eternal de Sitter spacetime. However, any single observer can only ever see a part of it, limited by their past and future light cones. This accessible region is called the "static patch" or "causal diamond." On the Penrose diagram, this is a diamond shape inscribed within the larger square. Events outside this diamond are forever beyond that observer's horizon—they can never receive a signal from them or send a signal to them.</p><h3>A Bestiary of Diagrams</h3><p>Comparing Penrose diagrams is a powerful learning tool.<ul><li><strong>Minkowski Space:</strong> An infinite diamond. It has past and future timelike and null infinities, but its spacelike infinity (i⁰) is a single point, unlike de Sitter's two.</li><li><strong>Anti-de Sitter Space:</strong> An infinite vertical strip inside a square. Timelike geodesics can actually reach spacelike infinity (the vertical sides) in a finite time and "bounce" back.</li><li><strong>Schwarzschild Black Hole:</strong> The most famous diagram. It consists of two diamonds (our universe and a parallel universe) and two triangles (the white hole singularity in the past and the black hole singularity in the future), showing how all paths inside the event horizon must end on the future singularity.</li></ul></p><h3>Hawking-Gibbons Radiation</h3><p>In quantum field theory, the vacuum is filled with virtual particle-antiparticle pairs that pop into and out of existence. An observer in de Sitter space has a cosmological horizon (the edge of their causal diamond). It's possible for a virtual pair to be created such that one particle is inside the observer's horizon and the other is outside. The particle inside can be detected by the observer, while the partner particle is lost forever beyond the horizon. To the observer, it appears as if their horizon is radiating particles, with a temperature proportional to the expansion rate of the universe. This is Hawking-Gibbons radiation, a cosmological analogue to the Hawking radiation from black holes.</p>
+        </section>
+    </main>
+
+    <footer><p>Simulation generated by Jules.</p></footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            class PenroseSimulator {
+                constructor() {
+                    this.physicalCanvas = document.getElementById('physical-canvas');
+                    this.pCtx = this.physicalCanvas.getContext('2d');
+                    this.penroseCanvas = document.getElementById('penrose-canvas');
+                    this.penroseCtx = this.penroseCanvas.getContext('2d');
+                    this.geodesics = [];
+                    this.lastLaunched = null;
+                    this.time = 0;
+                    this.labels = {};
+                    this.causalPatch = null;
+                    this.setupUI();
+                    this.animate();
+                }
+                setupUI() {
+                    document.getElementById('launch-timelike-btn').addEventListener('click', () => this.launchGeodesic('timelike'));
+                    document.getElementById('launch-null-btn').addEventListener('click', () => this.launchGeodesic('null'));
+                    document.getElementById('map-btn').addEventListener('click', () => this.mapGeodesic());
+                    document.getElementById('clear-btn').addEventListener('click', () => { this.geodesics = []; this.lastLaunched = null; this.causalPatch = null; this.updateLegend(); });
+                    document.querySelectorAll('.label-toggle').forEach(t => t.addEventListener('change', e => { this.labels[e.target.dataset.label] = e.target.checked; }));
+                    this.penroseCanvas.addEventListener('click', e => {
+                        const rect = this.penroseCanvas.getBoundingClientRect();
+                        this.causalPatch = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                    });
+                }
+                launchGeodesic(type) {
+                    const w = this.physicalCanvas.width, h = this.physicalCanvas.height;
+                    const path = [];
+                    const startX = w / 2 + (Math.random() - 0.5) * 50;
+                    const velX = (type === 'null') ? (Math.random() > 0.5 ? 1 : -1) * 2 : 0;
+                    for (let t = 0; t < h; t++) {
+                        path.push({ t: h - t, x: startX + t * velX });
+                    }
+                    this.lastLaunched = { type, path, color: `hsl(${Math.random()*360}, 90%, 50%)` };
+                }
+                transform(t_phys, x_phys) {
+                    const w = this.physicalCanvas.width, h = this.physicalCanvas.height;
+                    const alpha = 1.0; // de Sitter radius
+                    const t = (t_phys / h) * 5 - 2.5; // Scale time
+                    const x = (x_phys / w - 0.5) * 5; // Scale space
+                    const T = Math.atan(Math.tanh(t / (2 * alpha)));
+                    const R = Math.atan(Math.tanh((t - x) / (2 * alpha)));
+                    const t_prime = T + R;
+                    const x_prime = T - R;
+                    return { x: this.penroseCanvas.width * (0.5 + x_prime / Math.PI), y: this.penroseCanvas.height * (0.5 - t_prime / Math.PI) };
+                }
+                mapGeodesic() {
+                    if (!this.lastLaunched) return;
+                    this.lastLaunched.mappedPath = this.lastLaunched.path.map(p => this.transform(p.t, p.x));
+                    this.geodesics.push(this.lastLaunched);
+                    this.lastLaunched = null;
+                    this.updateLegend();
+                }
+                updateLegend() {
+                    const legend = document.getElementById('geodesic-legend');
+                    legend.innerHTML = this.geodesics.map((g, i) => `<li style="color: ${g.color};"><strong>Geodesic ${i+1}:</strong> ${g.type}</li>`).join('');
+                }
+                draw() {
+                    this.drawPhysicalView();
+                    this.drawPenroseView();
+                }
+                drawPhysicalView() {
+                    const w = this.physicalCanvas.width, h = this.physicalCanvas.height;
+                    this.pCtx.clearRect(0,0,w,h);
+                    this.pCtx.strokeStyle = '#ddd';
+                    for(let i=1; i<10; i++) { this.pCtx.beginPath(); this.pCtx.moveTo(i*w/10, 0); this.pCtx.lineTo(i*w/10, h); this.pCtx.stroke(); }
+                    const drawPath = (path, color) => {
+                        if (!path || path.length < 2) return;
+                        this.pCtx.strokeStyle = color; this.pCtx.lineWidth = 3; this.pCtx.beginPath(); this.pCtx.moveTo(path[0].x, path[0].y);
+                        for(let i=1; i<path.length; i++) { this.pCtx.lineTo(path[i].x, path[i].y); }
+                        this.pCtx.stroke();
+                    };
+                    if (this.lastLaunched) drawPath(this.lastLaunched.path, this.lastLaunched.color);
+                    this.geodesics.forEach(g => drawPath(g.path, g.color));
+                }
+                drawPenroseView() {
+                    const w = this.penroseCanvas.width, h = this.penroseCanvas.height;
+                    this.penroseCtx.clearRect(0,0,w,h);
+                    this.penroseCtx.strokeStyle = 'black'; this.penroseCtx.lineWidth = 2;
+                    this.penroseCtx.beginPath(); this.penroseCtx.moveTo(w/2, 10); this.penroseCtx.lineTo(w-10, h/2); this.penroseCtx.lineTo(w/2, h-10); this.penroseCtx.lineTo(10, h/2); this.penroseCtx.closePath(); this.penroseCtx.stroke();
+                    this.geodesics.forEach(g => {
+                        if (!g.mappedPath || g.mappedPath.length < 2) return;
+                        this.penroseCtx.strokeStyle = g.color; this.penroseCtx.lineWidth = 2; this.penroseCtx.beginPath(); this.penroseCtx.moveTo(g.mappedPath[0].x, g.mappedPath[0].y);
+                        for(let i=1; i<g.mappedPath.length; i++) { this.penroseCtx.lineTo(g.mappedPath[i].x, g.mappedPath[i].y); }
+                        this.penroseCtx.stroke();
+                    });
+                    this.drawCausalPatch(); this.drawLabels();
+                }
+                drawCausalPatch() {
+                    if (!this.causalPatch) return;
+                    const ctx = this.penroseCtx; const {x, y} = this.causalPatch;
+                    ctx.strokeStyle = 'rgba(252, 163, 17, 0.8)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(x, y); ctx.lineTo(x + (y - 10), 10);
+                    ctx.moveTo(x, y); ctx.lineTo(x - (y - 10), 10);
+                    ctx.moveTo(x, y); ctx.lineTo(x + (ctx.canvas.height - 10 - y), ctx.canvas.height - 10);
+                    ctx.moveTo(x, y); ctx.lineTo(x - (ctx.canvas.height - 10 - y), ctx.canvas.height - 10);
+                    ctx.stroke(); ctx.setLineDash([]);
+                }
+                drawLabels() {
+                    const ctx = this.penroseCtx; const w = ctx.canvas.width, h = ctx.canvas.height; ctx.fillStyle = 'black'; ctx.font = '16px serif';
+                    if(this.labels['i+']) ctx.fillText('i⁺', w/2 - 8, 25);
+                    if(this.labels['i-']) ctx.fillText('i⁻', w/2 - 8, h - 15);
+                    if(this.labels['i0']) { ctx.fillText('i⁰', 15, h/2 + 5); ctx.fillText('i⁰', w - 35, h/2 + 5); }
+                    if(this.labels['scri+']) ctx.fillText('ℐ⁺', w - 40, 40);
+                    if(this.labels['scri-']) ctx.fillText('ℐ⁻', 20, h - 25);
+                }
+                animate() {
+                    this.time++; this.draw(); requestAnimationFrame(() => this.animate());
+                }
+            }
+            new PenroseSimulator();
+        });
+    </script>
+
+</body>
+</html>

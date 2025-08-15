@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echoes from Another Dimension: Kaluza-Klein Towers</title>
+    <style>
+        :root { --bg-color: #1a1a1a; --text-color: #f0f0f0; --primary-color: #00aaff; --secondary-color: #ff00aa; --accent-color: #aaff00; --panel-bg-color: #2a2a2a; --border-color: #444; --font-sans: 'Inter', 'Segoe UI', 'Roboto', sans-serif; }
+        body { font-family: var(--font-sans); background-color: var(--bg-color); color: var(--text-color); line-height: 1.7; margin: 0; padding: 0 20px; }
+        header, main, section, footer { max-width: 1200px; margin: 20px auto; }
+        section { background-color: var(--panel-bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        h1, h2, h3, h4 { color: var(--primary-color); border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        h1 { text-align: center; font-size: 2em; }
+        .main-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 20px; }
+        .main-panel { grid-column: 1 / 2; }
+        .sidebar { grid-column: 2 / 3; }
+        .sim-container { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; background: #111; border-radius: 4px; padding: 10px; }
+        #sim-canvas { max-width: 100%; height: auto; }
+        .controls-parameters { display: flex; flex-direction: column; gap: 15px; }
+        .param-group label { font-weight: bold; color: var(--secondary-color); }
+        .data-panel { padding: 15px; margin-bottom: 20px; background-color: #222; border-radius: 8px; }
+        .kk-tower-container canvas { width: 100%; background-color: #111; border-radius: 4px; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        th { background-color: #333; }
+        code { background-color: #333; padding: 2px 5px; border-radius: 4px; font-family: monospace; }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } .main-panel, .sidebar { grid-column: 1 / -1; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Echoes from Another Dimension: Kaluza-Klein Degrees of Freedom</h1>
+        <p class="subtitle" style="text-align:center;">An interactive simulation of how extra spatial dimensions could reveal themselves in our world.</p>
+    </header>
+
+    <main>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>What if the world has more dimensions than the three we perceive? This is not just a question for science fiction, but for fundamental physics. This simulation explores the fascinating Kaluza-Klein theory, which proposes that extra spatial dimensions could exist, curled up on a microscopic scale, too small for us to see. You will visualize this concept with a 'world' that is a cylinder: one long, familiar dimension and one tiny, circular extra dimension. You will control a single particle moving in this higher-dimensional space. The key discovery you will make is that from our limited 4D perspective, the particle's momentum *around* the tiny extra dimension appears to us as *mass*. By giving the particle more momentum in the hidden dimension, you will see it transform into a whole 'tower' of heavier and heavier particles. This simulation reveals a profound idea: the particles we see in our world could just be the echoes of simple motion in dimensions beyond our own.</p>
+        </section>
+
+        <div class="main-grid">
+            <section id="simulation-area" class="main-panel">
+                <h2>Simulation Volume</h2>
+                <div class="sim-container"><canvas id="sim-canvas" width="800" height="400"></canvas></div>
+                <div class="controls-parameters">
+                    <h3>Simulation Parameters</h3>
+                    <div class="param-group"><label for="radius-slider">Extra Dimension Radius (R)</label><input type="range" id="radius-slider" min="0.2" max="2" step="0.05" value="1"></div>
+                    <div class="param-group"><label for="p-large-slider">Momentum in Large Dimensions (p_large)</label><input type="range" id="p-large-slider" min="0" max="5" step="0.1" value="1"></div>
+                    <div class="param-group"><label for="p-extra-slider">Momentum in Extra Dimension (KK Level n)</label><input type="range" id="p-extra-slider" min="0" max="10" step="1" value="0"></div>
+                    <div class="param-group"><label><input type="checkbox" id="view-toggle"> Show 5D View (Cylinder)</label></div>
+                </div>
+            </section>
+
+            <aside class="sidebar">
+                <section id="panel-observer" class="data-panel">
+                    <h3>Dimensional Observer</h3>
+                    <div id="observer-commentary"></div>
+                </section>
+                <section id="panel-datasheet" class="data-panel">
+                    <h3>4D Particle Data Sheet</h3>
+                    <p><strong>Apparent Mass:</strong> <span id="mass-value">--</span></p>
+                    <p><strong>Kaluza-Klein Level (n):</strong> <span id="kk-level-value">--</span></p>
+                    <div class="kk-tower-container"><h4>KK Tower Spectrum</h4><canvas id="kk-tower-canvas" width="200" height="300"></canvas></div>
+                </section>
+            </aside>
+        </div>
+    </main>
+
+    <section id="theory">
+        <h2>The Physics of Extra Dimensions</h2>
+        <h3>Part A: The Kaluza-Klein Idea</h3><p>In the 1920s, Theodor Kaluza had a radical idea: what if the universe had a hidden fifth dimension? He found that if he wrote down the equations for Einstein's General Relativity in 5 dimensions and then mathematically "curled up" the 5th dimension into a tiny circle, the equations split into two parts: normal 4D General Relativity, and a second set of equations that were identical to Maxwell's equations for electromagnetism! This suggested that gravity and electromagnetism, two fundamental forces of nature, could be unified as a single force (gravity) in a 5D universe. This was the birth of extra-dimensional physics.</p><h3>Part B: Momentum as Mass</h3><p>The core concept of this simulation is how we perceive motion in this hidden dimension. Imagine an ant walking on a garden hose. From far away, you only see it move along the hose (the large dimension). But up close, you see it can also walk *around* the hose's circumference (the extra dimension). Kaluza-Klein theory says the same is true for particles. A particle can have momentum along our familiar dimensions, but it can also have momentum as it travels around the extra dimension. Because the extra dimension is a circle of radius R, the particle's wavefunction must be continuous, which means its wavelength must fit perfectly around the circumference an integer number of times. This quantizes the momentum in the extra dimension: `p_extra = n * (ħ / R)`, where `n` is an integer (0, 1, 2...).</p><p>Now, consider Einstein's famous equation `E² = (mc²)² + (pc)²`. In 5D, a massless particle has `E² = (p_large * c)² + (p_extra * c)²`. A 4D observer doesn't see `p_extra`; they see a particle with momentum `p_large` and some leftover energy. They interpret this leftover energy as mass, so from their point of view: `E² = (m_apparent * c²)² + (p_large * c)²`. Comparing the two equations, we see that `(m_apparent * c²)² = (p_extra * c)²`. This means the apparent mass is directly proportional to the quantized momentum in the extra dimension: `m_apparent = p_extra / c = n * (ħ / Rc)`.</p><h3>Part C: The Kaluza-Klein Tower</h3><p>This leads to a startling conclusion. For any single type of massless particle in 5D, a 4D observer sees an entire **tower** of particles.<ul><li>The `n=0` mode has zero momentum in the extra dimension and appears to us as a normal, massless particle.</li><li>The `n=1` mode has one quantum of momentum and appears as a new particle with mass `m₁ = ħ/Rc`.</li><li>The `n=2` mode appears as another, even heavier particle with mass `m₂ = 2ħ/Rc`.</li></ul>...and so on, creating an infinite ladder of particles with increasing mass. These are the Kaluza-Klein (KK) particles. If extra dimensions exist, then for every particle we know (electron, photon, etc.), there should be a corresponding KK tower of heavier copies. We haven't seen them because if the radius `R` is very small, the mass of even the first KK particle (`n=1`) would be enormous, requiring incredibly high energies to produce in a particle accelerator.</p>
+    </section>
+
+    <section id="advanced-notes">
+        <h2>Maximal Depth: Advanced Topics & Extensions</h2>
+        <h3>Spherical (S²) Extra Dimensions</h3><p>What if the extra dimension wasn't a circle (S¹) but a sphere (S²)? The principle is the same, but the quantization of momentum becomes more complex. The allowed wavefunctions on a sphere are the spherical harmonics, indexed by two quantum numbers, `l` and `m`. This means the KK mass spectrum would be more intricate, with mass levels given by `m² ∝ l(l+1)/R²`. This would lead to a different, more degenerate pattern of KK particles in the tower.</p><h3>Metric Decomposition</h3><p>Kaluza's original insight came from the 5D metric tensor, `G_MN`. When you assume the 5th dimension is a small circle, this 5x5 matrix naturally decomposes into smaller parts from a 4D perspective. The 4x4 part `G_μν` (where μ,ν = 0,1,2,3) behaves like the normal 4D metric tensor (the graviton). The 4x1 part `G_μ4` behaves exactly like a 4D vector field, which was identified with the electromagnetic vector potential `A_μ` (the photon). The final component, `G_44`, behaves like a 4D scalar field, often called the "radion" or "dilaton," whose value is related to the radius R of the extra dimension.</p><h3>Production at the LHC</h3><p>If the extra dimensions are large enough (e.g., in "large extra dimension" models), the first KK excitation of the graviton could have a mass accessible by the Large Hadron Collider (LHC). A high-energy collision (e.g., proton-proton) could produce one of these massive KK gravitons. Since the graviton interacts very weakly, it would likely not be detected directly. Instead, it would quickly decay back into standard model particles (like a pair of jets or leptons) or escape into the extra dimensions. If it escapes, it would be detected as a large amount of "missing energy" and momentum in the event, which is a key signature that physicists search for.</p>
+    </section>
+
+    <footer><p>Simulation generated by Jules.</p></footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            class KaluzaKleinSimulator {
+                constructor() {
+                    this.canvas = document.getElementById('sim-canvas');
+                    this.ctx = this.canvas.getContext('2d');
+                    this.towerCanvas = document.getElementById('kk-tower-canvas');
+                    this.towerCtx = this.towerCanvas.getContext('2d');
+                    this.particle = { t: 0 };
+                    this.params = {};
+                    this.setupUI();
+                    this.update();
+                    this.animate();
+                }
+                setupUI() {
+                    this.controls = {
+                        radius: document.getElementById('radius-slider'),
+                        p_large: document.getElementById('p-large-slider'),
+                        p_extra: document.getElementById('p-extra-slider'),
+                        viewToggle: document.getElementById('view-toggle'),
+                        massValue: document.getElementById('mass-value'),
+                        kkLevel: document.getElementById('kk-level-value'),
+                    };
+                    Object.values(this.controls).forEach(c => c.addEventListener('input', () => this.update()));
+                }
+                update() {
+                    this.params.R = parseFloat(this.controls.radius.value);
+                    this.params.p_large = parseFloat(this.controls.p_large.value);
+                    this.params.n = parseInt(this.controls.p_extra.value);
+                    this.params.is5D = this.controls.viewToggle.checked;
+                    this.params.mass = this.params.n / this.params.R;
+                    this.controls.massValue.textContent = this.params.mass.toFixed(3);
+                    this.controls.kkLevel.textContent = this.params.n;
+                    document.getElementById('observer-commentary').innerHTML = this.params.is5D ? "<p><strong>5D View:</strong> You see a single, massless particle moving on a cylinder. Its path is a helix.</p>" : "<p><strong>4D View:</strong> You see only the 'long' dimension. The particle's momentum around the extra dimension is now perceived as rest mass. Notice the particle's color and size change.</p>";
+                }
+                drawKKTower() {
+                    const ctx = this.towerCtx; const w = ctx.canvas.width, h = ctx.canvas.height; ctx.clearRect(0,0,w,h); const max_n = 10;
+                    for(let i=0; i<=max_n; i++) {
+                        const mass = i / this.params.R; const y = h - (mass / (max_n / this.params.R) * (h-30)) - 15;
+                        ctx.strokeStyle = (i === this.params.n) ? 'var(--accent-color)' : 'var(--border-color)';
+                        ctx.lineWidth = (i === this.params.n) ? 4 : 2;
+                        ctx.beginPath(); ctx.moveTo(w*0.1, y); ctx.lineTo(w*0.9, y); ctx.stroke();
+                        ctx.fillStyle = (i === this.params.n) ? 'var(--accent-color)' : 'var(--text-color)';
+                        ctx.fillText(`n=${i}, m=${mass.toFixed(2)}`, w*0.1, y-5);
+                    }
+                }
+                draw() {
+                    this.ctx.fillStyle = '#111'; this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    const particle_x = (this.particle.t * this.params.p_large) % this.canvas.width;
+                    if(this.params.is5D) { this.drawCylinder(particle_x); } else { this.draw4DView(particle_x); }
+                    this.drawKKTower();
+                }
+                drawCylinder(particle_x) {
+                    const w = this.canvas.width, h = this.canvas.height; const cylinder_r = h * 0.2 * this.params.R;
+                    this.ctx.strokeStyle = 'rgba(0, 170, 255, 0.2)';
+                    for(let x=0; x<w; x+=20) { this.ctx.beginPath(); this.ctx.ellipse(x, h/2, 5, cylinder_r, 0.5*Math.PI, 0, 2*Math.PI); this.ctx.stroke(); }
+                    const particle_angle = this.particle.t * this.params.n * 0.1;
+                    const y = h/2 + Math.sin(particle_angle) * cylinder_r;
+                    const z = Math.cos(particle_angle);
+                    this.ctx.fillStyle = 'var(--accent-color)';
+                    this.ctx.beginPath(); this.ctx.arc(particle_x, y, 6 * (0.5 + z*0.5), 0, 2*Math.PI); this.ctx.fill();
+                }
+                draw4DView(particle_x) {
+                    const w = this.canvas.width, h = this.canvas.height;
+                    this.ctx.strokeStyle = 'var(--primary-color)'; this.ctx.beginPath(); this.ctx.moveTo(0, h/2); this.ctx.lineTo(w, h/2); this.ctx.stroke();
+                    const mass = this.params.mass; const size = 5 + mass*2; const hue = (240 - mass * 40 + 360) % 360;
+                    this.ctx.fillStyle = `hsl(${hue}, 100%, 70%)`;
+                    this.ctx.beginPath(); this.ctx.arc(particle_x, h/2, size, 0, 2*Math.PI); this.ctx.fill();
+                }
+                animate() {
+                    this.particle.t += 1; this.draw(); requestAnimationFrame(() => this.animate());
+                }
+            }
+            new KaluzaKleinSimulator();
+        });
+    </script>
+
+</body>
+</html>

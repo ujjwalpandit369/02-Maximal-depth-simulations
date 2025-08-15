@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Cosmic Boiler: Degrees of Freedom & Heat Capacity</title>
+    <style>
+        :root { --bg-color: #f4f4f9; --text-color: #333; --primary-color: #005f73; --secondary-color: #0a9396; --accent-color: #ee9b00; --panel-bg-color: #ffffff; --border-color: #e0e0e0; --font-sans: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif; }
+        body { font-family: var(--font-sans); background-color: var(--bg-color); color: var(--text-color); line-height: 1.6; margin: 0; padding: 0 20px; }
+        header, main, section, footer { max-width: 1200px; margin: 20px auto; }
+        section { background-color: var(--panel-bg-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 20px; margin-bottom: 20px; }
+        h1, h2, h3, h4 { color: var(--primary-color); border-bottom: 1px solid #ccc; padding-bottom: 10px; }
+        h1 { text-align: center; }
+        .main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .main-panel { grid-column: 1 / 2; }
+        .sidebar { grid-column: 2 / 3; }
+        .sim-container { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; background: #e9ecef; border: 1px solid var(--border-color); border-radius: 4px; min-height: 550px; }
+        .controls-parameters { display: flex; flex-direction: column; gap: 15px; }
+        .param-group label { font-weight: bold; color: var(--secondary-color); }
+        .data-panel { padding: 15px; margin-bottom: 20px; background-color: #f8f9fa; border: 1px solid var(--border-color); border-radius: 8px; }
+        #energy-pie-chart { max-width: 100%; height: auto; }
+        .thermo-plot canvas { width: 100%; height: auto; background-color: #e9ecef; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid var(--border-color); padding: 12px; text-align: left; }
+        th { background-color: #e9ecef; }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } .main-panel, .sidebar { grid-column: 1 / -1; } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>The Cosmic Boiler: Degrees of Freedom & Heat Capacity</h1>
+        <p class="subtitle" style="text-align:center;">An interactive simulation exploring why different substances require different amounts of energy to heat up.</p>
+    </header>
+
+    <main>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>Have you ever wondered why it takes so much energy to boil a pot of water, but a metal spoon in the water heats up almost instantly? The answer lies in how substances store heat energy at the microscopic level. This simulation, 'The Cosmic Boiler,' lets you explore this fundamental concept. You will control a sealed box of gas, choosing different types of molecules—from simple spheres (monatomic) to complex structures (polyatomic). By adding heat and changing the temperature, you will see how the molecules store this energy in different ways: moving around (translation), spinning (rotation), and wobbling (vibration). These are called 'degrees of freedom.' You will discover the classical Equipartition Theorem, which predicts how this energy should be shared, and then see how quantum mechanics changes the rules, 'freezing out' some degrees of freedom at low temperatures. The key takeaway is watching the Heat Capacity plot: the step-like jumps reveal the hidden quantum nature of the microscopic world.</p>
+        </section>
+
+        <div class="main-grid">
+            <section id="simulation-area" class="main-panel">
+                <h2>Simulation Volume</h2>
+                <div class="sim-container"><canvas id="sim-canvas" width="600" height="550"></canvas></div>
+                <div class="controls-parameters">
+                    <h3>Simulation Parameters</h3>
+                    <div class="param-group">
+                        <label for="molecule-type-select">Molecule Type</label>
+                        <select id="molecule-type-select">
+                            <option>Monatomic</option>
+                            <option selected>Diatomic</option>
+                            <option>Polyatomic</option>
+                        </select>
+                    </div>
+                    <div class="param-group">
+                        <label for="temperature-slider">System Temperature (K): <span id="temperature-value">300</span></label>
+                        <input type="range" id="temperature-slider" min="1" max="5000" value="300" step="1">
+                    </div>
+                    <div class="param-group">
+                        <label for="heat-power-slider">Energy Input Rate</label>
+                        <input type="range" id="heat-power-slider" min="0" max="100" value="0">
+                    </div>
+                    <div class="param-group">
+                        <label><input type="checkbox" id="quantum-toggle" checked> Enable Quantum Freezing</label>
+                    </div>
+                </div>
+            </section>
+
+            <aside class="sidebar">
+                <section id="panel-dashboard" class="data-panel">
+                    <h3>Energy Distribution</h3>
+                    <canvas id="energy-pie-chart" width="250" height="250"></canvas>
+                    <div id="energy-legend"></div>
+                </section>
+                <section id="panel-thermo" class="data-panel">
+                    <h3>Thermodynamic Analysis</h3>
+                    <div class="thermo-plot"><strong>Heat Capacity (C<sub>v</sub>) vs. Temp.</strong><canvas id="cv-plot-canvas" width="300" height="150"></canvas></div>
+                    <div class="thermo-plot"><strong>Internal Energy (U) vs. Temp.</strong><canvas id="energy-plot-canvas" width="300" height="150"></canvas></div>
+                    <div class="thermo-gauge"><strong>Pressure:</strong> <span id="pressure-value">--</span> kPa</div>
+                </section>
+            </aside>
+        </div>
+
+        <section id="parameters-summary">
+            <h2>Parameters & Controls Guide</h2>
+            <table id="params-table">
+                 <thead><tr><th>Parameter</th><th>Control Type</th><th>Description</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Molecule Type</strong></td><td>Dropdown</td><td>Selects the type of gas molecule in the box. Each type has different ways to store energy (degrees of freedom).</td></tr>
+                    <tr><td><strong>System Temperature</strong></td><td>Slider</td><td>Directly sets the temperature of the gas, a measure of the average kinetic energy of the molecules.</td></tr>
+                    <tr><td><strong>Energy Input Rate</strong></td><td>Slider</td><td>Acts like a heater. When above zero, it continuously adds energy to the system, causing the temperature to rise.</td></tr>
+                    <tr><td><strong>Enable Quantum Freezing</strong></td><td>Checkbox</td><td>Switches between the classical model (all DoF are always active) and the more realistic quantum model where DoF "freeze out" at low temperatures.</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="theory">
+            <h2>The Physics of Heat - Equipartition and Quantization</h2>
+            <h3>Part A: The Equipartition Theorem</h3><p>The Equipartition Theorem is a powerful result from classical statistical mechanics that links a system's temperature to its total energy. It states: <strong>In thermal equilibrium, the total energy is shared equally among all accessible quadratic degrees of freedom, each getting an average energy of ½k<sub>B</sub>T.</strong> A "quadratic" degree of freedom is any way to store energy that depends on the square of a variable (like ½mv² for motion or ½kx² for a spring). This theorem explains why substances with more ways to store energy (more DoF) have higher heat capacities.</p><h3>Part B: A Degree of Freedom (DoF) Census</h3><p>To use the theorem, we count the DoF: <ul><li><strong>Monatomic Gas:</strong> A simple sphere can move in 3 directions (x, y, z). Total DoF = 3 (translational). Heat Capacity C_v = ³/₂ R.</li><li><strong>Diatomic Gas:</strong> A dumbbell shape can move in 3 directions, and rotate around 2 axes (rotation along its own axis is negligible). This gives 3 translational + 2 rotational = 5 DoF. If it also vibrates (like a spring), it adds 1 kinetic and 1 potential DoF. Total = 7 DoF.</li></ul></p><h3>Part C: The Quantum Revolution - Freezing Freedom</h3><p>Classically, the heat capacity of a diatomic gas should be ⁷/₂ R, but at room temperature, it's ⁵/₂ R. Why? Quantum mechanics dictates that energy is quantized. A molecule needs a minimum amount of energy to start rotating or vibrating. These motions are "frozen out" at low temperatures.<ul><li><strong>Low T:</strong> Only translation is active (3 DoF).</li><li><strong>Medium T:</strong> Rotation "unfreezes" (3+2=5 DoF).</li><li><strong>High T:</strong> Vibration "unfreezes" (3+2+2=7 DoF).</li></ul>The step-like jumps on the Heat Capacity plot are a direct visualization of this quantum reality.</p>
+        </section>
+
+        <section id="advanced-notes">
+            <h2>Maximal Depth: Advanced Topics & Extensions</h2>
+            <h3>Solids and the Dulong-Petit Law</h3><p>In a simple solid crystal, each atom is an oscillator with 3 kinetic and 3 potential energy DoF, for a total of 6. The Equipartition Theorem predicts a heat capacity of C_v = d(6 * ½RT)/dT = 3R. This is the <strong>Dulong-Petit Law</strong>, which works well for many solids at high temperatures. At low temperatures, these vibrational modes (phonons) freeze out, and the heat capacity drops to zero, a phenomenon explained by the Debye and Einstein models.</p><h3>Relativistic Effects</h3><p>The Equipartition Theorem relies on energy being a quadratic function (like E = ½mv²). At relativistic speeds, this is no longer true. As a result, the theorem breaks down, and the heat capacity of a relativistic gas no longer remains constant but continues to rise with temperature.</p><h3>Electron Gas in Metals</h3><p>A metal has many "free" electrons. Classically, they should contribute `3/2 R` to the heat capacity, but they don't. The <strong>Pauli Exclusion Principle</strong> forces electrons into a "Fermi sea," filling all low-energy states. Only electrons very near the surface of this sea (the Fermi energy) can be excited by thermal energy. This means only a tiny fraction of electrons contribute to the heat capacity, explaining the discrepancy.</p>
+        </section>
+
+        <section id="faq">
+            <h2>FAQ & Troubleshooting</h2>
+            <dl><dt>What is a "degree of freedom" (DoF)?</dt><dd>An independent way a molecule can store energy. A simple atom can only move (3 translational DoF). A complex molecule can also rotate and vibrate.</dd><dt>What is the Equipartition Theorem?</dt><dd>A classical physics principle stating that energy is shared equally among all accessible DoF, with each getting ½kT of energy on average.</dd><dt>Why does the Heat Capacity (Cv) plot have steps?</dt><dd>This is a quantum effect! Rotational and vibrational motions are quantized and can only be activated when the thermal energy (kT) is high enough to reach the first energy level. As T rises, you unlock rotation, then vibration, causing Cv to jump.</dd></dl>
+        </section>
+    </main>
+
+    <footer><p>Simulation generated by Jules.</p></footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            class Molecule {
+                constructor(type) {
+                    this.type = type;
+                    this.pos = { x: Math.random(), y: Math.random(), z: Math.random() };
+                    this.vel = { x: (Math.random()-0.5)*0.01, y: (Math.random()-0.5)*0.01, z: 0 };
+                    this.rot_angle = 0;
+                    this.rot_vel = 0;
+                    this.vib_amp = 0;
+                    this.vib_phase = Math.random() * 2 * Math.PI;
+                }
+                draw(ctx, w, h) {
+                    const x2d = this.pos.x * w;
+                    const y2d = this.pos.y * h;
+                    const zScale = 0.4 + this.pos.z * 0.6;
+                    ctx.save();
+                    ctx.translate(x2d, y2d);
+                    ctx.scale(zScale, zScale);
+                    const color1 = '#005f73', color2 = '#0a9396';
+                    if (this.type === 'Monatomic') {
+                        ctx.fillStyle = color2;
+                        ctx.beginPath(); ctx.arc(0, 0, 6, 0, 2 * Math.PI); ctx.fill();
+                    } else if (this.type === 'Diatomic') {
+                        const vib_offset = this.vib_amp * Math.sin(this.vib_phase);
+                        ctx.rotate(this.rot_angle);
+                        ctx.strokeStyle = color1; ctx.lineWidth = 3;
+                        ctx.beginPath(); ctx.moveTo(-10 - vib_offset, 0); ctx.lineTo(10 + vib_offset, 0); ctx.stroke();
+                        ctx.fillStyle = color2;
+                        ctx.beginPath(); ctx.arc(-10 - vib_offset, 0, 6, 0, 2*Math.PI); ctx.fill();
+                        ctx.beginPath(); ctx.arc(10 + vib_offset, 0, 6, 0, 2*Math.PI); ctx.fill();
+                    } else { // Polyatomic
+                         ctx.fillStyle = color2; ctx.strokeStyle = color1; ctx.lineWidth = 3;
+                         ctx.rotate(this.rot_angle);
+                         ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0, -14); ctx.stroke();
+                         ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-12, 7); ctx.stroke();
+                         ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(12, 7); ctx.stroke();
+                         ctx.beginPath(); ctx.arc(0, 0, 6, 0, 2*Math.PI); ctx.fill();
+                         ctx.beginPath(); ctx.arc(0, -14, 5, 0, 2*Math.PI); ctx.fill();
+                         ctx.beginPath(); ctx.arc(-12, 7, 5, 0, 2*Math.PI); ctx.fill();
+                         ctx.beginPath(); ctx.arc(12, 7, 5, 0, 2*Math.PI); ctx.fill();
+                    }
+                    ctx.restore();
+                }
+            }
+
+            class HeatCapacitySimulator {
+                constructor() {
+                    this.canvas = document.getElementById('sim-canvas');
+                    this.ctx = this.canvas.getContext('2d');
+                    this.molecules = [];
+                    this.setupUI();
+                    this.reset();
+                    this.animate();
+                }
+                setupUI() {
+                    this.controls = {
+                        moleculeType: document.getElementById('molecule-type-select'),
+                        temperature: document.getElementById('temperature-slider'),
+                        tempValue: document.getElementById('temperature-value'),
+                        heatPower: document.getElementById('heat-power-slider'),
+                        quantumToggle: document.getElementById('quantum-toggle'),
+                    };
+                    this.controls.moleculeType.addEventListener('change', () => this.reset());
+                    const updateOnChange = () => { this.controls.heatPower.value = 0; this.updateSystem(); };
+                    this.controls.temperature.addEventListener('input', updateOnChange);
+                    this.controls.quantumToggle.addEventListener('change', updateOnChange);
+                }
+                reset() {
+                    this.molecules = [];
+                    const n_molecules = 40;
+                    for (let i = 0; i < n_molecules; i++) {
+                        this.molecules.push(new Molecule(this.controls.moleculeType.value));
+                    }
+                    this.updateSystem();
+                }
+                updateSystem() {
+                    const T = parseFloat(this.controls.temperature.value);
+                    this.controls.tempValue.textContent = `${Math.round(T)} K`;
+                    const type = this.controls.moleculeType.value;
+                    const isQuantum = this.controls.quantumToggle.checked;
+                    const R = 8.314, n_moles = 1, T_rot = 50, T_vib = 1500;
+
+                    let dof_trans = 3, dof_rot = 0, dof_vib = 0;
+                    if (type === 'Diatomic') {
+                        dof_rot = isQuantum ? (T > T_rot ? 2 : 0) : 2;
+                        dof_vib = isQuantum ? (T > T_vib ? 2 : 0) : 2;
+                    } else if (type === 'Polyatomic') {
+                        dof_rot = isQuantum ? (T > T_rot ? 3 : 0) : 3;
+                        dof_vib = isQuantum ? (T > T_vib ? 6 : 0) : 6;
+                    }
+                    const total_dof = dof_trans + dof_rot + dof_vib;
+                    const U = total_dof > 0 ? (total_dof / 2 * n_moles * R * T) : 0;
+                    const energy_trans = total_dof > 0 ? (dof_trans / total_dof) * U : 0;
+                    const energy_rot = total_dof > 0 ? (dof_rot / total_dof) * U : 0;
+                    const energy_vib = total_dof > 0 ? (dof_vib / total_dof) * U : 0;
+
+                    this.molecules.forEach(m => {
+                        const speed_scale = Math.sqrt(energy_trans || 0) * 0.0005;
+                        const rot_scale = Math.sqrt(energy_rot || 0) * 0.0005;
+                        const vib_scale = Math.sqrt(energy_vib || 0) * 0.005;
+                        m.vel.x = (m.vel.x > 0 ? 1 : -1) * speed_scale;
+                        m.vel.y = (m.vel.y > 0 ? 1 : -1) * speed_scale;
+                        m.rot_vel = (Math.random() - 0.5) * rot_scale;
+                        m.vib_amp = vib_scale;
+                    });
+
+                    this.drawPieChart([energy_trans, energy_rot, energy_vib]);
+                    this.drawCvPlot(type, T, isQuantum, T_rot, T_vib);
+                    this.drawEnergyPlot(type, T, isQuantum, T_rot, T_vib);
+                    document.getElementById('pressure-value').textContent = (n_moles * R * T / 1.0).toFixed(1);
+                }
+                drawPieChart(e) { /* ... plotting logic ... */ }
+                drawCvPlot(type, currentT, isQuantum, T_rot, T_vib) { /* ... plotting logic ... */ }
+                drawEnergyPlot(type, currentT, isQuantum, T_rot, T_vib) { /* ... plotting logic ... */ }
+                animate() {
+                    const heatPower = parseFloat(this.controls.heatPower.value);
+                    if (heatPower > 0) {
+                        const currentT = parseFloat(this.controls.temperature.value);
+                        const newT = Math.min(5000, currentT + heatPower * 0.2);
+                        this.controls.temperature.value = newT;
+                        this.updateSystem();
+                    }
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.molecules.forEach(m => {
+                        m.pos.x = (m.pos.x + m.vel.x + 1) % 1;
+                        m.pos.y = (m.pos.y + m.vel.y + 1) % 1;
+                        m.rot_angle += m.rot_vel;
+                        m.vib_phase += 0.5;
+                        m.draw(this.ctx, this.canvas.width, this.canvas.height);
+                    });
+                    requestAnimationFrame(() => this.animate());
+                }
+            }
+            // Simplified plotting functions to be inserted here for brevity
+            HeatCapacitySimulator.prototype.drawPieChart = function(energies) {
+                const ctx = document.getElementById('energy-pie-chart').getContext('2d'); const w = ctx.canvas.width, h = ctx.canvas.height; ctx.clearRect(0,0,w,h); const total = energies.reduce((a,b) => a+b, 0); if (total === 0) { ctx.fillStyle = '#ccc'; ctx.beginPath(); ctx.arc(w/2, h/2, h/2, 0, 2*Math.PI); ctx.closePath(); ctx.fill(); return; }
+                const colors = ['#005f73', '#0a9396', '#ee9b00']; const labels = ['Translational', 'Rotational', 'Vibrational']; let startAngle = -0.5 * Math.PI;
+                for(let i=0; i<energies.length; i++) { if (energies[i] === 0) continue; const sliceAngle = (energies[i] / total) * 2 * Math.PI; ctx.fillStyle = colors[i]; ctx.beginPath(); ctx.moveTo(w/2, h/2); ctx.arc(w/2, h/2, h/2, startAngle, startAngle + sliceAngle); ctx.closePath(); ctx.fill(); startAngle += sliceAngle; }
+                document.getElementById('energy-legend').innerHTML = labels.map((l, i) => { if(energies[i]===0) return ''; const p = (energies[i]/total * 100).toFixed(1); return `<div style="color:${colors[i]}; font-weight: bold;">■ ${l}: ${p}%</div>`; }).join('');
+            };
+            HeatCapacitySimulator.prototype.drawCvPlot = function(type, currentT, isQuantum, T_rot, T_vib) {
+                const ctx = document.getElementById('cv-plot-canvas').getContext('2d'); const w = ctx.canvas.width, h = ctx.canvas.height; ctx.clearRect(0,0,w,h); const R = 8.314, Tmax = 5000;
+                const getCv = (T) => { let dof = 3; if (type === 'Diatomic') { dof += isQuantum ? (T > T_rot ? 2 : 0) : 2; dof += isQuantum ? (T > T_vib ? 2 : 0) : 2; } else if (type === 'Polyatomic') { dof += isQuantum ? (T > T_rot ? 3 : 0) : 3; dof += isQuantum ? (T > T_vib ? 6 : 0) : 6; } return dof/2 * R; };
+                ctx.strokeStyle = '#0a9396'; ctx.lineWidth = 2; ctx.beginPath();
+                for(let T=0; T<=Tmax; T+=20) { const x = T/Tmax * w; const y = h - (getCv(T) / (4.5*R) * h); if(T===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.stroke();
+                ctx.fillStyle = '#ee9b00'; const x_cur = currentT/Tmax * w; const y_cur = h - (getCv(currentT) / (4.5*R) * h); ctx.beginPath(); ctx.arc(x_cur, y_cur, 4, 0, 2*Math.PI); ctx.fill();
+            };
+            HeatCapacitySimulator.prototype.drawEnergyPlot = function(type, currentT, isQuantum, T_rot, T_vib) {
+                const ctx = document.getElementById('energy-plot-canvas').getContext('2d'); const w = ctx.canvas.width, h = ctx.canvas.height; ctx.clearRect(0,0,w,h); const R = 8.314, Tmax = 5000;
+                const getU = (T) => { let dof = 3; if (type === 'Diatomic') { dof += isQuantum ? (T > T_rot ? 2 : 0) : 2; dof += isQuantum ? (T > T_vib ? 2 : 0) : 2; } else if (type === 'Polyatomic') { dof += isQuantum ? (T > T_rot ? 3 : 0) : 3; dof += isQuantum ? (T > T_vib ? 6 : 0) : 6; } return dof/2 * R * T; };
+                const Umax = getU(Tmax); ctx.strokeStyle = '#0a9396'; ctx.lineWidth = 2; ctx.beginPath();
+                for(let T=0; T<=Tmax; T+=20) { const x = T/Tmax * w; const y = h - (getU(T) / Umax * h); if(T===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); } ctx.stroke();
+                ctx.fillStyle = '#ee9b00'; const x_cur = currentT/Tmax * w; const y_cur = h - (getU(currentT) / Umax * h); ctx.beginPath(); ctx.arc(x_cur, y_cur, 4, 0, 2*Math.PI); ctx.fill();
+            };
+            new HeatCapacitySimulator();
+        });
+    </script>
+</body>
+</html>

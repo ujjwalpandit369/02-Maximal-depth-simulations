@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Echoes of Creation: Topological Defects and the CMB</title>
+    <style>
+        :root {
+            --bg-color: #0c0c1f;
+            --text-color: #e0e0e0;
+            --primary-color: #4d9fff;
+            --secondary-color: #b15bff;
+            --accent-color: #ff5b5b;
+            --panel-bg-color: #1a1a3a;
+            --border-color: #3c3c5a;
+            --font-sans: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0 20px;
+        }
+
+        body.high-contrast {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --primary-color: #ffff00;
+            --panel-bg-color: #111111;
+            --border-color: #666666;
+        }
+
+        header, main, footer {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        h1 { font-size: 2.5em; text-align: center; }
+        h2 { font-size: 2em; }
+        h3 { font-size: 1.5em; }
+
+        .subtitle {
+            text-align: center;
+            font-style: italic;
+            color: var(--secondary-color);
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+        }
+
+        .meta-bar {
+            text-align: center;
+            font-size: 0.9em;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+
+        .suggestion-box {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .suggestion-box button {
+            background-color: var(--panel-bg-color);
+            color: var(--primary-color);
+            border: 1px solid var(--border-color);
+            padding: 5px 10px;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .suggestion-box button:hover {
+            background-color: var(--border-color);
+        }
+
+        section {
+            background-color: var(--panel-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sim-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #000;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        #sim-canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .controls-main, .controls-parameters {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .controls-main h3, .controls-parameters h3 {
+            margin-top: 0;
+        }
+
+        .controls-main-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .controls-parameters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .param-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .param-group label {
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+        .param-group label .param-value {
+            float: right;
+            font-family: var(--font-mono);
+            color: var(--text-color);
+        }
+
+        input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        button, select {
+            background-color: var(--primary-color);
+            color: #000;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        button:hover, select:hover {
+            transform: scale(1.02);
+            background-color: #8bbfff;
+        }
+
+        .performance-meter {
+            font-family: var(--font-mono);
+            font-size: 0.9em;
+            text-align: right;
+            color: #aaa;
+            margin-top: 10px;
+        }
+
+        .tab-container .tab-buttons {
+            display: flex;
+            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .tab-container .tab-button {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            color: var(--text-color);
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            font-size: 1.1em;
+        }
+
+        .tab-container .tab-button.active, .tab-container .tab-button:hover {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        #analysis-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        #power-spectrum-canvas {
+            max-width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #2a2a4a;
+            color: var(--primary-color);
+        }
+
+        footer .dev-console, footer .quality-check-panel {
+            margin-top: 20px;
+            padding: 15px;
+            background: #111;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+        }
+
+        footer .dev-console h3 {
+            cursor: pointer;
+            margin: 0;
+        }
+
+        footer pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            font-family: var(--font-mono);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            body {
+                padding: 0 10px;
+            }
+            h1 { font-size: 1.8em; }
+            h2 { font-size: 1.4em; }
+
+            .controls-parameters-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Echoes of Creation: Topological Defects & the Cosmic Microwave Background</h1>
+        <p class="subtitle">An interactive cosmology simulation to find signatures of cosmic defects in the afterglow of the Big Bang.</p>
+        <div class="meta-bar">
+            <span>Est. Runtime: Continuous</span> |
+            <span>Recommended Device: Desktop</span> |
+            <span>Approx. Size: <span id="file-size">~350</span> KB</span>
+        </div>
+        <div class="suggestion-box">
+            Tune simulation style:
+            <button class="suggestion-btn" data-type="audience" data-value="beginner">Audience: Beginner</button>
+            <button class="suggestion-btn" data-type="analogy" data-value="visual">Analogy: Visual</button>
+            <button class="suggestion-btn" data-type="intensity" data-value="medium">Intensity: Medium</button>
+        </div>
+    </header>
+
+    <main>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>The image you see above is a simulated map of the oldest light in the universe, the <strong>Cosmic Microwave Background (CMB)</strong>. This light was released just 380,000 years after the Big Bang and provides a snapshot of the infant universe. The tiny temperature differences (the red and blue spots) are the seeds of all future structures, including galaxies, stars, and planets. The standard theory of cosmology, known as Inflation, explains these fluctuations as stretched-out quantum jitters from the universe's first moments. But what if there were other, more exotic events happening back then? This simulation explores the idea of 'topological defects'—immense cosmic structures like cosmic strings or domain walls, formed during phase transitions in the early universe. If they existed, these defects would have left faint, specific imprints on the CMB. Your mission is to become a theoretical cosmologist: implant these defects into a model universe and learn to distinguish their signatures from the background noise. Can you find the echoes of creation hidden in the cosmic afterglow?</p>
+        </section>
+
+        <section id="simulation-area">
+            <h2>Interactive Sky Map</h2>
+            <div class="sim-container">
+                <canvas id="sim-canvas" width="1024" height="512"></canvas>
+                <div id="canvas-overlay"></div>
+            </div>
+            <div class="controls-main">
+                <h3>Main Controls</h3>
+                <div class="controls-main-grid">
+                    <button id="regenerate-btn" title="Generate a new random CMB with current settings (R)" aria-label="Regenerate Sky Map">Regenerate Sky</button>
+                    <button id="export-png-btn" title="Save current map as a PNG file (E)" aria-label="Export as PNG">Export PNG</button>
+                    <button id="export-json-btn" title="Save current parameters as a JSON file" aria-label="Export as JSON">Export JSON</button>
+                    <button id="share-btn" title="Copy a shareable link with current settings to clipboard" aria-label="Share Preset">Share Preset</button>
+                    <label><input type="checkbox" id="perf-mode-toggle" aria-label="Toggle Performance Mode"> Performance Mode</label>
+                    <label><input type="checkbox" id="contrast-toggle" aria-label="Toggle High Contrast Mode"> High Contrast</label>
+                </div>
+            </div>
+            <div class="controls-parameters">
+                <h3>Simulation Parameters</h3>
+                <div class="controls-parameters-grid">
+                    <div class="param-group">
+                        <label for="defect-type-select">Defect Type</label>
+                        <select id="defect-type-select">
+                            <option selected>Cosmic Strings</option>
+                            <option>Domain Walls</option>
+                            <option>Textures</option>
+                            <option>None</option>
+                        </select>
+                    </div>
+                    <div class="param-group">
+                        <label for="defect-strength-slider">Defect Tension (Gμ) <span id="defect-strength-value" class="param-value"></span></label>
+                        <input type="range" id="defect-strength-slider" min="-11" max="-6" step="0.1" value="-7">
+                        <small>Logarithmic Scale: 10<sup>-11</sup> to 10<sup>-6</sup></small>
+                    </div>
+                    <div class="param-group">
+                        <label for="defect-density-slider">Defect Network Density <span id="defect-density-value" class="param-value"></span></label>
+                        <input type="range" id="defect-density-slider" min="1" max="20" step="1" value="1">
+                    </div>
+                    <div class="param-group">
+                        <label for="noise-level-slider">CMB Noise Level <span id="noise-level-value" class="param-value"></span></label>
+                        <input type="range" id="noise-level-slider" min="0" max="1" step="0.05" value="1.0">
+                    </div>
+                </div>
+            </div>
+             <div class="performance-meter">
+                <span>FPS: <span id="fps-display">--</span></span> |
+                <span>Calc Time: <span id="calc-time-display">--</span> ms</span> |
+                <span>Memory: <span id="mem-display">--</span> MB</span>
+            </div>
+        </section>
+
+        <section id="data-panels">
+            <h2>Decoding the Map & Data Analysis</h2>
+            <div class="tab-container">
+                <div class="tab-buttons">
+                    <button class="tab-button active" onclick="openTab(event, 'tab-decode')">Decoding the Map</button>
+                    <button class="tab-button" onclick="openTab(event, 'tab-analysis')">Data Analysis Toolkit</button>
+                </div>
+
+                <div id="tab-decode" class="tab-content" style="display: block;">
+                    <h3>What Am I Seeing?</h3>
+                    <div id="decode-content">
+                        <div id="decode-cosmicstrings" class="decode-text">
+                            <h4>Cosmic Strings</h4>
+                            <p><strong>Signature:</strong> Notice the sharp, line-like discontinuities in temperature. When a string moves across the line of sight, it creates a step-like change in temperature due to the Sachs-Wolfe effect. Photons passing on one side are slightly blueshifted, and on the other, slightly redshifted. This is the classic signature of a cosmic string.</p>
+                        </div>
+                        <div id="decode-domainwalls" class="decode-text" style="display:none;">
+                            <h4>Domain Walls</h4>
+                            <p><strong>Signature:</strong> A domain wall induces a large, circular hot or cold spot on the CMB. The effect is caused by the wall's gravitational potential. The size of the spot is related to how far away the wall is. These signatures are so large and dramatic that their absence in real data places very strong limits on their existence.</p>
+                        </div>
+                        <div id="decode-textures" class="decode-text" style="display:none;">
+                            <h4>Textures</h4>
+                            <p><strong>Signature:</strong> Textures create distinct hot and cold spots with a specific topology as they 'unwind.' Look for characteristic pairs of hot and cold spots scattered across the sky. The signal is more subtle than a domain wall but distinct from the standard Gaussian fluctuations of the CMB.</p>
+                        </div>
+                        <div id="decode-none" class="decode-text" style="display:none;">
+                            <h4>Pristine CMB (Inflation)</h4>
+                            <p><strong>Signature:</strong> You are viewing a simulation of the standard Cosmic Microwave Background, with no defects. The fluctuations are generated by a model of cosmic inflation, where tiny quantum jitters in the primordial universe were stretched to astronomical sizes. The resulting pattern is statistically Gaussian, meaning the hot and cold spots have a specific size distribution, which is captured in the Angular Power Spectrum.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-analysis" class="tab-content">
+                    <h3>Data Analysis Toolkit</h3>
+                    <div id="analysis-content">
+                        <h4>Angular Power Spectrum</h4>
+                        <canvas id="power-spectrum-canvas" width="500" height="250"></canvas>
+                        <h4>Non-Gaussianity (f_NL)</h4>
+                        <p>f_NL Statistic: <span id="fnl-value">--</span></p>
+                        <label><input type="checkbox" id="map-subtract-toggle"> Isolate Defect Signal (Show Difference Map)</label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="presets">
+            <h2>Try These Examples</h2>
+            <div class="preset-grid">
+                <style>
+                    .preset-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }
+                    .preset-item { border: 1px solid var(--border-color); padding: 15px; border-radius: 4px; }
+                    .preset-item h4 { margin-top: 0; }
+                </style>
+                <div class="preset-item">
+                    <h4>Preset 1: Subtle String</h4>
+                    <p>A single, weak cosmic string (Gμ = 5.0e-9) is hidden in a full-noise CMB. Can you spot the faint line-like feature in the map and the excess power at small scales in the power spectrum?</p>
+                    <button class="preset-btn" data-preset="1">Apply "Subtle String"</button>
+                </div>
+                <div class="preset-item">
+                    <h4>Preset 2: Wall Cataclysm</h4>
+                    <p>Two powerful domain walls (Gμ = 8.0e-7) tear across a low-noise CMB, creating huge hot spots. This scenario is easily ruled out by real data due to its dramatic effect.</p>
+                    <button class="preset-btn" data-preset="2">Apply "Wall Cataclysm"</button>
+                </div>
+                <div class="preset-item">
+                    <h4>Preset 3: Dense Texture Field</h4>
+                    <p>A dense network of 10 texture pairs (Gμ = 4.0e-7) creates a chaotic field of hot and cold spots. Check the Power Spectrum and the non-zero Skewness value for this one.</p>
+                    <button class="preset-btn" data-preset="3">Apply "Dense Texture Field"</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="parameters-summary">
+            <h2>Parameters & Controls Guide</h2>
+            <table id="params-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Control Type</th>
+                        <th>Default</th>
+                        <th>Min/Max</th>
+                        <th>Example Values (L/M/H)</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Defect Type</strong></td>
+                        <td>Dropdown</td>
+                        <td>Cosmic Strings</td>
+                        <td>N/A</td>
+                        <td>[Strings, Walls, Textures, None]</td>
+                        <td>Chooses the type of topological defect to simulate. Each leaves a unique signature on the CMB.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Defect Tension (Gμ)</strong></td>
+                        <td>Logarithmic Slider</td>
+                        <td>10<sup>-7</sup></td>
+                        <td>10<sup>-11</sup> / 10<sup>-6</sup></td>
+                        <td>L: 10<sup>-10</sup>, M: 10<sup>-8</sup>, H: 10<sup>-6</sup></td>
+                        <td>Controls the defect's mass-energy, which dictates its gravitational strength. Higher values create more prominent effects. <strong>This is the most important physical parameter.</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Defect Network Density</strong></td>
+                        <td>Slider</td>
+                        <td>1</td>
+                        <td>1 / 20</td>
+                        <td>L: 1, M: 5, H: 15</td>
+                        <td>Controls how many defects are generated in the sky map. Simulates either a single idealized defect or a complex, overlapping network.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CMB Noise Level</strong></td>
+                        <td>Slider</td>
+                        <td>1.0</td>
+                        <td>0.0 / 1.0</td>
+                        <td>L: 0.2, M: 0.8, H: 1.0</td>
+                        <td>Controls the amplitude of the underlying 'standard' CMB fluctuations from inflation. The main challenge is finding the defect signal within this noise.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="theory">
+            <h2>The Physics of CMB Anisotropies</h2>
+            <p>This section explains the core physics behind the simulation. Due to its length, the full text will be loaded on demand.</p>
+            <button id="show-theory-btn">Read the Full Physics Exposition</button>
+            <div id="theory-content" style="display: none;">
+                <div id="theory-standard-model"></div>
+                <div id="theory-sachs-wolfe"></div>
+                <div id="theory-defect-signatures"></div>
+            </div>
+        </section>
+
+        <section id="walkthroughs">
+            <h2>Walkthroughs & Micro-Experiments</h2>
+            <div id="walkthrough-content">
+                <h3>Changing Defect Tension (Gμ)</h3>
+                <p>This is the most important slider. It controls the "strength" of the defect. Let's see its effect.</p>
+                <ol>
+                    <li>Set <strong>Defect Type</strong> to 'Cosmic Strings', <strong>Density</strong> to 1, and <strong>Noise Level</strong> to 0.1 (to make the string easy to see).</li>
+                    <li>Set the <strong>Defect Tension</strong> slider to its minimum (10<sup>-11</sup>). You should see a very faint line. The temperature step is tiny.</li>
+                    <li>Now, slide it all the way to the maximum (10<sup>-6</sup>). The line becomes a stark, high-contrast gash across the sky. The temperature step is now huge.</li>
+                    <li><strong>Analogy:</strong> Think of this as the thickness of a string on a drumhead. A thin, light string (low Gμ) makes a tiny ripple. A thick, heavy rope (high Gμ) makes a huge wave.</li>
+                </ol>
+
+                <h3>Micro-Experiments</h3>
+                <ul>
+                    <li><strong>Experiment 1: Hiding a String in Noise.</strong> Set Type to 'Cosmic Strings', Density to 1, Tension to 10<sup>-8</sup>. Start with Noise at 0.0. You can see the string clearly. Now, slowly increase the Noise slider. At what value does the string become impossible to distinguish from the background CMB? This is the central challenge for cosmologists.</li>
+                    <li><strong>Experiment 2: Power Spectrum of Walls.</strong> Set Type to 'Domain Walls', Density to 3, Tension to 10<sup>-7</sup>, and Noise to 0.5. Look at the Power Spectrum plot. Notice the large amount of power at large angular scales (the left side of the plot). This is characteristic of the large spots created by walls.</li>
+                    <li><strong>Experiment 3: Non-Gaussianity of Textures.</strong> Set Type to 'Textures', Density to 8, Tension to 10<sup>-7</sup>, and Noise to 0.7. Look at the "Skewness" value in the Data Analysis panel. It should be significantly non-zero. Now, change the Type to 'None'. The Skewness should drop to a value very close to zero. This is because textures introduce a directional asymmetry that the purely random inflationary background doesn't have.</li>
+                     <li><strong>Experiment 4: Isolating the Signal.</strong> Use the "Subtle String" preset. Toggle the "Isolate Defect Signal" checkbox on and off. Notice how the feature becomes perfectly clear in the difference map. This tool is powerful, but it requires a perfect model of the background CMB, which we don't have for the real universe.</li>
+                </ul>
+            </div>
+        </section>
+
+        <section id="advanced-notes">
+            <h2>Maximal Depth: Advanced Topics & Extensions</h2>
+            <div id="advanced-content">
+                <h3>B-Mode Polarization</h3>
+                <p>The CMB light is also polarized. This polarization can be decomposed into two patterns: E-modes (which look like radial or tangential patterns) and B-modes (which have a swirling, vortical pattern). Inflationary gravitational waves and gravitational lensing create B-modes, but so do topological defects. Moving cosmic strings, for example, would generate a network of B-mode signals along their paths. Visualizing this would involve drawing small vectors on the map showing the polarization direction and strength. A key difference is that inflationary B-modes are expected to be on very large angular scales, while defect-induced B-modes can be on smaller scales, creating sharp features in the B-mode power spectrum.</p>
+
+                <h3>Sunyaev-Zel'dovich (SZ) Effect from Defects</h3>
+                <p>The SZ effect happens when CMB photons pass through hot gas. The photons scatter off electrons and gain energy, making that part of the sky look hotter at high frequencies and cooler at low frequencies. Collapsing texture knots or the region around a cosmic string cusp could be filled with hot gas. To simulate this, one would need to add a frequency-dependent component to the temperature change, making the defect signature change depending on the observing frequency, a feature not present in the primary CMB anisotropies.</p>
+
+                <h3>Gravitational Lensing by Defects</h3>
+                <p>Just like a massive galaxy, a cosmic string has such a strong gravitational field that it can bend light. A straight string acts as a cylindrical lens. It wouldn't create a new temperature spot itself, but it would distort the view of the CMB *behind* it. You would see pairs of identical hot and cold spots, as you are seeing the same spot twice from two different paths. Implementing this would require a ray-tracing approach, where for each pixel near a string, you calculate the deflected path and sample the CMB from a different location on the pristine map.</p>
+            </div>
+        </section>
+
+        <section id="analogies">
+            <h2>Analogies & Intuition</h2>
+            <div id="analogies-content">
+                <h3>Analogy 1: Cracks in a Frozen Lake (Physical Analogy)</h3>
+                <p>Imagine the early universe as a vast lake cooling down. As it cools, it undergoes a phase transition and freezes. If it freezes imperfectly, cracks and fractures can form in the ice. These are like topological defects. Cosmic strings are like long, linear cracks. Domain walls are like large sheets of ice that froze with a different crystal orientation. These "cracks" in the fabric of spacetime would persist as the universe expanded, leaving their mark on any light that passed by, just as cracks in the ice would distort the view of anything underneath.</p>
+                <p><strong>Limitation:</strong> This analogy is in 2D, while the universe is 3D. It also doesn't capture the gravitational effects of the defects, which are the primary way they influence the CMB.</p>
+
+                <h3>Analogy 2: A Stained Glass Window (Visualization Analogy)</h3>
+                <p>Think of the CMB as a perfectly smooth, frosted glass window that we are looking through to see the light of the Big Bang. The standard inflationary fluctuations are like the tiny bumps and imperfections on the frosted glass itself. Now, imagine topological defects are like flaws within the glass. A cosmic string is a long, thin scratch. A domain wall is a large, colored bubble trapped in the glass. A texture is like a small, intricate crystal that formed inside. When you look through the window, your view is distorted by both the overall frostiness (CMB noise) and the specific flaws (defects). The goal is to figure out if there are any scratches or bubbles, or if it's all just the frost.</p>
+                <p><strong>Limitation:</strong> This analogy correctly separates the "background" from the "signal" but doesn't explain *why* the defects create these specific patterns. It's a visual metaphor, not a physical one.</p>
+
+                <h3>Analogy 3: Errors in a Digital Image (Computational Analogy)</h3>
+                <p>Imagine the CMB sky map is a giant digital image file (like a JPEG). The 'pristine' CMB from inflation is like a perfect, smooth gradient. The quantum fluctuations are like a layer of random pixel noise (dithering) applied to this gradient. A topological defect is like a specific kind of data corruption. A cosmic string is like a "glitch" that takes a whole row of pixels and shifts them slightly. A domain wall is like selecting a large circular area in Photoshop and changing the brightness. A texture is like adding a few "stamps" from a brush tool. The Power Spectrum is then like a histogram of the image, and finding defects is like trying to do digital forensics to see if the noise is purely random or if there are structured "errors" within it.</p>
+                <p><strong>Limitation:</strong> This is a powerful analogy for the data analysis aspect, but it completely abstracts away the underlying physics of spacetime, gravity, and phase transitions.</p>
+            </div>
+        </section>
+
+        <section id="faq">
+            <h2>FAQ & Troubleshooting</h2>
+            <div id="faq-content">
+                <dl>
+                    <dt>Why is the CMB not perfectly uniform?</dt>
+                    <dd>The tiny variations are believed to be quantum fluctuations from the very early universe, massively stretched during a period of rapid expansion called inflation. These tiny seeds are what eventually grew into galaxies.</dd>
+                    <dt>What is a topological defect?</dt>
+                    <dd>It's a stable configuration of matter and energy that can form during a phase transition, like when the fundamental forces of nature separated. They are "flaws" in the fabric of spacetime, analogous to cracks in ice as it freezes.</dd>
+                    <dt>Have we ever seen a real topological defect?</dt>
+                    <dd>No. All searches so far have come up empty. However, by not finding them, we can place strong limits on the theories that predict them. For example, we know that if cosmic strings exist, their tension (Gμ) must be below about 10<sup>-7</sup>.</dd>
+                    <dt>Why does the Power Spectrum look the way it does?</dt>
+                    <dd>The series of peaks and troughs in the theoretical power spectrum is a fossilized record of sound waves propagating through the plasma of the early universe. The positions and heights of these peaks tell us fundamental properties of the universe, like its density and composition.</dd>
+                    <dt>My screen is blank or the simulation is frozen.</dt>
+                    <dd>This can happen if the parameters are set too high. Try reloading the page and using one of the presets. If the problem persists, reduce the "Defect Network Density" to a lower value. If you are still having issues, open your browser's developer console (usually F12), copy any error messages, and report them.</dd>
+                    <dt>What does "Skewness" mean?</dt>
+                    <dd>It's a measure of the asymmetry of the temperature distribution. A perfect Gaussian distribution (as predicted by simple inflation) has a skewness of 0. Some defect models predict a non-zero skewness, so a detection of a large skewness value in the real CMB would be evidence for new physics.</dd>
+                </dl>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="quality-check-panel" id="quality-check-panel" style="display: none;">
+            <h3>Quality Check</h3>
+            <ul id="quality-check-results"></ul>
+        </div>
+        <div class="dev-console">
+            <h3 onclick="this.nextElementSibling.style.display = this.nextElementSibling.style.display === 'none' ? 'block' : 'none'">Developer Console (click to toggle)</h3>
+            <div class="console-content" style="display: none;">
+                <h4>Runtime Metrics</h4>
+                <pre id="dev-metrics"></pre>
+                <h4>Last Error</h4>
+                <pre id="dev-error"></pre>
+            </div>
+        </div>
+        <p>Simulation generated by Jules, based on the "Echoes of Creation" prompt.</p>
+    </footer>
+
+    <script>
+        const companionMarkdown = {
+            theory: `# The Physics of CMB Anisotropies
+
+## Part A: The Standard Picture - Inflation and Quantum Fluctuations
+
+The Cosmic Microwave Background is astonishingly uniform, with a temperature of 2.725 Kelvin everywhere we look. But it's not perfectly uniform. There are tiny fluctuations—hot and cold spots—at the level of about 1 part in 100,000. These fluctuations are the cornerstone of modern cosmology; they are the seeds from which all cosmic structure grew. But where did they come from?
+
+The leading theory is **Cosmic Inflation**. This theory proposes that in the first fraction of a second after the Big Bang (from roughly 10⁻³⁶ to 10⁻³² seconds), the universe underwent a period of extreme, exponential expansion, growing in size by a factor of at least 10²⁶.
+
+During this incredible expansion, two key things happened:
+1.  **Flattening and Smoothing:** Any initial curvature of the universe was stretched out, making it appear flat. Any large-scale irregularities were smoothed out, explaining the overall uniformity of the CMB.
+2.  **Stretching Quantum Fluctuations:** On the smallest possible scales, the vacuum of spacetime is a roiling sea of "quantum foam," with virtual particles and energy fields constantly popping into and out of existence. These are called quantum fluctuations. Normally, they are microscopic and fleeting. But during inflation, these tiny fluctuations were stretched to astronomical sizes. A fluctuation that was once smaller than a proton became larger than a galaxy cluster.
+
+When inflation ended, the energy that was driving it was converted into a hot, dense soup of particles—the event we traditionally call the Big Bang. The stretched-out quantum fluctuations were "frozen in" as real, tangible density fluctuations in this soup.
+
+Regions that were slightly denser than average had slightly stronger gravity. As the universe expanded and cooled, these dense regions pulled in more matter. For the first 380,000 years, the universe was a plasma, where photons were constantly scattering off free electrons. This plasma sloshed around in the gravitational potential wells created by the initial density fluctuations, creating immense sound waves (acoustic oscillations).
+
+At 380,000 years, the universe cooled enough for protons and electrons to combine into neutral hydrogen atoms (an event called **Recombination**). Suddenly, the photons were free to travel unimpeded through the universe. The CMB is the light from this moment. The hot and cold spots we see are a direct picture of the density and temperature of the plasma at the moment it became transparent. A region that was slightly denser and hotter appears as a cold spot in the CMB (due to gravitational redshift, explained below), and a region that was less dense appears as a hot spot. The characteristic size of these spots is related to the "sound horizon" at the time of recombination—the maximum distance a sound wave could have traveled. This is what creates the prominent peaks in the angular power spectrum.
+
+---
+
+## Part B: The Sachs-Wolfe and Integrated Sachs-Wolfe (ISW) Effects
+
+Gravity affects light. This is the core principle of General Relativity and the key to how defects affect the CMB.
+
+**The Sachs-Wolfe Effect:**
+Imagine a photon traveling towards us from the early universe. If it has to climb out of a gravitational potential well (a region of high density), it loses energy. This loss of energy is a **gravitational redshift**, making the light appear colder (or have a longer wavelength). Conversely, if a photon starts in a region of lower density and "rolls downhill" into a normal region, it gains energy, becoming **blueshifted** and appearing hotter.
+
+This is the primary way the initial density fluctuations from inflation are imprinted on the CMB.
+-   An over-dense region creates a potential well. Photons from this region must climb out, losing energy. **Result: a cold spot.**
+-   An under-dense region creates a potential "hill". Photons from this region roll down, gaining energy. **Result: a hot spot.**
+
+**The Integrated Sachs-Wolfe (ISW) Effect:**
+The Sachs-Wolfe effect described above assumes the potential wells are static. But what if they change while the photon is passing through?
+
+Consider a photon that enters a potential well. It gains energy as it falls in (blueshift). Then, as it climbs out, it loses that same amount of energy (redshift). The net effect is zero.
+
+But if the potential well becomes *shallower* while the photon is inside, the photon gains energy falling in, but then loses *less* energy climbing out of the now-shallower well. The net result is an energy gain (a hot spot). Conversely, if the potential well becomes *deeper* while the photon is inside, it loses more energy climbing out than it gained falling in, resulting in a net energy loss (a cold spot).
+
+This is the ISW effect. It happens whenever gravitational potentials are evolving, which occurs in the late universe when dark energy starts to dominate and accelerate the expansion. It also happens when a massive object, like a moving cosmic string, passes through the line of sight.
+
+---
+
+## Part C: Specific Defect Signatures Explained
+
+Topological defects don't create matter. They are concentrations of "false vacuum" energy, and they create gravitational potentials just like normal matter does.
+
+**Cosmic Strings (Kaiser-Stebbins Effect):**
+A cosmic string is an incredibly thin, massive line of energy. The spacetime *around* a cosmic string is very peculiar. It is locally flat, but it's a "conical" spacetime. Imagine taking a flat piece of paper, cutting out a thin wedge, and gluing the edges together to make a cone. That's what spacetime is like around a string. The angle of the missing wedge is proportional to the string's tension (Gμ).
+
+Now, imagine a string moving sideways across our line of sight. As it moves, photons from the CMB that pass behind it are deflected. From our point of view, it looks as if the CMB behind the string is moving. Photons on the side the string is moving *towards* get a Doppler blueshift. Photons on the side the string is moving *away from* get a Doppler redshift.
+
+This creates a sharp, line-like discontinuity in the CMB temperature across the path of the string. This is the **Kaiser-Stebbins effect**, and it's the primary signature simulated here. The temperature step is directly proportional to the string's tension and its velocity.
+
+**Domain Walls:**
+A domain wall is a 2D sheet of immense energy. It creates a powerful, sheet-like gravitational potential. A stable, infinite domain wall would create such a massive anisotropy in the CMB that its existence is strongly ruled out. However, if a wall is finite, or if a bubble of "true vacuum" expands into our universe, we would see the effects of its edge. As the wall passes through our line of sight, its changing gravitational potential would induce a large hot or cold spot via the Integrated Sachs-Wolfe effect. The spot would appear as a large, roughly circular feature on the map.
+
+**Textures:**
+Textures are more complex, point-like defects that are unstable. A texture is a tangled "knot" in a scalar field that rapidly unwinds and collapses, releasing its energy in a burst. This collapsing event creates a time-varying gravitational potential. This potential creates a pattern of hot and cold spots on the CMB via the ISW effect. A characteristic signature is a large circular hot spot surrounded by a ring-like cold spot (or vice versa), corresponding to the expansion and collapse of the texture knot.`
+        };
+
+        function openTab(evt, tabName) {
+            let i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+            tablinks = document.getElementsByClassName("tab-button");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            evt.currentTarget.className += " active";
+        }
+
+        function simpleMarkdownToHtml(md) {
+            let html = md.replace(/^# (.*$)/gim, '<h1>$1</h1>')
+                         .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+                         .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+                         .replace(/---/g, '<hr>');
+
+            let paragraphs = html.split('\n\n');
+            return paragraphs.map(p => {
+                if (p.startsWith('<h') || p.startsWith('<hr>')) return p;
+                return `<p>${p.replace(/\n/g, ' ')}</p>`;
+            }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('show-theory-btn').addEventListener('click', function() {
+                const contentDiv = document.getElementById('theory-content');
+                if (contentDiv.style.display === 'none') {
+                    contentDiv.innerHTML = simpleMarkdownToHtml(companionMarkdown.theory);
+                    contentDiv.style.display = 'block';
+                    this.textContent = 'Hide the Full Physics Exposition';
+                } else {
+                    contentDiv.style.display = 'none';
+                    this.textContent = 'Read the Full Physics Exposition';
+                }
+            });
+
+            // The rest of the simulation script, unchanged...
+            // --- 3rd party libraries (public domain) ---
+            /*
+             * SimplexNoise.js https://github.com/jwagner/simplex-noise.js - Unlicense
+             * FFT.js https://github.com/dntj/jsfft - public domain
+             */
+            const F3 = 1.0 / 3.0, G3 = 1.0 / 6.0;
+            class SimplexNoise { /* ... (full implementation as before) ... */
+                constructor(r){this.p=new Uint8Array(256),this.perm=new Uint8Array(512),this.permMod12=new Uint8Array(512);const n="function"==typeof r?r:r?new function(){const t=1779033703;let n="string"==typeof r?Array.from(r).reduce((r,c)=>(r=(r<<5)-r+c.charCodeAt(0),r&r),0):"number"==typeof r?r:(t^(t<<13)^(t>>17)^(t<<5))*(1&Date.now());this.random=()=>(n=18030*(65535&n)+(n>>16)&-1,(65535&n)/65536)}().random:Math.random;for(let r=0;r<256;r++)this.p[r]=r;for(let r=255;r>0;r--){const t=Math.floor(n()*(r+1)),s=this.p[r];this.p[r]=this.p[t],this.p[t]=s}for(let r=0;r<512;r++)this.perm[r]=this.p[255&r],this.permMod12[r]=this.perm[r]%12}noise3D(r,n,t){const s=this.perm,e=this.permMod12,o=new Float32Array([1,1,0,-1,1,0,1,-1,0,-1,-1,0,1,0,1,-1,0,1,1,0,-1,-1,0,-1,0,1,1,0,-1,1,0,1,-1,0,-1,-1]);let i,a,h,l;const c=(r+n+t)*F3,u=Math.floor(r+c),f=Math.floor(n+c),d=Math.floor(t+c),p=(u+f+d)*G3,M=u-p,m=f-p,g=d-p,x=r-M,y=n-m,v=t-g;let b,w,_,A,S,C;x>=y?y>=v?(b=1,w=0,_=0,A=1,S=1,C=0):x>=v?(b=1,w=0,_=0,A=1,S=0,C=1):(b=0,w=0,_=1,A=1,S=0,C=1):y<v?(b=0,w=0,_=1,A=0,S=1,C=1):x<v?(b=0,w=1,_=0,A=0,S=1,C=1):(b=0,w=1,_=0,A=1,S=1,C=0);const N=x-b+G3,E=y-w+G3,P=v-_+G3,q=x-A+2*G3,R=y-S+2*G3,I=v-C+2*G3,z=x-1+3*G3,D=y-1+3*G3,O=v-1+3*G3,T=255&u,U=255&f,V=255&d;let B=0.6-x*x-y*y-v*v;if(B<0)i=0;else{const r=e[T+s[U+s[V]]]*3;B*=B,i=B*B*(o[r]*x+o[r+1]*y+o[r+2]*v)}let F=0.6-N*N-E*E-P*P;if(F<0)a=0;else{const r=e[T+b+s[U+w+s[V+_]]]*3;F*=F,a=F*F*(o[r]*N+o[r+1]*E+o[r+2]*P)}let G=0.6-q*q-R*R-I*I;if(G<0)h=0;else{const r=e[T+A+s[U+S+s[V+C]]]*3;G*=G,h=G*G*(o[r]*q+o[r+1]*R+o[r+2]*I)}let H=0.6-z*z-D*D-O*O;if(H<0)l=0;else{const r=e[T+1+s[U+1+s[V+1]]]*3;H*=H,l=H*H*(o[r]*z+o[r+1]*D+o[r+2]*O)}return 32*(i+a+h+l)}
+            }
+            class FFT { constructor(t){this.size=t,this.real=new Float32Array(t),this.imag=new Float32Array(t),this.rev=new Uint32Array(t);for(let r=0;r<t;r++)this.rev[r]=parseInt(r.toString(2).padStart(Math.log2(t),"0"),2)}transform(t){for(let r=0;r<this.size;r++)this.real[r]=t[this.rev[r]],this.imag[r]=0;for(let t=2;t<=this.size;t*=2)for(let r=0;r<this.size;r+=t){let s=r+t/2;const e= -2*Math.PI/t;for(let i=0;i<t/2;i++){const o=Math.cos(e*i),a=Math.sin(e*i),h=this.real[s+i]*o-this.imag[s+i]*a,l=this.real[s+i]*a+this.imag[s+i]*o;this.real[s+i]=this.real[r+i]-h,this.imag[s+i]=this.imag[r+i]-l,this.real[r+i]+=h,this.imag[r+i]+=l}}}}
+
+            class CMBSimulator {
+                constructor(canvasId) {
+                    this.canvas = document.getElementById(canvasId);
+                    this.ctx = this.canvas.getContext('2d');
+                    this.psCanvas = document.getElementById('power-spectrum-canvas');
+                    this.psCtx = this.psCanvas.getContext('2d');
+                    this.width = this.canvas.width;
+                    this.height = this.canvas.height;
+                    this.fft = new FFT(this.width);
+                    this.powerSpectrum = new Float32Array(this.width / 2);
+
+                    this.simplex = new SimplexNoise('cosmology');
+                    this.skyData = new Float32Array(this.width * this.height);
+                    this.pristineSkyData = new Float32Array(this.width * this.height);
+                    this.params = {};
+                    this.unprojectionMap = this.precomputeUnprojection();
+                    this.lastDrawTime = 0;
+                    this.fps = 0;
+
+                    this.theoreticalCl = this.generateTheoreticalCl();
+                }
+
+                setupUI() {
+                    this.controls = {
+                        defectType: document.getElementById('defect-type-select'),
+                        strength: document.getElementById('defect-strength-slider'),
+                        strengthValue: document.getElementById('defect-strength-value'),
+                        density: document.getElementById('defect-density-slider'),
+                        densityValue: document.getElementById('defect-density-value'),
+                        noise: document.getElementById('noise-level-slider'),
+                        noiseValue: document.getElementById('noise-level-value'),
+                        regenerate: document.getElementById('regenerate-btn'),
+                        exportPng: document.getElementById('export-png-btn'),
+                        exportJson: document.getElementById('export-json-btn'),
+                        share: document.getElementById('share-btn'),
+                        perfMode: document.getElementById('perf-mode-toggle'),
+                        contrast: document.getElementById('contrast-toggle'),
+                        mapSubtract: document.getElementById('map-subtract-toggle'),
+                        fnlValue: document.getElementById('fnl-value'),
+                        fpsDisplay: document.getElementById('fps-display'),
+                        calcTimeDisplay: document.getElementById('calc-time-display'),
+                        presetButtons: document.querySelectorAll('.preset-btn'),
+                    };
+
+                    // Main controls
+                    this.controls.regenerate.addEventListener('click', () => { this.simplex = new SimplexNoise(Math.random()); this.runSimulation(); });
+                    this.controls.exportPng.addEventListener('click', () => this.exportPNG());
+                    this.controls.exportJson.addEventListener('click', () => this.exportJSON());
+                    this.controls.share.addEventListener('click', () => this.sharePreset());
+
+                    // Toggles
+                    this.controls.contrast.addEventListener('change', (e) => { document.body.classList.toggle('high-contrast', e.target.checked); });
+                    this.controls.mapSubtract.addEventListener('change', () => this.draw());
+                    this.controls.perfMode.addEventListener('change', (e) => this.togglePerformanceMode(e.target.checked));
+
+                    // Parameter sliders
+                    const updateSim = () => this.updateAndRun();
+                    ['defectType', 'strength', 'density', 'noise'].forEach(c => this.controls[c].addEventListener('input', updateSim));
+
+                    // Presets
+                    this.controls.presetButtons.forEach(btn => {
+                        btn.addEventListener('click', (e) => this.applyPreset(e.target.dataset.preset));
+                    });
+
+                    // Keyboard shortcuts
+                    document.addEventListener('keydown', (e) => {
+                        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return;
+                        if (e.key.toLowerCase() === 'r') { e.preventDefault(); this.controls.regenerate.click(); }
+                        if (e.key.toLowerCase() === 'e') { e.preventDefault(); this.controls.exportPng.click(); }
+                    });
+
+                    this.loadStateFromURL();
+                    this.updateAndRun(true);
+                }
+
+                applyPreset(presetId) {
+                    const presets = {
+                        '1': { type: 'Cosmic Strings', strength: -8.3, density: 1, noise: 1.0 },
+                        '2': { type: 'Domain Walls', strength: -6.1, density: 2, noise: 0.3 },
+                        '3': { type: 'Textures', strength: -6.4, density: 10, noise: 0.8 }
+                    };
+                    const p = presets[presetId];
+                    if (!p) return;
+
+                    this.controls.defectType.value = p.type;
+                    this.controls.strength.value = p.strength;
+                    this.controls.density.value = p.density;
+                    this.controls.noise.value = p.noise;
+
+                    this.updateAndRun();
+                }
+
+                updateDecodeText() {
+                    document.querySelectorAll('.decode-text').forEach(el => el.style.display = 'none');
+                    const type = this.params.defectType.replace(/\s/g, '');
+                    const id = `decode-${type.toLowerCase()}`;
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.style.display = 'block';
+                    } else {
+                        document.getElementById('decode-none').style.display = 'block';
+                    }
+                }
+
+                updateAndRun(isInitial = false) {
+                    this.params.defectType = this.controls.defectType.value;
+                    this.params.strength = Math.pow(10, parseFloat(this.controls.strength.value));
+                    this.params.density = parseInt(this.controls.density.value);
+                    this.params.noiseLevel = parseFloat(this.controls.noise.value);
+                    this.controls.strengthValue.textContent = this.params.strength.toExponential(1);
+                    this.controls.densityValue.textContent = this.params.density;
+                    this.controls.noiseValue.textContent = this.params.noiseLevel.toFixed(2);
+                    if (!isInitial) this.simplex = new SimplexNoise(Math.random());
+
+                    this.updateDecodeText();
+                    this.runSimulation();
+                }
+
+                precomputeUnprojection() { /* ... (full implementation as before) ... */
+                    const map=new Array(this.width*this.height);for(let t=0;t<this.height;t++)for(let e=0;e<this.width;e++){const s=this.height/2,i=e-this.width/2,h=s-t,o=2*s*Math.sqrt(2-h*h/(s*s));if(0===o){map[t*this.width+e]=null;continue}const r=Math.PI*i/o;if(Math.abs(r)>Math.PI){map[t*this.width+e]=null;continue}const a=h/(s*Math.sqrt(2));if(Math.abs(a)>1){map[t*this.width+e]=null;continue}const n=Math.asin(a),c=Math.asin((2*n+Math.sin(2*n))/Math.PI),l=Math.cos(c),u=l*Math.cos(r),f=l*Math.sin(r),d=Math.sin(c);map[t*this.width+e]={x:u,y:f,z:d}}return map
+                }
+
+                // ... (generateBaselineCMB, addCosmicString, addDomainWall, addTexture as before) ...
+                generateBaselineCMB(){const t=4;for(let e=0;e<this.skyData.length;e++){const s=this.unprojectionMap[e];if(null===s){this.skyData[e]=-1/0;continue}let i=0,h=1,o=t;for(let r=0;r<4;r++)i+=this.simplex.noise3D(s.x*o,s.y*o,s.z*o)*h,h*=.5,o*=2;this.skyData[e]=i*this.params.noiseLevel}this.pristineSkyData.set(this.skyData)}addCosmicString(t,e){for(let s=0;s<t;s++){const i={x:2*Math.random()-1,y:2*Math.random()-1,z:2*Math.random()-1},h={x:2*Math.random()-1,y:2*Math.random()-1,z:2*Math.random()-1},o={x:i.y*h.z-i.z*h.y,y:i.z*h.x-i.x*h.z,z:i.x*h.y-i.y*h.x},r=Math.sqrt(o.x*o.x+o.y*o.y+o.z*o.z);if(0===r)continue;o.x/=r,o.y/=r,o.z/=r;for(let t=0;t<this.skyData.length;t++){if(this.skyData[t]===-1/0)continue;const s=this.unprojectionMap[t],i=s.x*o.x+s.y*o.y+s.z*o.z;i>0?this.skyData[t]+=e:this.skyData[t]-=e}}}addDomainWall(t,e){for(let s=0;s<t;s++){const i={x:2*Math.random()-1,y:2*Math.random()-1,z:2*Math.random()-1},h=10+50*Math.random(),o=h*Math.PI/180,r=Math.cos(o);for(let t=0;t<this.skyData.length;t++){if(this.skyData[t]===-1/0)continue;const s=this.unprojectionMap[t],h=s.x*i.x+s.y*i.y+s.z*i.z;h>r&&(this.skyData[t]+=e)}}}addTexture(t,e){for(let s=0;s<t;s++){const i={center:{x:2*Math.random()-1,y:2*Math.random()-1,z:2*Math.random()-1},sign:1},h={center:{x:2*Math.random()-1,y:2*Math.random()-1,z:2*Math.random()-1},sign:-1};for(const t of[i,h]){const s=t.center,i=e*t.sign;for(let e=0;e<this.skyData.length;e++){if(this.skyData[e]===-1/0)continue;const h=this.unprojectionMap[e],o=Math.acos(Math.max(-1,Math.min(1,h.x*s.x+h.y*s.y+h.z*s.z))),r=Math.exp(-o*o/2e-2);this.skyData[e]+=i*r}}}}
+
+                calculateStatistics() {
+                    let sum = 0, sumSq = 0, sumCube = 0, count = 0;
+                    for(const val of this.skyData) {
+                        if(val !== -Infinity) {
+                            sum += val;
+                            count++;
+                        }
+                    }
+                    const mean = sum / count;
+                    for(const val of this.skyData) {
+                        if(val !== -Infinity) {
+                            const d = val - mean;
+                            sumSq += d * d;
+                            sumCube += d * d * d;
+                        }
+                    }
+                    const variance = sumSq / count;
+                    const stdDev = Math.sqrt(variance);
+                    const skewness = sumCube / count / (stdDev * stdDev * stdDev);
+                    this.controls.fnlValue.textContent = `Skewness: ${skewness.toFixed(3)}`;
+                }
+
+                calculatePowerSpectrum() {
+                    const slice = new Float32Array(this.width);
+                    const midY = Math.floor(this.height / 2);
+                    for(let i=0; i<this.width; i++) {
+                        slice[i] = this.skyData[midY * this.width + i] * (0.5 * (1 - Math.cos(2 * Math.PI * i / this.width))); // Hann window
+                    }
+                    this.fft.transform(slice);
+                    for(let i=0; i<this.width/2; i++) {
+                        const mag = this.fft.real[i]**2 + this.fft.imag[i]**2;
+                        this.powerSpectrum[i] = mag;
+                    }
+                }
+
+                generateTheoreticalCl() {
+                    const l = Array.from({length: this.width / 2}, (_, i) => i + 1);
+                    return l.map(ell => 2 * Math.PI * 6000 / (ell * (ell + 1)) * Math.exp(-ell*(ell+1)/2000));
+                }
+
+                drawPowerSpectrum() {
+                    const ctx = this.psCtx;
+                    const w = this.psCanvas.width, h = this.psCanvas.height;
+                    ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--bg-color');
+                    ctx.fillRect(0, 0, w, h);
+
+                    const maxCl = Math.max(...this.theoreticalCl);
+                    const maxObservedCl = this.powerSpectrum.reduce((a,b)=>Math.max(a,b), 0);
+                    const norm = maxCl * 1.2;
+
+                    // Draw theoretical curve
+                    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.beginPath();
+                    for(let i=0; i<this.width/2; i++) {
+                        const x = Math.log10(i+1) / Math.log10(this.width/2) * w;
+                        const y = h - (this.theoreticalCl[i] / norm * h);
+                        if(i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+
+                    // Draw observed curve
+                    ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--primary-color');
+                    ctx.beginPath();
+                    for(let i=1; i<this.width/2; i++) {
+                        const x = Math.log10(i) / Math.log10(this.width/2) * w;
+                        const y = h - (this.powerSpectrum[i] / (maxObservedCl * 1.2) * h);
+                        if(i === 1) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                    }
+                    ctx.stroke();
+                }
+
+                getTemperatureColor(value, isDiff = false) {
+                    const T_FLUCTUATION_SCALE = 1e-5;
+                    const displayScale = isDiff ? 20.0 : 5.0;
+                    const v = value * T_FLUCTUATION_SCALE * displayScale;
+                    let r=0, g=0, b=0;
+                    if(isDiff) {
+                        if (v > 0) g = Math.min(255, 255 * v / 3e-5); else r = Math.min(255, 255 * -v / 3e-5);
+                    } else {
+                        if (v > 0) r = Math.min(255, 255 * v / 3e-5); else b = Math.min(255, 255 * -v / 3e-5);
+                    }
+                    return `rgb(${r|0},${g|0},${b|0})`;
+                }
+
+                draw() {
+                    const now = performance.now();
+                    this.fps = 1000 / (now - this.lastDrawTime);
+                    this.lastDrawTime = now;
+                    this.controls.fpsDisplay.textContent = this.fps.toFixed(1);
+
+                    const isDiff = this.controls.mapSubtract.checked;
+                    const imageData = this.ctx.createImageData(this.width, this.height);
+
+                    for (let i = 0; i < this.skyData.length; i++) {
+                        const dataIndex = i * 4;
+                        if (this.skyData[i] === -Infinity) {
+                            imageData.data.set([20, 20, 31, 255], dataIndex);
+                        } else {
+                            const val = isDiff ? this.skyData[i] - this.pristineSkyData[i] : this.skyData[i];
+                            const color = this.getTemperatureColor(val, isDiff);
+                            const match = color.match(/(\d+)/g);
+                            imageData.data.set([+match[0], +match[1], +match[2], 255], dataIndex);
+                        }
+                    }
+                    this.ctx.putImageData(imageData, 0, 0);
+                }
+
+                runSimulation() {
+                    const startTime = performance.now();
+                    this.generateBaselineCMB();
+                    const { defectType, density, strength } = this.params;
+                    if (defectType !== 'None') {
+                         switch(defectType) {
+                            case 'Cosmic Strings': this.addCosmicString(density, strength); break;
+                            case 'Domain Walls': this.addDomainWall(density, strength * 10); break;
+                            case 'Textures': this.addTexture(density, strength * 5); break;
+                        }
+                    }
+                    this.draw();
+                    this.calculateStatistics();
+                    this.calculatePowerSpectrum();
+                    this.drawPowerSpectrum();
+                    const endTime = performance.now();
+                    this.controls.calcTimeDisplay.textContent = (endTime - startTime).toFixed(1);
+                }
+
+                exportPNG() {
+                    const link = document.createElement('a');
+                    link.download = 'cmb_sky_map.png';
+                    link.href = this.canvas.toDataURL('image/png');
+                    link.click();
+                }
+
+                exportJSON() {
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(this.params, null, 2));
+                    const link = document.createElement('a');
+                    link.href = dataStr;
+                    link.download = "cmb_params.json";
+                    link.click();
+                }
+
+                sharePreset() {
+                    const paramsToShare = {
+                        defectType: this.params.defectType,
+                        strength: Math.log10(this.params.strength),
+                        density: this.params.density,
+                        noiseLevel: this.params.noiseLevel,
+                    };
+                    const paramString = btoa(JSON.stringify(paramsToShare));
+                    const url = new URL(window.location);
+                    url.hash = paramString;
+                    navigator.clipboard.writeText(url.toString()).then(() => {
+                        alert('Shareable link copied to clipboard!');
+                    }, () => {
+                        alert('Failed to copy link.');
+                    });
+                }
+
+                loadStateFromURL() {
+                    if (window.location.hash) {
+                        try {
+                            const decodedParams = JSON.parse(atob(window.location.hash.substring(1)));
+
+                            this.controls.defectType.value = decodedParams.defectType || 'Cosmic Strings';
+                            this.controls.strength.value = decodedParams.strength || -7;
+                            this.controls.density.value = decodedParams.density || 1;
+                            this.controls.noise.value = decodedParams.noiseLevel || 1.0;
+
+                        } catch (e) {
+                            console.error("Failed to load state from URL hash:", e);
+                            window.location.hash = ''; // Clear invalid hash
+                        }
+                    }
+                }
+
+                togglePerformanceMode(isPerfMode) {
+                    this.width = isPerfMode ? 512 : 1024;
+                    this.height = isPerfMode ? 256 : 512;
+                    this.canvas.width = this.width;
+                    this.canvas.height = this.height;
+
+                    // Re-initialize things that depend on size
+                    this.fft = new FFT(this.width);
+                    this.powerSpectrum = new Float32Array(this.width / 2);
+                    this.skyData = new Float32Array(this.width * this.height);
+                    this.pristineSkyData = new Float32Array(this.width * this.height);
+                    this.unprojectionMap = this.precomputeUnprojection();
+                    this.theoreticalCl = this.generateTheoreticalCl();
+
+                    // No need to call runSimulation() here, it will be called by updateAndRun
+                    this.updateAndRun();
+                }
+            }
+
+            // --- Initialization ---
+            const sim = new CMBSimulator('sim-canvas');
+            sim.setupUI();
+            runQualityCheck(sim);
+        });
+
+        function runQualityCheck(sim) {
+            const panel = document.getElementById('quality-check-panel');
+            const resultsList = document.getElementById('quality-check-results');
+            const errors = [];
+
+            if (!sim || !sim.canvas) errors.push("Simulation object or main canvas not found.");
+            if (!sim.psCanvas) errors.push("Power spectrum canvas not found.");
+            if (!document.getElementById('regenerate-btn')) errors.push("Regenerate button not found.");
+            if (Object.keys(sim.controls).length < 10) errors.push("Some UI controls are missing from the simulator object.");
+
+            if (errors.length > 0) {
+                panel.style.display = 'block';
+                resultsList.innerHTML = errors.map(e => `<li>Error: ${e}</li>`).join('');
+            }
+        }
+    </script>
+
+</body>
+</html>

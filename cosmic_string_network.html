@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic String Network Evolution: The Scaling Solution</title>
+    <style>
+        :root {
+            --bg-color: #0d0d20;
+            --text-color: #e5e5e5;
+            --primary-color: #6a9bff;
+            --secondary-color: #ff6a9b;
+            --accent-color: #6aff9b;
+            --panel-bg-color: #1a1a3a;
+            --border-color: #3c3c5a;
+            --font-sans: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            --font-mono: 'Courier New', Courier, monospace;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0 20px;
+        }
+
+        header, main, footer {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 0;
+        }
+
+        h1, h2, h3, h4 {
+            color: var(--primary-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        h1 { font-size: 2.2em; text-align: center; }
+        h2 { font-size: 1.8em; }
+        h3 { font-size: 1.4em; margin-top: 0; }
+
+        section {
+            background-color: var(--panel-bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sim-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #000;
+            border-radius: 4px;
+            padding: 10px;
+        }
+
+        #sim-canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+        }
+
+        .controls-main, .controls-parameters {
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .controls-parameters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .param-group label {
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .data-panel {
+            background: var(--bg-color);
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        .data-panel canvas {
+            width: 100%;
+            height: auto;
+            background-color: #000;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #2a2a4a;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Cosmic String Network Evolution: The Scaling Solution</h1>
+        <p class="subtitle">A large-scale simulation of a cosmic string network searching for a stable, scaling state in an expanding universe.</p>
+        <div class="meta-bar">
+            <span>Est. Runtime: Continuous</span> |
+            <span>Recommended Device: Desktop</span> |
+            <span>Approx. Size: <span id="file-size">~400</span> KB</span>
+        </div>
+    </header>
+
+    <main>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>Welcome to the cosmic string network simulator. In this simulation, you are observing a cubic volume of the early universe filled with a network of cosmic strings. These are not just individual strings, but a tangled, evolving web. For these objects to be physically interesting and not violate observations, their network must reach a <strong>'scaling solution.'</strong> This means that as the universe expands, the network thins out in a very specific way, so that its overall energy density remains a constant fraction of the universe's total energy density. This simulation visualizes the two competing processes that lead to scaling: the stretching of the network by cosmic expansion, and the simplification of the network by strings intersecting and chopping off loops. Your goal is to watch the plots: does the 'Scaling Parameter (L/t)' converge to a constant value? If so, you have found a scaling solution!</p>
+        </section>
+
+        <section id="simulation-area">
+            <h2>Simulation Volume</h2>
+            <div class="sim-container">
+                <canvas id="sim-canvas" width="600" height="600"></canvas>
+            </div>
+            <div class="controls-main">
+                <h3>Main Controls</h3>
+                <div class="controls-main-grid" style="display:flex; gap: 15px; align-items: center;">
+                    <button id="play-pause-btn" aria-label="Play or Pause Simulation">Play</button>
+                    <button id="reset-btn" aria-label="Reset Simulation">Reset</button>
+                    <label>Speed: <input type="range" id="speed-slider" min="0.1" max="5" step="0.1" value="1" aria-label="Simulation Speed"></label>
+                </div>
+            </div>
+            <div class="controls-parameters">
+                <h3>Simulation Parameters</h3>
+                <div class="controls-parameters-grid">
+                    <div class="param-group">
+                        <label for="density-slider">Initial Density (ζ)</label>
+                        <input type="range" id="density-slider" min="1" max="10" step="1" value="3">
+                    </div>
+                    <div class="param-group">
+                        <label for="loop-eff-slider">Loop Formation Efficiency</label>
+                        <input type="range" id="loop-eff-slider" min="0.1" max="1" step="0.05" value="0.9">
+                    </div>
+                    <div class="param-group">
+                        <label for="back-reaction-slider">Grav. Back-Reaction</label>
+                        <input type="range" id="back-reaction-slider" min="0" max="1" step="0.05" value="0.1">
+                    </div>
+                    <div class="param-group">
+                        <label for="expansion-select">Expansion Model</label>
+                        <select id="expansion-select">
+                            <option>Radiation Dominated</option>
+                            <option selected>Matter Dominated</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="data-panels">
+            <h2>Live Commentary & Network Statistics</h2>
+            <div class="data-grid">
+                <div id="panel-commentary" class="data-panel">
+                    <h3>What Am I Seeing?</h3>
+                    <div id="commentary-content">
+                        <p>The simulation volume is constantly expanding, stretching the total length of the string network. If this were the only process, the string energy density would quickly come to dominate the universe, which we know is not true.</p>
+                        <p>However, as the strings move and wiggle, they intersect with each other. These intersections can cause the strings to 'intercommute' or reconnect in a different way, chopping off small, closed loops. These loops are an energy sink: they oscillate, radiate away their energy as gravitational waves, and eventually disappear from the long-string network.</p>
+                        <p>A <strong>'scaling solution'</strong> is achieved when the energy lost to loop formation perfectly balances the energy gained from Hubble stretching. Watch the 'Scaling Parameter' plot—if it flattens out to a constant value, the network has reached this critical equilibrium.</p>
+                    </div>
+                </div>
+                <div id="panel-scaling" class="data-panel">
+                    <h3>The Scaling Parameter (L/t)</h3>
+                    <canvas id="scaling-plot-canvas" width="400" height="200"></canvas>
+                    <p>Current L/t: <span id="scaling-value">--</span></p>
+                </div>
+                <div id="panel-loops" class="data-panel">
+                    <h3>Loop Production Rate</h3>
+                    <canvas id="loop-plot-canvas" width="400" height="200"></canvas>
+                </div>
+                <div id="panel-density" class="data-panel">
+                    <h3>Energy Density vs. Scale Factor (a)</h3>
+                    <canvas id="density-plot-canvas" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <section id="parameters-summary">
+            <h2>Parameters & Controls Guide</h2>
+            <table id="params-table">
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Control Type</th>
+                        <th>Default</th>
+                        <th>Min/Max</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Initial Density (ζ)</strong></td>
+                        <td>Slider</td>
+                        <td>3</td>
+                        <td>1 / 10</td>
+                        <td>Controls how many strings (per Hubble volume) the simulation starts with. A higher initial density will take longer to reach scaling.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Loop Formation Efficiency</strong></td>
+                        <td>Slider</td>
+                        <td>0.9</td>
+                        <td>0.1 / 1.0</td>
+                        <td>The probability that a string intersection results in a loop being formed. This is the primary way the network loses energy. A lower efficiency will 'frustrate' the network and slow its approach to scaling.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Grav. Back-Reaction</strong></td>
+                        <td>Slider</td>
+                        <td>0.1</td>
+                        <td>0.0 / 1.0</td>
+                        <td>A simplified model of how strings gravitationally attract each other, adding more complex motion to the network. Higher values introduce more 'jiggle' into the strings.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Expansion Model</strong></td>
+                        <td>Dropdown</td>
+                        <td>Matter Dom.</td>
+                        <td>N/A</td>
+                        <td>Sets the expansion rate of the universe. In the radiation-dominated era (early universe), the universe expands as t¹/². In the matter-dominated era (later), it expands as t²/³. This affects the amount of 'Hubble friction' the strings experience.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="theory">
+            <h2>The Physics of Scaling</h2>
+            <h3>Part A: The Velocity-One-Scale (VOS) Model</h3>
+            <p>A full simulation of cosmic string dynamics is incredibly complex. The Velocity-One-Scale (VOS) model provides a powerful analytical framework to understand the statistical behavior of the network. It simplifies the entire complex web of strings into just two key parameters:</p>
+            <ol>
+                <li><strong>L</strong>: The characteristic length scale of the network. You can think of this as the average distance between long strings, or the typical curvature radius of a string segment. The total length of long string in a volume V is roughly V / L². The energy density of the string network is therefore <code>ρ_s ≈ μ / L²</code>, where μ is the string tension (mass per unit length).</li>
+                <li><strong>v</strong>: The root-mean-square (RMS) velocity of the string segments.</li>
+            </ol>
+            <p>The VOS model then writes down two coupled differential equations for how L and v change with time <code>t</code>:</p>
+            <ul>
+                <li><code>2 * dL/dt = (L/t) * v² + c * v</code></li>
+                <li><code>dv/dt = (1 - v²) * (k/L - 2v/t)</code></li>
+            </ul>
+            <p>Let's break this down: The first equation describes the change in the length scale L. The <code>(L/t) * v²</code> term represents the stretching of the network due to its own motion and the expansion of the universe (Hubble friction). The <code>c * v</code> term represents the loss of length due to loop formation, where <code>c</code> is a parameter related to the loop chopping efficiency. The second equation describes the change in velocity. The <code>k/L</code> term (where <code>k</code> is related to the curvature of the strings) acts as an acceleration term, as curved strings try to straighten themselves out. The <code>2v/t</code> term represents the damping or "Hubble friction" from the universe's expansion, which slows the strings down. A <strong>scaling solution</strong> is a stable fixed point of these equations, where <code>dL/dt</code> and <code>dv/dt</code> are such that the ratio <code>L/t</code> becomes a constant. When you run the simulation, you are watching the system try to find this equilibrium point.</p>
+            <hr>
+            <h3>Part B: Loops as an Energy Sink</h3>
+            <p>The most crucial term in the VOS model is the one related to energy loss. Without it, the network would never reach a stable scaling solution. The primary mechanism for this energy loss is the <strong>formation of loops</strong>. When a long string intersects with itself or another long string, it can reconnect in a new way. This process, called <strong>intercommutation</strong>, can result in a small, closed loop being pinched off from the main network. The energy that was in the segment of the long string that formed the loop is now transferred *to* the loop. The long string network has lost a piece of itself, and thus has lost energy. These closed loops are gravitationally self-bound and oscillate relativistically. According to General Relativity, any accelerating mass distribution radiates gravitational waves. These oscillating loops are powerful sources of gravitational waves. They radiate their energy away, causing them to shrink and eventually disappear entirely. This process is the universe's safety valve for cosmic strings. It allows the infinite string network to continuously dump its energy into tiny, radiating loops, which then vanish. This prevents the total energy of the string network from growing out of control and dominating the universe. The "Loop Formation Efficiency" slider in this simulation is a direct control over the rate of this crucial energy loss mechanism.</p>
+            <hr>
+            <h3>Part C: The Importance of Scaling</h3>
+            <p>Why is a scaling solution so important? It's because it allows the string network to have a consistent cosmological history, being a small but constant fraction of the total energy density. Let's look at how energy densities of different components evolve as the universe expands (described by the scale factor <code>a(t)</code>):</p>
+            <ul>
+                <li><strong>Radiation (photons, neutrinos):</strong> <code>ρ_rad ∝ 1/a⁴</code>. The energy density drops very quickly because the number density is diluted by the expanding volume (a³) and the wavelength of each particle is also stretched (another factor of a).</li>
+                <li><strong>Matter (stars, dark matter):</strong> <code>ρ_mat ∝ 1/a³</code>. The energy is just diluted by the volume expansion.</li>
+                <li><strong>Cosmic Strings:</strong> This is more subtle. The physical length of a string grows as <code>a</code>. The physical volume grows as <code>a³</code>. So the density <code>ρ_s</code> goes as <code>a / a³ = 1/a²</code>.</li>
+            </ul>
+            <p>If this were the whole story, it would be a disaster! Since <code>ρ_s</code> (∝ 1/a²) decreases more slowly than <code>ρ_rad</code> (∝ 1/a⁴) and <code>ρ_mat</code> (∝ 1/a³), the strings would inevitably come to dominate the energy density of the universe. The scaling solution saves the day. The process of loop formation means the *actual* amount of string length doesn't grow as fast as `a`. In a scaling network, the characteristic length `L` grows in proportion to time `t`. This makes the *true* string density evolve in such a way that the ratio `ρ_s / ρ_bg` (where `ρ_bg` is the background density) remains **constant**. This is what the "Energy Density" plot shows. If the network is scaling, the line for string density should be parallel to the line for the background density on the log-log plot.</p>
+        </section>
+
+        <section id="advanced-notes">
+            <h2>Maximal Depth: Advanced Topics & Extensions</h2>
+            <div id="advanced-content">
+                <h3>Loop Size Distribution</h3>
+                <p>This simulation simplifies loop production into a single probability. A more advanced simulation would model the distribution of loop sizes. Most analytical models and numerical simulations suggest that strings chop off loops of a size comparable to the smallest features and wiggles on the long strings, which are themselves a fraction of the characteristic scale L. This means most loops are produced at very small sizes. The rate of gravitational wave emission depends strongly on the loop's size, so a realistic distribution is crucial for calculating the gravitational wave background accurately.</p>
+
+                <h3>Intercommutation Probability</h3>
+                <p>We assume that when two strings cross, they always reconnect (intercommute) with a probability of 1. However, in some more complex theories (like those involving extra dimensions), this probability could be less than 1. If p < 1, strings can pass through each other without interacting. This 'frustrates' the network's ability to simplify itself and lose energy. As a result, the network density in the scaling solution would be higher, as it needs to have more frequent intersections to achieve the same energy loss rate. This would lead to a different (lower) value for the scaling parameter L/t.</p>
+
+                <h3>Gravitational Wave Background Calculation</h3>
+                <p>The loops produced by the network create a stochastic (random) background of gravitational waves. The spectrum of this background can be calculated by integrating the gravitational wave emission from all loops produced over the history of the universe. The calculation involves: 1) The loop production rate (which you can see in the plot). 2) The distribution of loop sizes at formation. 3) The spectrum of gravitational waves emitted by a single oscillating loop. 4) The expansion history of the universe, which redshifts the waves. By summing the contributions from all loops at all times, one can predict the shape of the gravitational wave spectrum (Ω_gw vs. frequency) that experiments like LIGO, Virgo, and pulsar timing arrays search for.</p>
+            </div>
+        </section>
+
+        <section id="faq">
+            <h2>FAQ & Troubleshooting</h2>
+            <div id="faq-content">
+                <dl>
+                    <dt>What is a "scaling solution"?</dt>
+                    <dd>It's a stable state where the statistical properties of the string network (like its density relative to the background) remain constant over time, even as the universe expands. It's a sign of a mature, physically realistic network.</dd>
+                    <dt>Why do strings need to lose energy?</dt>
+                    <dd>A network of strings has energy in its tension. As the universe expands, the strings are stretched, which would normally increase their total energy relative to the cooling background. If they didn't have a way to lose energy (like forming loops), they would eventually dominate the energy density of the universe, which contradicts observations.</dd>
+                    <dt>Where do the loops go?</dt>
+                    <dd>The loops that are pinched off from the main network are gravitationally self-bound. They oscillate rapidly and radiate their energy away in the form of gravitational waves, eventually shrinking and disappearing completely.</dd>
+                    <dt>What does L/t mean?</dt>
+                    <dd>L is the characteristic length of the network (roughly the average distance between strings). 't' is the cosmological time (the age of the universe). In a scaling solution, the network's characteristic size L grows in direct proportion to the cosmic horizon t, so their ratio L/t becomes a constant.</dd>
+                </dl>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="quality-check-panel" id="quality-check-panel" style="display: none;">
+            <h3>Quality Check</h3>
+            <ul id="quality-check-results"></ul>
+        </div>
+        <p>Simulation generated by Jules, based on the "Cosmic String Network" prompt.</p>
+    </footer>
+
+    <script>
+        const companionMarkdown = {
+            theory: `# The Physics of Scaling
+
+## Part A: The Velocity-One-Scale (VOS) Model
+
+A full simulation of cosmic string dynamics is incredibly complex. The Velocity-One-Scale (VOS) model provides a powerful analytical framework to understand the statistical behavior of the network. It simplifies the entire complex web of strings into just two key parameters:
+
+1.  **L**: The characteristic length scale of the network. You can think of this as the average distance between long strings, or the typical curvature radius of a string segment. The total length of long string in a volume V is roughly V / L². The energy density of the string network is therefore \`ρ_s ≈ μ / L²\`, where μ is the string tension (mass per unit length).
+
+2.  **v**: The root-mean-square (RMS) velocity of the string segments.
+
+The VOS model then writes down two coupled differential equations for how L and v change with time \`t\`:
+
+-   \`2 * dL/dt = (L/t) * v² + c * v\`
+-   \`dv/dt = (1 - v²) * (k/L - 2v/t)\`
+
+Let's break this down:
+-   The first equation describes the change in the length scale L. The \`(L/t) * v²\` term represents the stretching of the network due to its own motion and the expansion of the universe (Hubble friction). The \`c * v\` term represents the loss of length due to loop formation, where \`c\` is a parameter related to the loop chopping efficiency.
+-   The second equation describes the change in velocity. The \`k/L\` term (where \`k\` is related to the curvature of the strings) acts as an acceleration term, as curved strings try to straighten themselves out. The \`2v/t\` term represents the damping or "Hubble friction" from the universe's expansion, which slows the strings down.
+
+A **scaling solution** is a stable fixed point of these equations, where \`dL/dt\` and \`dv/dt\` are such that the ratio \`L/t\` becomes a constant. When you run the simulation, you are watching the system try to find this equilibrium point.
+
+---
+
+## Part B: Loops as an Energy Sink
+
+The most crucial term in the VOS model is the one related to energy loss. Without it, the network would never reach a stable scaling solution. The primary mechanism for this energy loss is the **formation of loops**.
+
+When a long string intersects with itself or another long string, it can reconnect in a new way. This process, called **intercommutation**, can result in a small, closed loop being pinched off from the main network.
+
+-   **Energy Transfer:** The energy that was in the segment of the long string that formed the loop is now transferred *to* the loop. The long string network has lost a piece of itself, and thus has lost energy.
+-   **Gravitational Wave Emission:** These closed loops are gravitationally self-bound and oscillate relativistically. According to General Relativity, any accelerating mass distribution radiates gravitational waves. These oscillating loops are powerful sources of gravitational waves. They radiate their energy away, causing them to shrink and eventually disappear entirely.
+
+This process is the universe's safety valve for cosmic strings. It allows the infinite string network to continuously dump its energy into tiny, radiating loops, which then vanish. This prevents the total energy of the string network from growing out of control and dominating the universe. The "Loop Formation Efficiency" slider in this simulation is a direct control over the rate of this crucial energy loss mechanism.
+
+---
+
+## Part C: The Importance of Scaling
+
+Why is a scaling solution so important? It's because it allows the string network to have a consistent cosmological history, being a small but constant fraction of the total energy density.
+
+Let's look at how energy densities of different components evolve as the universe expands (described by the scale factor \`a(t)\`):
+-   **Radiation (photons, neutrinos):** \`ρ_rad ∝ 1/a⁴\`. The energy density drops very quickly because the number density is diluted by the expanding volume (a³) and the wavelength of each particle is also stretched (another factor of a).
+-   **Matter (stars, dark matter):** \`ρ_mat ∝ 1/a³\`. The energy is just diluted by the volume expansion.
+-   **Cosmic Strings:** This is more subtle. The length of a string in comoving coordinates is constant. So, its physical length grows as \`a\`. The total length of string in a comoving volume \`V_c\` is \`L_c\`. The physical energy is \`μ * L_c * a\`. The physical volume is \`V_c * a³\`. So the density \`ρ_s\` goes as \`(μ * L_c * a) / (V_c * a³) = (μ * L_c / V_c) * 1/a²\`. So, naively, \`ρ_s ∝ 1/a²\`.
+
+If this were the whole story, it would be a disaster! Since \`ρ_s\` (∝ 1/a²) decreases more slowly than \`ρ_rad\` (∝ 1/a⁴) and \`ρ_mat\` (∝ 1/a³), the strings would inevitably come to dominate the energy density of the universe. We would live in a universe full of strings, which is not what we observe.
+
+The scaling solution saves the day. The process of loop formation adds an extra layer of complexity. In a scaling network, the characteristic length \`L\` grows in proportion to time \`t\`. In a radiation or matter dominated era, \`t\` is related to \`a\`. This makes the *true* string density in a scaling solution evolve in such a way that the ratio \`ρ_s / ρ_bg\` (where \`ρ_bg\` is the background radiation or matter density) remains **constant**.
+
+This is what the "Energy Density" plot shows. If the network is scaling, the line for string density should be parallel to the line for the background density on the log-log plot, indicating they are decreasing at the same effective rate.`
+        };
+
+        function simpleMarkdownToHtml(md) {
+            return md
+                .replace(/^# (.*$)/gim, '<h3>$1</h3>')
+                .replace(/^## (.*$)/gim, '<h4>$1</h4>')
+                .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+                .replace(/---/g, '<hr>')
+                .replace(/`([^`]+)`/gim, '<code>$1</code>')
+                .split('\n\n').map(p => {
+                    if (p.startsWith('<h') || p.startsWith('<hr>')) return p;
+                    return `<p>${p.replace(/\n/g, ' ')}</p>`;
+                }).join('');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+             document.getElementById('show-theory-btn').addEventListener('click', function() {
+                const contentDiv = document.getElementById('theory-content');
+                if (contentDiv.style.display === 'none') {
+                    contentDiv.innerHTML = simpleMarkdownToHtml(companionMarkdown.theory);
+                    contentDiv.style.display = 'block';
+                    this.textContent = 'Hide Full Physics Exposition';
+                } else {
+                    contentDiv.style.display = 'none';
+                    this.textContent = 'Read the Full Physics Exposition';
+                }
+            });
+            class StringNetworkSimulator {
+                constructor() {
+                    this.canvas = document.getElementById('sim-canvas');
+                    this.ctx = this.canvas.getContext('2d');
+                    this.plotCtx = {
+                        scaling: document.getElementById('scaling-plot-canvas').getContext('2d'),
+                        loops: document.getElementById('loop-plot-canvas').getContext('2d'),
+                        density: document.getElementById('density-plot-canvas').getContext('2d'),
+                    };
+
+                    this.isPlaying = true;
+                    this.simTime = 0;
+                    this.scaleFactor = 1;
+                    this.network = [];
+                    this.history = { L_over_t: [], loop_rate: [], rho_string: [], rho_bg: [] };
+
+                    this.setupUI();
+                    this.reset();
+
+                    this.animate();
+                }
+
+                setupUI() {
+                    this.controls = {
+                        playPause: document.getElementById('play-pause-btn'),
+                        reset: document.getElementById('reset-btn'),
+                        speed: document.getElementById('speed-slider'),
+                        density: document.getElementById('density-slider'),
+                        loopEff: document.getElementById('loop-eff-slider'),
+                        backReaction: document.getElementById('back-reaction-slider'),
+                        expansion: document.getElementById('expansion-select'),
+                    };
+
+                    this.controls.playPause.addEventListener('click', () => {
+                        this.isPlaying = !this.isPlaying;
+                        this.controls.playPause.textContent = this.isPlaying ? 'Pause' : 'Play';
+                    });
+                    this.controls.reset.addEventListener('click', () => this.reset());
+                }
+
+                reset() {
+                    this.simTime = 1; // Start at t=1 to avoid singularities
+                    this.scaleFactor = 1;
+                    this.network = [];
+                    this.history = { L_over_t: [], loop_rate: [], rho_string: [], rho_bg: [] };
+                    this.initializeNetwork();
+                    Object.values(this.plotCtx).forEach(ctx => {
+                        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                    });
+                    if (!this.isPlaying) {
+                        this.draw();
+                        this.drawPlots();
+                    }
+                }
+
+                initializeNetwork() {
+                    const density = this.controls.density.value;
+                    const initialSegments = density * 10;
+                    for (let i = 0; i < initialSegments; i++) {
+                        const p1 = { x: Math.random(), y: Math.random(), z: Math.random(), vx: 0, vy: 0, vz: 0 };
+                        const p2 = { x: Math.random(), y: Math.random(), z: Math.random(), vx: 0, vy: 0, vz: 0 };
+                        this.network.push([p1, p2]);
+                    }
+                }
+
+                project(p) {
+                    const w = this.canvas.width;
+                    const h = this.canvas.height;
+                    const scale = w * 0.3 * this.scaleFactor;
+                    const x = p.x - 0.5;
+                    const y = p.y - 0.5;
+                    const z = p.z - 0.5;
+                    const rotX = x * 0.866 - z * 0.5;
+                    const rotZ = x * 0.5 + z * 0.866;
+                    const rotY = y * 0.866 - rotZ * 0.5;
+                    return {
+                        x: w / 2 + rotX * scale,
+                        y: h / 2 + rotY * scale
+                    };
+                }
+
+                draw() {
+                    this.ctx.fillStyle = '#0d0d20';
+                    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                    const boxSize = this.canvas.width * 0.3 * this.scaleFactor;
+                    this.ctx.strokeStyle = '#444';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeRect(this.canvas.width/2 - boxSize, this.canvas.height/2 - boxSize, 2*boxSize, 2*boxSize);
+
+                    this.ctx.strokeStyle = getComputedStyle(document.body).getPropertyValue('--accent-color');
+                    this.ctx.lineWidth = 1.5;
+                    this.network.forEach(string => {
+                        this.ctx.beginPath();
+                        const p1 = this.project(string[0]);
+                        this.ctx.moveTo(p1.x, p1.y);
+                        const p2 = this.project(string[1]);
+                        this.ctx.lineTo(p2.x, p2.y);
+                        this.ctx.stroke();
+                    });
+                }
+
+                evolve(dt) {
+                    if (this.simTime > 200) { this.isPlaying = false; this.controls.playPause.textContent = 'Play'; return; }
+                    this.simTime += dt;
+                    const expansionModel = this.controls.expansion.value;
+                    if (expansionModel === 'Matter Dominated') {
+                        this.scaleFactor = Math.pow(this.simTime, 2/3);
+                    } else {
+                        this.scaleFactor = Math.pow(this.simTime, 1/2);
+                    }
+
+                    let loopsFormed = 0;
+                    const loopEfficiency = this.controls.loopEff.value;
+                    const interactionThreshold = 0.05 / this.scaleFactor;
+                    const segmentsToRemove = new Set();
+
+                    for (let i = 0; i < this.network.length; i++) {
+                        for (let j = i + 1; j < this.network.length; j++) {
+                            if (segmentsToRemove.has(i) || segmentsToRemove.has(j)) continue;
+                            const p1 = this.network[i][0]; const p2 = this.network[j][0];
+                            const dist = Math.sqrt((p1.x-p2.x)**2 + (p1.y-p2.y)**2 + (p1.z-p2.z)**2);
+                            if (dist < interactionThreshold) {
+                                if (Math.random() < loopEfficiency) {
+                                    loopsFormed++;
+                                    segmentsToRemove.add(Math.random() > 0.5 ? i : j);
+                                }
+                            }
+                        }
+                    }
+                    if(segmentsToRemove.size > 0) {
+                        this.network = this.network.filter((_, i) => !segmentsToRemove.has(i));
+                    }
+
+                    const backReactionStrength = this.controls.backReaction.value * 0.001;
+                    this.network.forEach(string => {
+                        for(let p of string) {
+                            p.vx += (Math.random() - 0.5) * backReactionStrength;
+                            p.vy += (Math.random() - 0.5) * backReactionStrength;
+                            p.vz += (Math.random() - 0.5) * backReactionStrength;
+                            p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+                            p.x = (p.x + 1) % 1; p.y = (p.y + 1) % 1; p.z = (p.z + 1) % 1;
+                        }
+                    });
+
+                    this.updateStatistics(loopsFormed, dt);
+                }
+
+                updateStatistics(loopsFormed, dt) {
+                    const physicalVolume = this.scaleFactor ** 3;
+                    const totalProperLength = this.network.reduce((sum, s) => {
+                        const p1 = s[0], p2 = s[1];
+                        return sum + Math.sqrt((p1.x-p2.x)**2 + (p1.y-p2.y)**2 + (p1.z-p2.z)**2) * this.scaleFactor;
+                    }, 0);
+
+                    const rho_string = totalProperLength / physicalVolume;
+                    const L = (this.network.length > 0) ? Math.sqrt(physicalVolume / totalProperLength) : 0;
+                    const L_over_t = L / this.simTime;
+
+                    const expansionModel = this.controls.expansion.value;
+                    const rho_bg = (expansionModel === 'Matter Dominated') ? (1 / this.scaleFactor**3) : (1 / this.scaleFactor**4);
+
+                    if (this.simTime > 1.1) {
+                        this.history.L_over_t.push({x: this.simTime, y: L_over_t});
+                        this.history.loop_rate.push({x: this.simTime, y: loopsFormed / dt});
+                        this.history.rho_string.push({x: this.scaleFactor, y: rho_string});
+                        this.history.rho_bg.push({x: this.scaleFactor, y: rho_bg});
+                    }
+                    Object.keys(this.history).forEach(key => {
+                        if (this.history[key].length > 250) this.history[key].shift();
+                    });
+                    document.getElementById('scaling-value').textContent = L_over_t.toFixed(3);
+                }
+
+                drawPlots() {
+                    this.drawPlot(this.plotCtx.scaling, this.history.L_over_t, {yLabel: 'L/t', xLabel: 'Time'});
+                    this.drawPlot(this.plotCtx.loops, this.history.loop_rate, {yLabel: 'Loop Rate', xLabel: 'Time'});
+                    this.drawPlot(this.plotCtx.density, [this.history.rho_string, this.history.rho_bg], {
+                        xLabel: 'Scale Factor (a)', yLabel: 'Log(ρ)', isLog: true,
+                        seriesLabels: ['String', 'Background']
+                    });
+                }
+
+                drawPlot(ctx, data, options) {
+                    const { yLabel, xLabel, isLog, seriesLabels } = options;
+                    ctx.fillStyle = '#0d0d20';
+                    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+                    ctx.strokeStyle = '#3c3c5a';
+                    ctx.strokeRect(0,0,ctx.canvas.width, ctx.canvas.height);
+
+                    const plotData = Array.isArray(data) && Array.isArray(data[0]) ? data : [data];
+                    if (plotData.flat().length < 2) return;
+
+                    const w = ctx.canvas.width, h = ctx.canvas.height;
+                    const pad = 35;
+
+                    const xMax = plotData.flat().reduce((max, p) => Math.max(max, p.x), -Infinity);
+                    const xMin = plotData.flat().reduce((min, p) => Math.min(min, p.x), Infinity);
+                    const yMax = plotData.flat().reduce((max, p) => Math.max(max, p.y), -Infinity);
+                    const yMin = isLog ? plotData.flat().reduce((min, p) => p.y > 0 ? Math.min(min, p.y) : min, Infinity) : 0;
+
+                    const mapX = val => map(isLog ? Math.log(val) : val, isLog ? Math.log(xMin) : xMin, isLog ? Math.log(xMax) : xMax, pad, w - pad);
+                    const mapY = val => map(isLog ? Math.log(val) : val, isLog ? Math.log(yMin) : yMin, isLog ? Math.log(yMax) : yMax, h - pad, pad);
+                    const map = (v, min, max, newMin, newMax) => newMin + (v - min) * (newMax - newMin) / (max - min + 1e-9);
+
+                    plotData.forEach((series, idx) => {
+                        ctx.strokeStyle = idx === 0 ? 'var(--accent-color)' : 'var(--secondary-color)';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        series.forEach((p, i) => {
+                            if (!isFinite(p.x) || !isFinite(p.y)) return;
+                            const x = mapX(p.x);
+                            const y = mapY(p.y);
+                            if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                        });
+                        ctx.stroke();
+                    });
+                }
+
+                animate() {
+                    if (this.isPlaying) {
+                        const speed = this.controls.speed.value;
+                        this.evolve(0.01 * speed);
+                        this.draw();
+                        this.drawPlots();
+                    }
+                    requestAnimationFrame(() => this.animate());
+                }
+            }
+            const sim = new StringNetworkSimulator();
+        });
+    </script>
+
+</body>
+</html>
