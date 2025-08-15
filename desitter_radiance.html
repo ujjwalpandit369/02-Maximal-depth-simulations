@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The de Sitter Radiance: Temperature from a Vacuum</title>
+    <style>
+        :root {
+            --bg-color: #0d1b2a;
+            --text-color: #e0e1dd;
+            --primary-color: #778da9;
+            --secondary-color: #415a77;
+            --header-color: #ffffff;
+            --panel-bg: #1b263b;
+            --panel-border: #415a77;
+            --accent-color: #ffc107;
+        }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1em;
+        }
+        .container {
+            max-width: 1400px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            grid-template-areas:
+                "header header"
+                "main-sim controls"
+                "analysis analysis"
+                "deep-dive deep-dive";
+            gap: 1.5rem;
+        }
+        @media (max-width: 1000px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas: "header" "controls" "main-sim" "analysis" "deep-dive";
+            }
+        }
+        header { grid-area: header; text-align: center; }
+        .main-sim { grid-area: main-sim; }
+        .controls-sidebar { grid-area: controls; }
+        .analysis-panels-container { grid-area: analysis; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; }
+        .deep-dive { grid-area: deep-dive; }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 500; }
+        h1 { font-size: 2.2rem; color: var(--primary-color); }
+        h2 { border-bottom: 1px solid var(--secondary-color); padding-bottom: 0.5rem; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            padding: 1.5rem;
+            border: 1px solid var(--panel-border);
+        }
+        .control-group { margin-bottom: 1.5rem; }
+        .control-group label { display: block; margin-bottom: 0.5rem; }
+
+        canvas { width: 100%; height: auto; aspect-ratio: 16/9; background-color: #000; }
+        #detector-readout { font-size: 1.5em; color: var(--accent-color); text-align: center; min-height: 50px; border: 1px dashed var(--secondary-color); padding: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The de Sitter Radiance</h1>
+            <p>An interactive exploration of temperature, entropy, and quantum fields in an accelerating universe.</p>
+        </header>
+
+        <main class="main-sim panel">
+            <h3>First-Person Observer View</h3>
+            <canvas id="main-canvas"></canvas>
+        </main>
+
+        <aside class="controls-sidebar panel">
+            <h2>Observer Controls</h2>
+            <div class="control-group">
+                <label for="hubble-slider">Hubble Parameter (H): <span id="hubble-val">0</span></label>
+                <input type="range" id="hubble-slider" min="0" max="10" step="0.1" value="0">
+            </div>
+            <div class="control-group">
+                <label for="accel-slider">Observer Acceleration (a): <span id="accel-val">0</span></label>
+                <input type="range" id="accel-slider" min="0" max="10" step="0.1" value="0">
+            </div>
+            <hr>
+            <div class="control-group">
+                <label for="detector-select">Detector Model:</label>
+                <select id="detector-select">
+                    <option>Photon Detector</option>
+                    <option>Electron Detector</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Quantum Goggles:</label>
+                <input type="checkbox" id="quantum-goggles"> See Field Perspective
+            </div>
+        </aside>
+
+        <div class="analysis-panels-container">
+            <div class="panel">
+                <h3>Detector Readings</h3>
+                <div id="detector-readout">[ No detections ]</div>
+                <p>Gibbons-Hawking Temp (T<sub>dS</sub>): <span id="tds-temp">0.00</span> K</p>
+                <p>Unruh Temp (T<sub>Unruh</sub>): <span id="tunruh-temp">0.00</span> K</p>
+            </div>
+            <div class="panel">
+                <h3>Blackbody Spectrum</h3>
+                <canvas id="spectrum-canvas" style="aspect-ratio: 4/3;"></canvas>
+            </div>
+            <div class="panel">
+                <h3>Horizon Entropy</h3>
+                <p>Horizon Area: <span id="horizon-area">0</span></p>
+                <p>de Sitter Entropy (S<sub>dS</sub>): <span id="sds-entropy">0</span></p>
+            </div>
+        </div>
+
+        <div class="deep-dive panel">
+            <h2>The Physics of Spacetime's Glow</h2>
+            <article>
+                <h3>Part A: The Unruh Effect Analogy</h3>
+                <p>A shocking prediction of quantum field theory is that an observer undergoing constant acceleration 'a' will perceive the empty vacuum of flat spacetime as a thermal bath of particles with a temperature T = ħa / (2πck_B). This is the Unruh effect. It arises because the concept of a "particle" is observer-dependent. An accelerating observer's notion of time is different from an inertial observer's. Their coordinate system (called Rindler coordinates) has a horizon—a boundary beyond which light cannot reach them. The quantum vacuum state, which looks empty to an inertial observer, is a superposition of many excited particle states from the perspective of the accelerating observer. The detector is constantly being buffeted by these vacuum fluctuations, and the horizon prevents the "other half" of a virtual pair from recombining, promoting it to a real particle. The result is a perfect thermal, blackbody glow, purely as a result of acceleration.</p>
+            </article>
+            <article>
+                <h3>Part B: The Gibbons-Hawking Temperature</h3>
+                <p>The de Sitter universe (a universe dominated by a cosmological constant, Λ) is a universe that is expanding exponentially. An observer in such a universe is surrounded by a cosmological horizon—a spherical boundary beyond which the expansion of space is so fast that light can never reach the observer. In 1977, Gibbons and Hawking showed that this cosmological horizon is physically analogous to the Rindler horizon of an accelerating observer. Just as the Rindler horizon prevents virtual particles from recombining, so does the cosmological horizon. From the perspective of the inertial observer at the center, virtual particles are constantly being separated by the horizon. One falls beyond the boundary, lost forever, while the other is promoted to a real particle and flies towards the observer. The result is that even an "empty" de Sitter universe is filled with a thermal bath of radiation at the Gibbons-Hawking temperature, T_dS = ħH / (2πk_B), where H is the Hubble expansion rate. The universe itself glows.</p>
+            </article>
+            <article>
+                <h3>Part C: de Sitter Entropy</h3>
+                <p>Thermodynamics tells us that any object with a temperature must also have entropy. If the de Sitter horizon has a temperature, it must have entropy. The Bekenstein-Hawking formula states that this entropy is proportional to the area of the horizon: S = Area / (4Għ). This is a profound result. Entropy is a measure of microscopic degrees of freedom. The fact that the entropy of a region of empty spacetime is finite and depends on its boundary area, not its volume, is a deep clue about the nature of quantum gravity. It suggests that the fundamental degrees of freedom of spacetime itself may live on surfaces, a concept known as the holographic principle.</p>
+            </article>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const canvas = document.getElementById('main-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let horizonRadius = Infinity;
+        let temperature = 0;
+
+        class Particle {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type; // 'virtual', 'real'
+                this.lifetime = type === 'virtual' ? 20 + Math.random() * 50 : 1000;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.partner = null;
+            }
+
+            update() {
+                this.lifetime--;
+                if (this.type === 'real') {
+                    // Move towards center
+                    const dx = canvas.width / 2 - this.x;
+                    const dy = canvas.height / 2 - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist > 1) {
+                       this.x += (dx / dist) * 2;
+                       this.y += (dy / dist) * 2;
+                    }
+                } else {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                }
+            }
+
+            draw() {
+                ctx.fillStyle = this.type === 'real' ? 'yellow' : 'rgba(100, 100, 200, 0.5)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.type === 'real' ? 3 : 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function spawnVirtualPairs() {
+            // Spawn rate depends on temperature, simplified
+            if (Math.random() < 0.5) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const p1 = new Particle(x, y, 'virtual');
+                const p2 = new Particle(x + 5, y, 'virtual');
+                p1.partner = p2;
+                p2.partner = p1;
+                particles.push(p1, p2);
+            }
+        }
+
+        function checkHorizonSeparation() {
+            particles.forEach(p => {
+                if (p.type !== 'virtual' || !p.partner) return;
+
+                const dist_p = Math.hypot(p.x - canvas.width/2, p.y - canvas.height/2);
+                const dist_partner = Math.hypot(p.partner.x - canvas.width/2, p.partner.y - canvas.height/2);
+
+                if ((dist_p < horizonRadius && dist_partner > horizonRadius) || (dist_p > horizonRadius && dist_partner < horizonRadius)) {
+                    // Promote the one inside to a real particle
+                    const insider = dist_p < horizonRadius ? p : p.partner;
+                    const outsider = dist_p > horizonRadius ? p : p.partner;
+
+                    insider.type = 'real';
+                    insider.partner = null;
+                    outsider.lifetime = 0; // Mark for deletion
+                }
+            });
+        }
+
+        // --- Physics Calculations & Controls ---
+        let simParams = { H: 0, a: 0, quantumView: false };
+
+        function calculateTemperatures() {
+            // Using simplified units where ħ=c=k_B=1
+            const T_dS = simParams.H / (2 * Math.PI);
+            const T_Unruh = simParams.a / (2 * Math.PI);
+
+            document.getElementById('tds-temp').textContent = T_dS.toFixed(3);
+            document.getElementById('tunruh-temp').textContent = T_Unruh.toFixed(3);
+
+            temperature = Math.max(T_dS, T_Unruh);
+
+            if (temperature > 0.01) {
+                horizonRadius = (canvas.width / 2) / (temperature * 5);
+            } else {
+                horizonRadius = Infinity;
+            }
+        }
+
+        function simulationLoop() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Horizon
+            if (isFinite(horizonRadius)) {
+                ctx.strokeStyle = 'rgba(255, 100, 100, 0.5)';
+                ctx.beginPath();
+                ctx.arc(canvas.width/2, canvas.height/2, horizonRadius, 0, 2*Math.PI);
+                ctx.stroke();
+            }
+
+            // Spawn rate proportional to temperature
+            for(let i=0; i < temperature * 5; i++) {
+                spawnVirtualPairs();
+            }
+
+            particles = particles.filter(p => p.lifetime > 0);
+            checkHorizonSeparation();
+            particles.forEach(p => {
+                p.update();
+                p.draw();
+
+                const distToCenter = Math.hypot(p.x - canvas.width/2, p.y - canvas.height/2);
+                if(p.type === 'real' && distToCenter < 10) {
+                    p.lifetime = 0; // remove particle
+                    document.getElementById('detector-readout').textContent = 'CLICK!';
+                    setTimeout(() => document.getElementById('detector-readout').textContent = '[ No detections ]', 200);
+                }
+            });
+
+            requestAnimationFrame(simulationLoop);
+        }
+
+        // --- Analysis Panels ---
+        const spectrumCanvas = document.getElementById('spectrum-canvas');
+        const spectrumCtx = spectrumCanvas.getContext('2d');
+
+        function drawBlackbodyPlot(T) {
+            spectrumCtx.fillStyle = 'black';
+            spectrumCtx.fillRect(0,0,spectrumCanvas.width, spectrumCanvas.height);
+            if (T < 0.01) return;
+
+            function planck(lambda, T) {
+                // Simplified constants
+                return 1 / (Math.pow(lambda, 5) * (Math.exp(1 / (lambda * T)) - 1));
+            }
+
+            spectrumCtx.strokeStyle = 'yellow';
+            spectrumCtx.beginPath();
+            let max_B = 0;
+            for(let l=0.1; l<10; l+=0.1) {
+                 max_B = Math.max(max_B, planck(l,T));
+            }
+
+            for(let l=0.1; l<10; l+=0.1) {
+                const B = planck(l, T);
+                const x = (l / 10) * spectrumCanvas.width;
+                const y = spectrumCanvas.height - (B / max_B) * spectrumCanvas.height * 0.9;
+                if(l===0.1) spectrumCtx.moveTo(x,y);
+                else spectrumCtx.lineTo(x,y);
+            }
+            spectrumCtx.stroke();
+        }
+
+
+        // --- Physics Calculations & Controls ---
+        let simParams = { H: 0, a: 0, quantumView: false };
+
+        function calculateTemperatures() {
+            // Using simplified units where ħ=c=k_B=1
+            const T_dS = simParams.H / (2 * Math.PI);
+            const T_Unruh = simParams.a / (2 * Math.PI);
+
+            document.getElementById('tds-temp').textContent = T_dS.toFixed(3);
+            document.getElementById('tunruh-temp').textContent = T_Unruh.toFixed(3);
+
+            temperature = Math.max(T_dS, T_Unruh);
+
+            if (temperature > 0.01) {
+                horizonRadius = (canvas.width / 2) / (temperature * 5);
+                const area = Math.PI * horizonRadius * horizonRadius;
+                const entropy = area / 4; // S = A/4Għ
+                document.getElementById('horizon-area').textContent = area.toExponential(2);
+                document.getElementById('sds-entropy').textContent = entropy.toExponential(2);
+            } else {
+                horizonRadius = Infinity;
+                document.getElementById('horizon-area').textContent = 'Infinite';
+                document.getElementById('sds-entropy').textContent = 'Infinite';
+            }
+
+            drawBlackbodyPlot(temperature);
+        }
+
+        function init() {
+            console.log("de Sitter Radiance Initialized");
+
+            // Listeners
+            const hubbleSlider = document.getElementById('hubble-slider');
+            hubbleSlider.addEventListener('input', (e) => {
+                simParams.H = parseFloat(e.target.value);
+                document.getElementById('hubble-val').textContent = simParams.H.toFixed(1);
+                calculateTemperatures();
+            });
+
+            const accelSlider = document.getElementById('accel-slider');
+            accelSlider.addEventListener('input', (e) => {
+                simParams.a = parseFloat(e.target.value);
+                document.getElementById('accel-val').textContent = simParams.a.toFixed(1);
+                calculateTemperatures();
+            });
+
+            calculateTemperatures();
+            simulationLoop();
+        }
+
+        init();
+    });
+    </script>
+</body>
+</html>
