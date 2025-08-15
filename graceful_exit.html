@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Graceful Exit: Ending Inflation and Reheating the Universe</title>
+    <style>
+        body { font-family: sans-serif; background-color: #111; color: #eee; }
+        .container { max-width: 1200px; margin: auto; padding: 20px; }
+        .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .sim-area, .data-area { background-color: #222; padding: 20px; border-radius: 8px; }
+        canvas { background-color: #000; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The Graceful Exit: Ending Inflation and Reheating the Universe</h1>
+        <div class="main-layout">
+            <div class="sim-area">
+                <h2>Inflaton Potential V(φ)</h2>
+                <canvas id="potential-canvas" width="550" height="400"></canvas>
+                <h3>Controls</h3>
+                <!-- Controls will be added here -->
+            </div>
+            <div class="data-area">
+                <h2>Universe Data</h2>
+                <div id="inflaton-log"></div>
+                <div id="energy-budget"></div>
+                <div id="temperature-plot"></div>
+                 <div id="hubble-plot"></div>
+            </div>
+        </div>
+        <div class="theory-section">
+            <h2>The Physics of Reheating</h2>
+            <div id="theory-content">
+                <h3>Part A: The Inflaton Field</h3>
+                <p>The <strong>inflaton</strong> is a hypothetical scalar field that drives cosmic inflation. Its key feature is its potential energy, V(φ). When the inflaton field is on a flat part of its potential, its energy density is nearly constant, causing the universe to expand exponentially. This is the "slow-roll" phase. The shape of the potential determines the properties of inflation and the primordial fluctuations that seed large-scale structure.</p>
+
+                <h3>Part B: The Graceful Exit Problem</h3>
+                <p>A crucial challenge for any inflationary model is the <strong>graceful exit problem</strong>: how to end inflation smoothly and transition to the hot, radiation-dominated universe of the standard Big Bang. If inflation doesn't end, the universe remains empty and cold. If it ends chaotically, it can produce inhomogeneities larger than those observed. Slow-roll models solve this by having the inflaton roll off the flat plateau into a steep "waterfall" region, bringing inflation to a swift end everywhere.</p>
+
+                <h3>Part C: Reheating Dynamics</h3>
+                <p>After inflation, the universe is cold and empty. The inflaton field, now oscillating at the bottom of its potential, contains all the energy of the universe. <strong>Reheating</strong> is the process of transferring this energy to Standard Model particles. In the simplest models, the inflaton couples to other fields, causing it to decay, much like a radioactive particle. These decays produce a hot, thermal plasma, which is the starting point of the conventional Big Bang cosmology. The efficiency of this process is governed by the coupling strength Γ.</p>
+            </div>
+        </div>
+        <div class="advanced-section">
+            <h2>Maximal Depth: Advanced Topics</h2>
+            <div id="advanced-content">
+                <h4>Preheating and Parametric Resonance</h4>
+                <p>If the inflaton couples strongly to other fields, reheating can be much more explosive than the simple decay model suggests. The coherent oscillations of the inflaton field can act as a classical background that resonantly amplifies quantum fluctuations of other fields. This process, called <strong>preheating</strong>, is a form of parametric resonance. It can lead to a very rapid and violent transfer of energy, a "lumpy" distribution of matter in the very early universe, and potentially the production of exotic relics like primordial black holes.</p>
+
+                <h4>The Cosmological Constant and False Vacua</h4>
+                <p>If the minimum of the inflaton potential V(φ) is not exactly zero, the universe will be left with a residual vacuum energy after reheating. This energy would behave like a cosmological constant, causing the expansion of the universe to accelerate again at late times. This is a leading explanation for the <strong>dark energy</strong> we observe today. Furthermore, if the potential has multiple minima, the inflaton could get trapped in a "false vacuum"—a local minimum with a higher energy than the true vacuum. Our universe would then be stuck in a de Sitter phase, unable to form structures. Escape from a false vacuum is possible via quantum tunneling, a process that would create a "bubble" of the true vacuum that expands at the speed of light.</p>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const potentialCanvas = document.getElementById('potential-canvas');
+            const pCtx = potentialCanvas.getContext('2d');
+
+            let potentialControlPoints = [
+                { x: 50, y: 100 }, { x: 150, y: 80 }, { x: 250, y: 75 },
+                { x: 350, y: 200 }, { x: 450, y: 350 }, { x: 500, y: 300 }
+            ];
+            let inflaton_phi = 50; // Inflaton field value
+            let inflaton_pi = 0;   // Inflaton field momentum
+            let temperature = 0;
+            let energy_potential = 0, energy_kinetic = 0, energy_radiation = 0;
+            let hubble = 0;
+
+            let coupling_gamma = 0.01;
+            let isRunning = false;
+
+            function drawPotential() {
+                pCtx.clearRect(0, 0, potentialCanvas.width, potentialCanvas.height);
+                pCtx.strokeStyle = '#6a7dff';
+                pCtx.lineWidth = 3;
+                pCtx.beginPath();
+                pCtx.moveTo(potentialControlPoints[0].x, potentialControlPoints[0].y);
+                for (let i = 0; i < potentialControlPoints.length - 1; i++) {
+                    const xc = (potentialControlPoints[i].x + potentialControlPoints[i+1].x) / 2;
+                    const yc = (potentialControlPoints[i].y + potentialControlPoints[i+1].y) / 2;
+                    pCtx.quadraticCurveTo(potentialControlPoints[i].x, potentialControlPoints[i].y, xc, yc);
+                }
+                pCtx.stroke();
+
+                // Draw inflaton ball
+                const V_phi = getPotential(inflaton_phi);
+                pCtx.fillStyle = '#ff6a7d';
+                pCtx.beginPath();
+                pCtx.arc(inflaton_phi, V_phi, 8, 0, 2 * Math.PI);
+                pCtx.fill();
+            }
+
+            function getPotential(phi) {
+                // Simple interpolation for now
+                for (let i = 0; i < potentialControlPoints.length - 1; i++) {
+                    if (phi >= potentialControlPoints[i].x && phi <= potentialControlPoints[i+1].x) {
+                        const t = (phi - potentialControlPoints[i].x) / (potentialControlPoints[i+1].x - potentialControlPoints[i].x);
+                        return potentialControlPoints[i].y * (1 - t) + potentialControlPoints[i+1].y * t;
+                    }
+                }
+                return potentialControlPoints[potentialControlPoints.length - 1].y;
+            }
+
+            function getPotentialDerivative(phi) {
+                const V_plus = getPotential(phi + 0.5);
+                const V_minus = getPotential(phi - 0.5);
+                return (V_plus - V_minus);
+            }
+
+            function update(dt) {
+                if (!isRunning) return;
+
+                const V_phi = getPotential(inflaton_phi);
+                const dV_dphi = getPotentialDerivative(inflaton_phi);
+
+                // Friedmann equation for H
+                energy_potential = V_phi;
+                energy_kinetic = 0.5 * inflaton_pi * inflaton_pi;
+                hubble = Math.sqrt((energy_potential + energy_kinetic + energy_radiation) / 3.0);
+
+                // Inflaton equation of motion
+                const acceleration = -3 * hubble * inflaton_pi - dV_dphi - coupling_gamma * inflaton_pi;
+                inflaton_pi += acceleration * dt;
+                inflaton_phi += inflaton_pi * dt;
+
+                // Reheating
+                const reheating_rate = coupling_gamma * inflaton_pi * inflaton_pi;
+                energy_radiation += reheating_rate * dt;
+                temperature = Math.pow(energy_radiation, 0.25);
+
+                // Update log and plots
+                updateDataPanels();
+            }
+
+            function updateDataPanels() {
+                const log = document.getElementById('inflaton-log');
+                const V = getPotential(inflaton_phi);
+                const V_prime = getPotentialDerivative(inflaton_phi);
+                const V_double_prime = (getPotentialDerivative(inflaton_phi + 0.5) - getPotentialDerivative(inflaton_phi-0.5));
+
+                const epsilon = 0.5 * (V_prime / V)**2;
+                const eta = V_double_prime / V;
+
+                let status = "";
+                if (epsilon < 1 && eta < 1) {
+                    status = "Slow-roll inflation";
+                } else if (Math.abs(inflaton_pi) > 1) {
+                    status = "Waterfall / Reheating";
+                } else {
+                    status = "Oscillating";
+                }
+                log.innerHTML = `<p>Status: ${status}</p><p>ε ≈ ${epsilon.toFixed(3)}</p><p>η ≈ ${eta.toFixed(3)}</p>`;
+
+                // Update energy pie chart
+                const total_energy = energy_potential + energy_kinetic + energy_radiation;
+                const p_pot = (energy_potential / total_energy) * 100;
+                const p_kin = (energy_kinetic / total_energy) * 100;
+                const p_rad = (energy_radiation / total_energy) * 100;
+                document.getElementById('energy-budget').innerHTML = `
+                    <h4>Energy Budget</h4>
+                    <p>Potential: ${p_pot.toFixed(1)}%</p>
+                    <p>Kinetic: ${p_kin.toFixed(1)}%</p>
+                    <p>Radiation: ${p_rad.toFixed(1)}%</p>
+                `;
+
+                // Update plots (simplified for now)
+                document.getElementById('temperature-plot').innerHTML = `<h4>Temperature</h4><p>${temperature.toFixed(2)}</p>`;
+                document.getElementById('hubble-plot').innerHTML = `<h4>Hubble Parameter</h4><p>${hubble.toFixed(2)}</p>`;
+            }
+
+            function animate() {
+                if (!isRunning) return;
+                update(0.1);
+                drawPotential();
+                requestAnimationFrame(animate);
+            }
+
+            // Basic controls
+            const controlsDiv = document.querySelector('.sim-area h3').parentElement;
+            const startBtn = document.createElement('button');
+            startBtn.textContent = 'Start';
+            startBtn.onclick = () => { isRunning = true; animate(); };
+            const stopBtn = document.createElement('button');
+            stopBtn.textContent = 'Stop';
+            stopBtn.onclick = () => { isRunning = false; };
+            const resetBtn = document.createElement('button');
+            resetBtn.textContent = 'Reset';
+            resetBtn.onclick = () => {
+                isRunning = false;
+                inflaton_phi = 50;
+                inflaton_pi = 0;
+                temperature = 0;
+                energy_radiation = 0;
+                drawPotential();
+                updateDataPanels();
+            };
+            controlsDiv.append(startBtn, stopBtn, resetBtn);
+
+            drawPotential();
+            updateDataPanels();
+        });
+    </script>
+</body>
+</html>
