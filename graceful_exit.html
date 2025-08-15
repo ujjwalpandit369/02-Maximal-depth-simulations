@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Graceful Exit: Ending Inflation</title>
+    <style>
+        :root {
+            --bg-color: #2d3436;
+            --text-color: #dfe6e9;
+            --primary-color: #00b894;
+            --secondary-color: #6c5ce7;
+            --header-color: #ffffff;
+            --panel-bg: #636e72;
+            --panel-border: #b2bec3;
+        }
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1em;
+        }
+        .container {
+            max-width: 1400px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 1.5rem;
+        }
+        header { text-align: center; grid-column: 1 / -1; }
+        .main-content { display: grid; grid-template-rows: auto 1fr; gap: 1rem; }
+        .plots-container { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+        h1, h2, h3 { color: var(--header-color); }
+        h1 { color: var(--primary-color); }
+        h2 { border-bottom: 1px solid var(--secondary-color); padding-bottom: 0.5rem; }
+
+        .panel { background-color: var(--panel-bg); padding: 1.5rem; border-radius: 5px; }
+        .control-group { margin-bottom: 1rem; }
+        .control-group label { display: block; margin-bottom: 0.5rem; }
+
+        canvas { width: 100%; height: auto; background-color: #000; border: 1px solid var(--panel-border); }
+        #potential-canvas { aspect-ratio: 2/1; cursor: grab; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Graceful Exit</h1>
+            <p>Simulating the end of inflation and the reheating of the universe.</p>
+        </header>
+
+        <main class="main-content panel">
+            <h2>Inflaton Potential V(φ)</h2>
+            <canvas id="potential-canvas"></canvas>
+            <div id="inflaton-log" style="min-height: 50px;">Log messages will appear here...</div>
+        </main>
+
+        <aside class="controls-sidebar panel">
+            <h2>Controls</h2>
+            <div class="control-group">
+                <label>Inflaton Starting Position (φ_initial)</label>
+                <input type="range" id="phi-start-slider" min="0" max="100" value="10">
+            </div>
+            <div class="control-group">
+                <label>Inflaton-Matter Coupling (Γ)</label>
+                <input type="range" id="coupling-slider" min="0" max="1" step="0.01" value="0.1">
+            </div>
+            <hr>
+            <h3>Maximal Depth Features</h3>
+            <div class="control-group">
+                <label for="preheating-toggle">Enable Preheating</label>
+                <input type="checkbox" id="preheating-toggle">
+            </div>
+            <div class="control-group">
+                <label for="tunneling-toggle">Enable Quantum Tunneling</label>
+                <input type="checkbox" id="tunneling-toggle">
+            </div>
+            <hr>
+            <button id="start-sim-btn">Start Simulation</button>
+            <button id="reset-sim-btn">Reset</button>
+        </aside>
+
+        <div class="plots-container" style="grid-column: 1 / -1;">
+            <div class="panel">
+                <h3>Energy Budget</h3>
+                <canvas id="energy-pie-canvas" style="aspect-ratio: 1;"></canvas>
+            </div>
+            <div class="panel">
+                <h3>Thermodynamics</h3>
+                <canvas id="thermo-plot-canvas" style="aspect-ratio: 1;"></canvas>
+            </div>
+        </div>
+
+        <div class="deep-dive panel" style="grid-column: 1 / -1;">
+            <h2>The Physics of Reheating</h2>
+            <article>
+                <h3>Part A: The Inflaton Field</h3>
+                <p>Inflation, the theory of exponential expansion in the very early universe, is driven by a hypothetical scalar field called the "inflaton" (φ). The key idea is that the energy density of the universe was dominated by the *potential energy* V(φ) of this field. If the potential is very flat, the field "slow-rolls" down it, behaving like a cosmological constant and causing spacetime to expand exponentially. This simulation lets you design V(φ) and see how its shape dictates the universe's evolution.</p>
+            </article>
+            <article>
+                <h3>Part B: The Graceful Exit Problem</h3>
+                <p>A major challenge for early models of inflation was how to end it. If inflation goes on forever, it doesn't create the universe we see. The "graceful exit" problem is the challenge of getting the inflaton to stop slow-rolling and settle into a minimum value, converting its energy into particles. Modern potentials, like the ones you can design here, solve this by having a "waterfall" region where the potential becomes very steep, causing the inflaton to accelerate, end the slow-roll phase, and begin oscillating around its minimum.</p>
+            </article>
+            <article>
+                <h3>Part C: Reheating Dynamics</h3>
+                <p>After inflation, the universe is vast, cold, and empty, with all its energy locked in the oscillating inflaton field. Reheating is the process of converting this energy into the hot soup of Standard Model particles we associate with the Big Bang. In the simplest models (perturbative reheating), the inflaton's oscillations decay into other particles, much like a radioactive atom decays. The strength of this decay is governed by the coupling constant Γ, which you can control. A larger Γ leads to faster, more efficient reheating and a higher final "reheat temperature."</p>
+            </article>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const potentialCanvas = document.getElementById('potential-canvas');
+        const ctx = potentialCanvas.getContext('2d');
+
+        let potentialPoints = [
+            { x: 0, y: 150 }, { x: 50, y: 140 }, { x: 150, y: 130 },
+            { x: 250, y: 125 }, { x: 350, y: 120 }, { x: 450, y: 50 },
+            { x: 500, y: 250 }, { x: 550, y: 100 }, { x: 600, y: 200 }
+        ];
+
+        let selectedPoint = null;
+        let needsRedraw = true;
+
+        function drawPotential() {
+            if (!needsRedraw) return;
+
+            const w = potentialCanvas.width;
+            const h = potentialCanvas.height;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0,0,w,h);
+
+            // Draw the curve
+            ctx.strokeStyle = 'var(--primary-color)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(potentialPoints[0].x, potentialPoints[0].y);
+            for(let i=1; i<potentialPoints.length; i++) {
+                // Using quadratic curve for smoothness
+                const xc = (potentialPoints[i].x + potentialPoints[i-1].x) / 2;
+                const yc = (potentialPoints[i].y + potentialPoints[i-1].y) / 2;
+                ctx.quadraticCurveTo(potentialPoints[i-1].x, potentialPoints[i-1].y, xc, yc);
+            }
+            ctx.stroke();
+
+            // Draw control points
+            potentialPoints.forEach((p, i) => {
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 8, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.fillStyle = 'var(--secondary-color)';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI);
+                ctx.fill();
+            });
+
+            needsRedraw = false;
+        }
+
+        potentialCanvas.addEventListener('mousedown', e => {
+            const rect = potentialCanvas.getBoundingClientRect();
+            const mouseX = (e.clientX - rect.left) * (potentialCanvas.width / rect.width);
+            const mouseY = (e.clientY - rect.top) * (potentialCanvas.height / rect.height);
+
+            for(let i=0; i<potentialPoints.length; i++) {
+                const p = potentialPoints[i];
+                const dist = Math.hypot(mouseX - p.x, mouseY - p.y);
+                if (dist < 10) {
+                    selectedPoint = i;
+                    potentialCanvas.style.cursor = 'grabbing';
+                    return;
+                }
+            }
+        });
+
+        potentialCanvas.addEventListener('mousemove', e => {
+            if (selectedPoint === null) return;
+            const rect = potentialCanvas.getBoundingClientRect();
+            const mouseY = (e.clientY - rect.top) * (potentialCanvas.height / rect.height);
+            potentialPoints[selectedPoint].y = mouseY;
+            needsRedraw = true;
+        });
+
+        potentialCanvas.addEventListener('mouseup', () => {
+            selectedPoint = null;
+            potentialCanvas.style.cursor = 'grab';
+        });
+
+        // --- Simulation Engine ---
+        let simState = {
+            running: false,
+            phi: 0,
+            phi_dot: 0,
+            rho_radiation: 0,
+            H: 0,
+            time: 0,
+            dt: 0.1
+        };
+
+        function getPotentialValue(x) {
+            // Simplified: find closest segment and linearly interpolate
+            for(let i=0; i<potentialPoints.length-1; i++) {
+                if(x >= potentialPoints[i].x && x < potentialPoints[i+1].x) {
+                    const p1 = potentialPoints[i];
+                    const p2 = potentialPoints[i+1];
+                    const t = (x - p1.x) / (p2.x - p1.x);
+                    return p1.y * (1-t) + p2.y * t;
+                }
+            }
+            return potentialPoints[potentialPoints.length-1].y;
+        }
+
+        function getPotentialGradient(x) {
+            const V_plus = getPotentialValue(x + 0.1);
+            const V_minus = getPotentialValue(x - 0.1);
+            return (V_plus - V_minus) / 0.2;
+        }
+
+        function updateSimulation() {
+            if (!simState.running) return;
+
+            const V = getPotentialValue(simState.phi);
+            const V_prime = getPotentialGradient(simState.phi);
+            const rho_inflaton = 0.5 * simState.phi_dot * simState.phi_dot + V;
+            const rho_total = rho_inflaton + simState.rho_radiation;
+
+            simState.H = Math.sqrt(rho_total / 3); // Simplified Friedmann eq.
+            const Gamma = parseFloat(document.getElementById('coupling-slider').value);
+
+            // Eq. of motion: phi'' + (3H + Gamma)phi' + V' = 0
+            const phi_ddot = - (3 * simState.H + Gamma) * simState.phi_dot - V_prime;
+
+            simState.phi_dot += phi_ddot * simState.dt;
+            simState.phi += simState.phi_dot * simState.dt;
+
+            // Reheating: d(rho_rad)/dt = Gamma * phi_dot^2
+            let reheating_rate = Gamma * simState.phi_dot * simState.phi_dot;
+
+            // Preheating
+            if (document.getElementById('preheating-toggle').checked) {
+                const preheating_term = 0.1 * Math.sin(simState.phi * 0.1) * simState.rho_radiation;
+                reheating_rate += preheating_term;
+            }
+
+            simState.rho_radiation += reheating_rate * simState.dt;
+
+
+            // False Vacuum Trapping & Quantum Tunneling
+            if (document.getElementById('tunneling-toggle').checked) {
+                const isTrapped = checkForFalseVacuum();
+                if (isTrapped) {
+                    const tunnelProbability = Math.exp(-simState.phi); // Simplified
+                    if (Math.random() < tunnelProbability) {
+                        simState.phi += 50; // Tunnel through the barrier
+                    }
+                }
+            }
+
+
+            simState.time += simState.dt;
+        }
+
+        function checkForFalseVacuum() {
+            const V = getPotentialValue(simState.phi);
+            const V_prime = getPotentialGradient(simState.phi);
+            const V_double_prime = (getPotentialGradient(simState.phi + 0.1) - V_prime) / 0.1;
+
+            // Condition for a local minimum (trap)
+            if (Math.abs(V_prime) < 0.1 && V_double_prime > 0) {
+                // Check if there is a lower minimum elsewhere
+                const globalMin = Math.min(...potentialPoints.map(p => p.y));
+                if (V > globalMin + 10) { // +10 for some tolerance
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function drawInflatonBall() {
+            const V = getPotentialValue(simState.phi);
+            ctx.fillStyle = 'red';
+            ctx.beginPath();
+            ctx.arc(simState.phi, V, 10, 0, 2*Math.PI);
+            ctx.fill();
+        }
+
+        // --- Visualization & Data Panels ---
+        const energyCanvas = document.getElementById('energy-pie-canvas');
+        const energyCtx = energyCanvas.getContext('2d');
+        const thermoCanvas = document.getElementById('thermo-plot-canvas');
+        const thermoCtx = thermoCanvas.getContext('2d');
+        let history = [];
+
+        function drawEnergyPie() {
+            const V = getPotentialValue(simState.phi);
+            const K = 0.5 * simState.phi_dot * simState.phi_dot;
+            const R = simState.rho_radiation;
+            const total = V + K + R;
+            if (total < 1e-3) return;
+
+            energyCtx.clearRect(0,0,energyCanvas.width, energyCanvas.height);
+            let startAngle = -Math.PI/2;
+
+            // Inflaton Potential
+            let slice = (V/total) * 2 * Math.PI;
+            energyCtx.fillStyle = '#6c5ce7';
+            energyCtx.beginPath();
+            energyCtx.moveTo(150,150);
+            energyCtx.arc(150,150,100,startAngle, startAngle+slice);
+            energyCtx.closePath();
+            energyCtx.fill();
+            startAngle += slice;
+
+            // Radiation
+            slice = (R/total) * 2 * Math.PI;
+            energyCtx.fillStyle = '#fd79a8';
+            energyCtx.beginPath();
+            energyCtx.moveTo(150,150);
+            energyCtx.arc(150,150,100,startAngle, startAngle+slice);
+            energyCtx.closePath();
+            energyCtx.fill();
+        }
+
+        function updateInflatonLog() {
+            const V = getPotentialValue(simState.phi);
+            const V_prime = getPotentialGradient(simState.phi);
+            const epsilon = 0.5 * Math.pow(V_prime / V, 2);
+            let status = "Oscillating/Reheating";
+            if (epsilon < 1 && Math.abs(simState.phi_dot) > 1) {
+                status = "Slow-roll Inflation";
+            } else if (Math.abs(simState.phi_dot) > 50) {
+                 status = "Waterfall / End of Inflation";
+            }
+            document.getElementById('inflaton-log').textContent = `Status: ${status} | H: ${simState.H.toFixed(2)}`;
+        }
+
+        function mainLoop() {
+            if(simState.running) {
+                updateSimulation();
+                drawEnergyPie();
+                updateInflatonLog();
+            }
+            needsRedraw = true; // Force potential to be redrawn every frame
+            drawPotential();
+            if (simState.running) {
+                drawInflatonBall();
+            }
+            requestAnimationFrame(mainLoop);
+        }
+
+        function init() {
+            // Set canvas size based on its display size
+            const rect = potentialCanvas.getBoundingClientRect();
+            potentialCanvas.width = rect.width;
+            potentialCanvas.height = rect.height;
+
+            document.getElementById('start-sim-btn').addEventListener('click', () => {
+                simState.phi = parseFloat(document.getElementById('phi-start-slider').value) * (potentialCanvas.width/100);
+                simState.phi_dot = 0;
+                simState.rho_radiation = 0;
+                simState.running = true;
+            });
+
+            document.getElementById('reset-sim-btn').addEventListener('click', () => {
+                simState.running = false;
+                needsRedraw = true;
+            });
+
+            console.log("Graceful Exit Initialized");
+            mainLoop();
+        }
+
+        init();
+    });
+    </script>
+</body>
+</html>
