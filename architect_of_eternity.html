@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Architect of Eternity: A de Sitter Universe Designer</title>
+    <style>
+        body { font-family: 'Helvetica Neue', sans-serif; background-color: #000; color: #fff; }
+        .container { max-width: 1600px; margin: auto; padding: 20px; }
+        h1 { text-align: center; color: #ff6a7d; }
+        .master-dashboard { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+        .control-panel, .display-panel { background-color: #1a1a2a; border: 1px solid #3a3a4a; border-radius: 10px; padding: 15px; }
+        .control-panel { grid-column: 1 / 2; }
+        .display-panel { background-color: #111; }
+        canvas { width: 100%; height: auto; background-color: #000; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>The Architect of Eternity: A de Sitter Universe Designer</h1>
+        <div class="master-dashboard">
+            <div class="control-panel">
+                <h2>Cosmology Control Panel</h2>
+                <!-- All controls will go here -->
+            </div>
+            <div class="display-panel" id="3d-view">
+                <h3>3D Universe Evolution</h3>
+                <canvas id="3d-canvas"></canvas>
+            </div>
+            <div class="display-panel" id="penrose-diagram">
+                <h3>Penrose Diagram</h3>
+                <canvas id="penrose-canvas"></canvas>
+            </div>
+            <div class="display-panel" id="energy-chart">
+                <h3>Energy Density</h3>
+                <canvas id="energy-canvas"></canvas>
+            </div>
+            <div class="display-panel" id="cmb-map">
+                <h3>CMB Map</h3>
+                <canvas id="cmb-canvas"></canvas>
+            </div>
+            <div class="display-panel" id="narrative-panel" style="grid-column: 1 / 3;">
+                <h3>The Cosmic Story</h3>
+            <div id="cosmic-story-content">Your universe's story will be written here.</div>
+            </div>
+            <div class="display-panel" id="encyclopedia-panel" style="grid-column: 3 / 5;">
+            <h3>The Universal Laws & Maximal Depth</h3>
+            <div id="universal-laws-content">
+                 <h4>String Theory Landscape</h4>
+                 <p>Instead of a single potential, string theory predicts a vast "landscape" of possible vacuums, each with its own cosmological constant. Our universe may have started in a high-energy vacuum and then "tunneled" to our current low-energy state. This is a leading explanation for the smallness of the observed dark energy.</p>
+                 <canvas id="landscape-canvas" width="400" height="200"></canvas>
+
+                 <h4>Extra Spacetime Dimensions</h4>
+                 <p>String theory also requires extra spatial dimensions. These could be curled up into tiny, compact spaces, invisible to our current experiments. The geometry of these extra dimensions would affect the laws of physics we observe in our 4D spacetime.</p>
+
+                 <h4>The Measure Problem</h4>
+                 <p>In an eternally-inflating multiverse, any event that can happen will happen an infinite number of times. This makes it difficult to calculate probabilities. For example, how do we determine whether we are "typical" observers? The "measure problem" is the challenge of finding a sensible way to regulate these infinities and make predictions. Different proposed measures can lead to vastly different conclusions about the nature of our universe.</p>
+            </div>
+        </div>
+        <div class="display-panel" id="consequences-panel" style="grid-column: 1 / 5;">
+            <h3>Observational Consequences</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                <div>
+                    <h4>CMB Power Spectrum</h4>
+                    <canvas id="cmb-spectrum-canvas"></canvas>
+                </div>
+                <div>
+                    <h4>Final State Report</h4>
+                    <div id="final-state-report"></div>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        // For offline use, the user would need to download three.js and chart.js
+        // For this self-contained file, I am embedding the libraries.
+        // In a real scenario, these would be linked or bundled.
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Simulation State ---
+            let universe = {
+                lambda: 0.1,
+                initial_matter: 0.5,
+                initial_radiation: 0.5,
+                inflaton_potential: [{x:0, y:100}, {x:1, y:10}, {x:2, y:1}],
+                time: 0,
+                scale_factor: 1,
+                energy_density: { potential: 1, kinetic: 0, radiation: 1, matter: 1 },
+            };
+
+            // --- UI Setup ---
+            const lambdaSlider = document.createElement('input');
+            lambdaSlider.type = 'range';
+            lambdaSlider.min = "-1";
+            lambdaSlider.max = "1";
+            lambdaSlider.step = "0.01";
+            lambdaSlider.value = universe.lambda;
+            lambdaSlider.oninput = (e) => universe.lambda = parseFloat(e.target.value);
+
+            const controlPanel = document.querySelector('.control-panel');
+            controlPanel.innerHTML += '<h3>Cosmological Constant (Λ)</h3>';
+            controlPanel.appendChild(lambdaSlider);
+
+            // --- Visualization Setup ---
+            // 1. 3D View
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('3d-canvas') });
+            const geometry = new THREE.SphereGeometry(1, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: 0xff6a7d, wireframe: true });
+            const sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+            camera.position.z = 5;
+
+            // 2. Energy Chart
+            const energyCtx = document.getElementById('energy-canvas').getContext('2d');
+            const energyChart = new Chart(energyCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Potential', 'Kinetic', 'Radiation', 'Matter'],
+                    datasets: [{
+                        data: [1, 0, 1, 1],
+                        backgroundColor: ['#6a7dff', '#ff6a7d', '#7dff6a', '#ffda6a']
+                    }]
+                }
+            });
+
+            function update() {
+                // Simplified evolution for demonstration
+                const H = Math.sqrt(Math.abs(universe.lambda) + (universe.energy_density.radiation + universe.energy_density.matter) / (universe.scale_factor**3));
+                universe.scale_factor += universe.scale_factor * (H * 0.01) * (universe.lambda >= 0 ? 1 : -1);
+
+                if (universe.scale_factor <= 0) {
+                    document.getElementById('cosmic-story-content').innerHTML += `<p>The universe has ended in a Big Crunch.</p>`;
+                    return; // Stop simulation
+                }
+
+                universe.energy_density.radiation /= (1 + H * 0.01)**4;
+                universe.energy_density.matter /= (1 + H * 0.01)**3;
+
+                // Update Visuals
+                sphere.scale.set(universe.scale_factor, universe.scale_factor, universe.scale_factor);
+                renderer.render(scene, camera);
+
+                const ed = universe.energy_density;
+                const total = ed.potential + ed.kinetic + ed.radiation + ed.matter;
+                energyChart.data.datasets[0].data = [ed.potential/total, ed.kinetic/total, ed.radiation/total, ed.matter/total];
+                energyChart.update();
+
+                // Update Narrative
+                let story = `<p>Time: ${universe.time.toFixed(1)} Gyr</p><p>Scale Factor: ${universe.scale_factor.toFixed(2)}</p><p>Hubble Parameter H: ${H.toFixed(2)}</p>`;
+                if (universe.lambda > 0.1) story += "<p>The high cosmological constant is causing rapid, accelerating expansion.</p>";
+                else if (universe.lambda < -0.1) story += "<p>The negative cosmological constant is pulling the universe towards a collapse.</p>";
+                else story += "<p>The universe is expanding at a moderate rate.</p>";
+                document.getElementById('cosmic-story-content').innerHTML = story;
+
+                // Final State
+                let final_state = "Undetermined";
+                if(universe.lambda > 0) final_state = "Heat Death / Big Rip";
+                else if (universe.lambda < 0) final_state = "Big Crunch";
+                else final_state = "Eternal expansion, but slowing down.";
+                document.getElementById('final-state-report').innerHTML = `<p>${final_state}</p>`;
+
+
+                universe.time += 0.1;
+                requestAnimationFrame(update);
+            }
+
+            update();
+        });
+    </script>
+</body>
+</html>
