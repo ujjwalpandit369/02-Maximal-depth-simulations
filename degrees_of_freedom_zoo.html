@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Freedom Zoo: A Guide to Mechanical Degrees of Freedom</title>
+    <style>
+        :root {
+            --bg-color: #f0f4f8;
+            --text-color: #333333;
+            --header-color: #003366;
+            --accent-color: #007bff; /* A clean, educational blue */
+            --control-bg: #ffffff;
+            --control-border: #d0d8e0;
+            --slider-thumb: #007bff;
+            --slider-track: #d0d8e0;
+            --button-bg: #e9ecef;
+            --button-hover: #007bff;
+            --button-text-hover: #ffffff;
+            --panel-bg: #ffffff;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --code-bg: #eef2f5;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 350px 1fr 400px;
+            grid-template-areas:
+                "header header header"
+                "overview overview overview"
+                "controls sim analysis"
+                "theory theory theory"
+                "advanced advanced advanced"
+                "footer footer footer";
+            gap: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr 400px;
+                grid-template-areas:
+                    "header header"
+                    "overview overview"
+                    "controls sim"
+                    "analysis analysis"
+                    "theory theory"
+                    "advanced advanced"
+                    "footer footer";
+            }
+        }
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "overview"
+                    "sim"
+                    "controls"
+                    "analysis"
+                    "theory"
+                    "advanced"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 10px; }
+        .simulation-area { grid-area: sim; }
+        .controls-area { grid-area: controls; }
+        .analysis-area { grid-area: analysis; }
+        .overview-section { grid-area: overview; }
+        .theory-section { grid-area: theory; }
+        .advanced-section { grid-area: advanced; }
+        footer { grid-area: footer; text-align: center; font-size: 0.9em; padding-top: 20px; border-top: 1px solid var(--control-border); }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 400; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        #simulation-canvas {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            background-color: #eef2f5;
+            border-radius: 8px;
+            cursor: grab;
+        }
+        #simulation-canvas:active { cursor: grabbing; }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+        .control-group h4 {
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid var(--control-border);
+            padding-bottom: 5px;
+            color: var(--header-color);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .button-grid button, .control-group button {
+            padding: 10px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9em;
+        }
+        .button-grid button:hover, .control-group button:hover {
+            background-color: var(--button-hover);
+            color: var(--button-text-hover);
+            border-color: var(--button-hover);
+        }
+         .button-grid button.active, .control-group button.active {
+            background-color: var(--accent-color);
+            color: var(--button-text-hover);
+            border-color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        #dof-counter-panel {
+            background-color: var(--code-bg);
+            padding: 15px;
+            border-radius: 5px;
+        }
+        #dof-counter-panel h4 { margin-top: 0; }
+        #dof-calculation { font-family: monospace; font-size: 0.9em; }
+        #dof-calculation p { margin: 5px 0; }
+        #dof-final-count {
+            text-align: center;
+            font-size: 3em;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-top: 10px;
+        }
+
+        #config-space-panel canvas {
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: #eef2f5;
+            border-radius: 4px;
+        }
+
+        .info-panel {
+            background-color: #e9f5ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Freedom Zoo</h1>
+            <p>A Foundational Guide to Mechanical Degrees of Freedom</p>
+        </header>
+
+        <div class="overview-section">
+            <h2>Overview</h2>
+            <p>Welcome to the Freedom Zoo, a foundational guide to one of the most important concepts in physics: <strong>Degrees of Freedom (DoF)</strong>. A "degree of freedom" is simply an independent way an object can move. In this sandbox, you will build an intuition for this concept by spawning objects and applying constraints that limit their movement. You will discover that the number of DoF is precisely the number of independent "sliders" or variables you would need to completely describe the object's state. This core idea is the bedrock for everything from robotics to statistical mechanics and quantum field theory.</p>
+        </div>
+
+        <div class="controls-area panel">
+            <div class="control-group">
+                <h4>1. Spawn Object</h4>
+                <div id="spawn-buttons" class="button-grid">
+                    <button data-type="point">Point Mass</button>
+                    <button data-type="rod">Rigid Rod</button>
+                    <button data-type="disc">Rigid Disc</button>
+                    <button data-type="cube">Rigid Cube</button>
+                </div>
+            </div>
+            <div class="control-group">
+                <h4>2. Apply Constraint</h4>
+                <div id="constraint-buttons" class="button-grid">
+                    <button data-constraint="none" class="active">None</button>
+                    <button data-constraint="fix_point">Fix to Point</button>
+                    <button data-constraint="on_rail">On Rail (Line)</button>
+                    <button data-constraint="on_plane">On Surface (Plane)</button>
+                </div>
+            </div>
+             <div class="control-group">
+                <h4>3. "Wiggle" Tool</h4>
+                <div class="info-panel" style="margin:0; background-color: #fff;">
+                    Click and drag the object in the simulation window to "feel" its available degrees of freedom. The simulation will resist movements that are disallowed by its constraints.
+                </div>
+            </div>
+            <div class="control-group">
+                <h4>4. Coordinate System</h4>
+                <div id="coord-buttons" class="button-grid">
+                    <button data-coord="cartesian" class="active">Cartesian</button>
+                    <button data-coord="euler">Euler Angles</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="simulation-area panel">
+            <canvas id="simulation-canvas"></canvas>
+        </div>
+
+        <div class="analysis-area">
+            <div class="panel">
+                <h3>The DoF Counter</h3>
+                <div id="dof-counter-panel">
+                    <h4>Live Tally:</h4>
+                    <div id="dof-calculation">
+                        <p>Select an object to begin.</p>
+                    </div>
+                    <div id="dof-final-count">?</div>
+                </div>
+            </div>
+            <div class="panel">
+                <h3>Configuration Space Explorer</h3>
+                <div id="config-space-panel">
+                    <canvas id="config-canvas"></canvas>
+                    <p class="description" style="text-align:center;">This space represents all possible states of the object. Its dimensionality equals the number of DoF.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>The Physics Explained: From Newton to Lagrange</h2>
+            <h3>Part A: What is a Degree of Freedom?</h3>
+            <p>In physics, a "degree of freedom" is a formal way of answering the question: "How many independent numbers do I need to write down to know exactly where this object is and how it's oriented?" It is the number of independent parameters that define the system's state. This concept is deceptively simple but incredibly powerful.</p>
+            <p><strong>Real-World Analogies:</strong>
+            <ul>
+                <li><strong>A train on a track:</strong> It can only move forward or backward. Its position can be described by a single number: distance from the station. The train has <strong>1 DoF</strong>.</li>
+                <li><strong>A bead on a taut wire:</strong> Same as the train. It can only slide along the wire. <strong>1 DoF</strong>.</li>
+                <li><strong>A boat on a lake's surface:</strong> To know its state, you need its X and Y coordinates on the water, plus its orientation (the direction it's pointing). That's three independent numbers. The boat has <strong>3 DoF</strong>.</li>
+                <li><strong>A helicopter in the air:</strong> It can move up/down, left/right, and forward/backward (3 translational DoF). It can also tilt forward/backward (pitch), turn left/right (yaw), and tilt side-to-side (roll) (3 rotational DoF). You need 3 + 3 = <strong>6 DoF</strong> to fully describe its state. A simple point mass in space only has 3 DoF, but a rigid body like a helicopter has 6.</li>
+                <li><strong>Your arm:</strong> This is a more complex system. The position of your shoulder has 3 DoF. Then, the rotation at the shoulder joint adds more, the elbow joint adds another, the wrist adds more... A complex, multi-part system has many degrees of freedom.</li>
+            </ul>
+            The key is <strong>independence</strong>. For the boat, knowing its X coordinate tells you nothing about its Y coordinate or its rotation. They are all independent variables. The number of such variables is the number of DoF.</p>
+
+            <h3>Part B: Translational and Rotational Freedom</h3>
+            <p>For any single rigid body, its motion can always be broken down into two distinct types:
+            <ol>
+                <li><strong>Translation:</strong> The movement of the object's center of mass. In 3D space, there are 3 independent directions for translation: X, Y, and Z.</li>
+                <li><strong>Rotation:</strong> The movement of the object *around* its center of mass. In 3D space, there are 3 independent axes of rotation: pitch, yaw, and roll.</li>
+            </ol>
+            Therefore, a free, unconstrained rigid body in 3D space always has <strong>3 + 3 = 6 degrees of freedom</strong>. A point mass, which has no size and thus cannot rotate, only has 3 translational DoF. This is a fundamental starting point. In this simulation, when you spawn a "Rigid Cube," it begins with 6 DoF. When you spawn a "Point Mass," it begins with 3. Applying constraints then subtracts from this initial count.</p>
+
+            <h3>Part C: Constraints and Generalized Coordinates</h3>
+            <p>Describing systems with constraints can be clumsy. Imagine a bead on a circular wire of radius R in the X-Y plane. We could use two Cartesian coordinates, x and y, to describe its position. But these are not independent! They are linked by the <strong>constraint equation</strong>: x² + y² = R². This is inefficient. We have two variables and one equation. The number of DoF is Variables - Equations = 2 - 1 = 1.</p>
+            <p>The Lagrangian approach to mechanics, developed by Joseph-Louis Lagrange, offers a more elegant solution. Instead of using more coordinates than we need and adding constraint equations, we should define a new set of "generalized coordinates" that automatically respect the constraints.
+            <br>For the bead on the wire, we can define its position with a single angle, θ. The Cartesian coordinates are then given by x = Rcos(θ) and y = Rsin(θ). The constraint is automatically satisfied! The angle θ is a generalized coordinate. Since we only need one such coordinate, the system has 1 DoF.
+            <br>This is a profound shift in thinking. The number of degrees of freedom is the minimum number of generalized coordinates required to describe the system. The "Configuration Space" you see in the analysis panel is the space whose axes are these generalized coordinates. For the bead on the wire, the configuration space is a circle, parameterized by θ. For a point on a plane, it's a 2D space parameterized by x and y. The dimensionality of the configuration space is always equal to the number of degrees of freedom.</p>
+        </div>
+
+        <div class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+
+            <h3>1. Non-Holonomic Constraints</h3>
+            <p>The constraints in this simulation (e.g., `x=0`, `x²+y²=R²`) are all "holonomic," meaning they are algebraic constraints on the coordinates. Some systems have more complex constraints on their *velocities*. A classic example is a sphere rolling without slipping on a plane.
+            <br>The sphere has 5 DoF (3 for translation, 2 for rotation - it can't spin on the vertical axis if it's rolling). However, the "no-slip" condition imposes a constraint on the velocities: `v_x = R * ω_y` and `v_y = -R * ω_x`, where `v` is the velocity of the center and `ω` is the angular velocity. These equations cannot be integrated to form a simple algebraic equation relating the coordinates (x, y, angles). You can't reduce the number of coordinates. Such a constraint is "non-holonomic."
+            <br>This has a strange effect on the configuration space. While the sphere's state can be described by 5 coordinates (so its configuration space is 5D), it can only move in 3 directions at any given instant. Yet, through complex maneuvers (like parallel parking a car), it can eventually reach any point in the 5D configuration space. This makes controlling non-holonomic systems a fascinating and challenging problem in robotics.</p>
+
+            <h3>2. Potential Energy and Configuration Space</h3>
+            <p>We can enhance the simulation by adding a potential energy function, V, which depends on the system's coordinates. For example, adding a gravitational field would create a potential V(z) = mgz. Adding a virtual spring attached to a point would create a potential V(x,y,z) = ½k * (distance)².
+            <br>A system in mechanics will always try to move towards a state of lower potential energy. This means a force, F = -∇V, acts on the system. In the language of configuration space, the system will feel a "force" pushing it "downhill" on the potential energy landscape that is "painted" onto its configuration space. For a bead on a wire with gravity, the configuration space is a circle, and the potential energy is V(θ) = mgRsin(θ). The bead will always try to slide to the bottom of the circle (θ = -π/2), where V is minimum.</p>
+
+            <h3>3. The Double Pendulum</h3>
+            <p>A double pendulum is a classic example of a complex, chaotic system. It consists of a pendulum with another pendulum attached to its end.
+            <strong>Degrees of Freedom:</strong> The position of the first pivot is fixed. We need one angle, θ₁, to describe the first pendulum's orientation. We need a second angle, θ₂, to describe the second pendulum's orientation *relative to the first*. Since we need two independent numbers, the system has <strong>2 DoF</strong>.
+            <strong>Configuration Space:</strong> The state of the system is given by (θ₁, θ₂). Since each angle is periodic (goes from 0 to 2π), the configuration space is a 2D surface where the edges are identified. This topology is a <strong>torus</strong> (the surface of a doughnut).
+            <strong>Chaotic Motion:</strong> If you release the double pendulum from a high-energy state, its trajectory through this toroidal configuration space is chaotic. It will trace out incredibly complex, unpredictable paths that never exactly repeat, eventually exploring large regions of the available space. This is a hallmark of chaotic systems: sensitive dependence on initial conditions leading to complex exploration of a well-defined, low-dimensional configuration space.</p>
+        </div>
+
+        <footer>
+            <p>Freedom Zoo Simulator. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+    <script>
+    // --- Global State & Setup ---
+    let canvas, ctx, configCanvas, configCtx;
+    const ui = {};
+    const state = {
+        object: null, // { type, pos, orientation, vertices, faces, ... }
+        constraint: 'none',
+        view: { rotX: 0.3, rotY: -0.5, zoom: 300 },
+        mouse: { x: 0, y: 0, lastX: 0, lastY: 0, isDown: false, isDraggingObject: false },
+        animationFrameId: null,
+    };
+
+    window.onload = init;
+
+    function init() {
+        // Cache DOM elements
+        canvas = document.getElementById('simulation-canvas');
+        ctx = canvas.getContext('2d');
+        configCanvas = document.getElementById('config-canvas');
+        configCtx = configCanvas.getContext('2d');
+
+        const buttonGroups = ['spawn-buttons', 'constraint-buttons', 'coord-buttons'];
+        buttonGroups.forEach(id => ui[id] = document.getElementById(id));
+
+        // Setup event listeners
+        setupEventListeners();
+
+        // Initial spawn
+        spawnObject('point');
+
+        // Start loop
+        gameLoop();
+    }
+
+    function setupEventListeners() {
+        // --- UI Buttons ---
+        ui['spawn-buttons'].addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                spawnObject(e.target.dataset.type);
+            }
+        });
+
+        ui['constraint-buttons'].addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                setConstraint(e.target.dataset.constraint);
+            }
+        });
+
+        ui['coord-buttons'].addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                setCoordSystem(e.target.dataset.coord);
+            }
+        });
+
+        // --- Canvas Mouse Controls ---
+        canvas.addEventListener('mousedown', e => {
+            state.mouse.isDown = true;
+            state.mouse.lastX = e.clientX;
+            state.mouse.lastY = e.clientY;
+            // A proper implementation would use raycasting. For now, assume we always grab the object.
+            state.mouse.isDraggingObject = true;
+        });
+        canvas.addEventListener('mouseup', () => {
+            state.mouse.isDown = false;
+            state.mouse.isDraggingObject = false;
+        });
+        canvas.addEventListener('mouseout', () => {
+            state.mouse.isDown = false;
+            state.mouse.isDraggingObject = false;
+        });
+        canvas.addEventListener('mousemove', e => {
+            if (!state.mouse.isDown) return;
+            const dx = e.clientX - state.mouse.lastX;
+            const dy = e.clientY - state.mouse.lastY;
+
+            if (state.mouse.isDraggingObject && state.object) {
+                // Apply a "wiggle" force
+                const force = {
+                    x: dx * 0.1,
+                    y: -dy * 0.1, // Screen Y is inverted
+                    z: 0 // No direct depth movement from 2D mouse
+                };
+
+                // This is the key: apply force respecting constraints
+                applyConstrainedForce(force);
+
+            } else if (!state.mouse.isDraggingObject) {
+                // Rotate camera view
+                state.view.rotY += dx * 0.005;
+                state.view.rotX += dy * 0.005;
+                state.view.rotX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, state.view.rotX));
+            }
+
+            state.mouse.lastX = e.clientX;
+            state.mouse.lastY = e.clientY;
+        });
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            state.view.zoom -= e.deltaY;
+            state.view.zoom = Math.max(100, Math.min(800, state.view.zoom));
+        });
+    }
+
+    // --- Object Creation ---
+    function spawnObject(type) {
+        state.object = {
+            type: type,
+            pos: { x: 0, y: 0, z: 0 },
+            vel: { x: 0, y: 0, z: 0 },
+            orientation: { w: 1, x: 0, y: 0, z: 0 }, // Quaternion
+            angularVel: { x: 0, y: 0, z: 0 },
+            vertices: [],
+            faces: [],
+        };
+
+        // Define object geometry
+        switch(type) {
+            case 'point':
+                // No vertices needed
+                break;
+            case 'rod':
+                state.object.vertices = [{x:0, y:-50, z:0}, {x:0, y:50, z:0}];
+                break;
+            case 'cube':
+                const s = 30;
+                const v = [
+                    {x:-s, y:-s, z:-s}, {x:s, y:-s, z:-s}, {x:s, y:s, z:-s}, {x:-s, y:s, z:-s},
+                    {x:-s, y:-s, z:s}, {x:s, y:-s, z:s}, {x:s, y:s, z:s}, {x:-s, y:s, z:s}
+                ];
+                state.object.vertices = v;
+                state.object.faces = [
+                    [0,1,2,3], [4,5,6,7], [0,1,5,4],
+                    [2,3,7,6], [0,3,7,4], [1,2,6,5]
+                ];
+                break;
+            case 'disc':
+                 const r = 40;
+                 const segs = 16;
+                 for(let i=0; i<segs; i++) {
+                     const angle = (i/segs) * 2 * Math.PI;
+                     state.object.vertices.push({x: r * Math.cos(angle), y: r * Math.sin(angle), z: 0});
+                 }
+                 state.object.faces = [Array.from(Array(segs).keys())]; // One big face
+                 break;
+        }
+
+        // Update UI
+        const spawnButtons = ui['spawn-buttons'].querySelectorAll('button');
+        spawnButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.type === type));
+
+        updateDofCounter();
+    }
+
+    function setConstraint(constraintType) {
+        state.constraint = constraintType;
+
+        // Reset object state to be valid for the new constraint
+        if (state.object) {
+            state.object.pos = { x: 0, y: 0, z: 0 };
+            state.object.vel = { x: 0, y: 0, z: 0 };
+            state.object.orientation = { w: 1, x: 0, y: 0, z: 0 };
+            state.object.angularVel = { x: 0, y: 0, z: 0 };
+        }
+
+        const constraintButtons = ui['constraint-buttons'].querySelectorAll('button');
+        constraintButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.constraint === constraintType));
+
+        updateDofCounter();
+    }
+
+    function setCoordSystem(coordSystem) {
+        state.coordSystem = coordSystem;
+        const coordButtons = ui['coord-buttons'].querySelectorAll('button');
+        coordButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.coord === coordSystem));
+    }
+
+    function update() {
+        if (!state.object) return;
+
+        const obj = state.object;
+        const dt = 0.1; // Timestep
+        const damping = 0.95; // Velocity damping
+
+        // Update position
+        obj.pos.x += obj.vel.x * dt;
+        obj.pos.y += obj.vel.y * dt;
+        obj.pos.z += obj.vel.z * dt;
+
+        // Update orientation
+        const av = obj.angularVel;
+        const q = obj.orientation;
+        const q_dot = {
+            w: -0.5 * (av.x * q.x + av.y * q.y + av.z * q.z),
+            x:  0.5 * (av.x * q.w + av.y * q.z - av.z * q.y),
+            y:  0.5 * (av.y * q.w + av.z * q.x - av.x * q.z),
+            z:  0.5 * (av.z * q.w + av.x * q.y - av.y * q.x)
+        };
+        q.w += q_dot.w * dt;
+        q.x += q_dot.x * dt;
+        q.y += q_dot.y * dt;
+        q.z += q_dot.z * dt;
+        const mag = Math.sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
+        if (mag > 0) {
+            q.w /= mag; q.x /= mag; q.y /= mag; q.z /= mag;
+        }
+
+        // Apply damping
+        obj.vel.x *= damping;
+        obj.vel.y *= damping;
+        obj.vel.z *= damping;
+        obj.angularVel.x *= damping;
+        obj.angularVel.y *= damping;
+        obj.angularVel.z *= damping;
+
+        // Apply constraints
+        applyConstraints();
+    }
+
+    function applyConstrainedForce(force) {
+        const obj = state.object;
+        if (!obj) return;
+
+        // For now, we only apply translational force. Rotational torque would be more complex.
+        let allowedForce = { ...force };
+
+        // Project force onto allowed DoF
+        switch(state.constraint) {
+            case 'fix_point':
+                allowedForce = { x: 0, y: 0, z: 0 }; // No translation
+                break;
+            case 'on_rail':
+                // Only allow force along X axis
+                allowedForce = { x: force.x, y: 0, z: 0 };
+                break;
+            case 'on_plane':
+                // Allow force on X-Z plane
+                allowedForce = { x: force.x, y: 0, z: force.z };
+                break;
+        }
+
+        obj.vel.x += allowedForce.x;
+        obj.vel.y += allowedForce.y;
+        obj.vel.z += allowedForce.z;
+
+        // Simple rotational force for non-point objects
+        if (obj.type !== 'point') {
+            obj.angularVel.z += force.x * 0.01;
+            obj.angularVel.x -= force.y * 0.01;
+        }
+    }
+
+    function applyConstraints() {
+        const obj = state.object;
+        if (!obj) return;
+
+        switch(state.constraint) {
+            case 'fix_point':
+                obj.pos = { x: 0, y: 0, z: 0 };
+                obj.vel = { x: 0, y: 0, z: 0 };
+                break;
+            case 'on_rail':
+                obj.pos.y = 0;
+                obj.pos.z = 0;
+                obj.vel.y = 0;
+                obj.vel.z = 0;
+                if (obj.type !== 'point') {
+                    // Lock rotation to be only around the rail axis (X)
+                    obj.angularVel.y = 0;
+                    obj.angularVel.z = 0;
+                    // This doesn't perfectly lock orientation, a full quaternion constraint is needed
+                }
+                break;
+            case 'on_plane':
+                obj.pos.y = 0;
+                obj.vel.y = 0;
+                if (obj.type !== 'point') {
+                    // Lock tumbling rotations (around X and Z axes)
+                    obj.angularVel.x = 0;
+                    obj.angularVel.z = 0;
+                }
+                break;
+        }
+    }
+
+    function draw() {
+        const rect = canvas.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        ctx.scale(dpr, dpr);
+
+        ctx.fillStyle = '#eef2f5';
+        ctx.fillRect(0, 0, rect.width, rect.height);
+
+        ctx.save();
+        ctx.translate(rect.width / 2, rect.height / 2);
+
+        drawGrid();
+
+        if (state.object) {
+            drawObject(state.object);
+        }
+
+        ctx.restore();
+
+        drawOverlay(rect);
+        drawConfigSpace();
+    }
+
+    function drawOverlay(rect) {
+        if (!state.object) return;
+
+        ctx.save();
+        ctx.font = '12px monospace';
+        ctx.fillStyle = 'var(--text-color)';
+
+        const pos = state.object.pos;
+        let y = 20;
+
+        ctx.fillText(`Position (x, y, z):`, 10, y); y+=15;
+        ctx.fillText(`  ${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)}`, 10, y); y+=20;
+
+        if (state.coordSystem === 'euler' && state.object.type !== 'point') {
+            const euler = quaternionToEuler(state.object.orientation);
+            ctx.fillText(`Orientation (φ, θ, ψ):`, 10, y); y+=15;
+            ctx.fillText(`  ${euler.roll.toFixed(2)}, ${euler.pitch.toFixed(2)}, ${euler.yaw.toFixed(2)}`, 10, y); y+=15;
+        }
+
+        ctx.restore();
+    }
+
+    function drawGrid() {
+        ctx.strokeStyle = '#d0d8e0';
+        ctx.lineWidth = 1;
+        const lines = 10;
+        const size = 500;
+        const step = size / lines;
+
+        for (let i = 0; i <= lines; i++) {
+            const p = -size / 2 + i * step;
+            // Lines along Z axis
+            const p1 = project({x: p, y: 0, z: -size/2});
+            const p2 = project({x: p, y: 0, z: size/2});
+            ctx.beginPath();
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.stroke();
+
+            // Lines along X axis
+            const p3 = project({x: -size/2, y: 0, z: p});
+            const p4 = project({x: size/2, y: 0, z: p});
+            ctx.beginPath();
+            ctx.moveTo(p3.x, p3.y);
+            ctx.lineTo(p4.x, p4.y);
+            ctx.stroke();
+        }
+    }
+
+    function drawObject(obj) {
+        ctx.save();
+        // Translate to object's position
+        const projectedPos = project(obj.pos);
+        ctx.translate(projectedPos.x, projectedPos.y);
+
+        // --- Render based on type ---
+        if (obj.type === 'point') {
+            ctx.fillStyle = 'var(--accent-color)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 8 * projectedPos.scale, 0, 2 * Math.PI);
+            ctx.fill();
+        } else {
+            // Project all vertices
+            const projectedVertices = obj.vertices.map(v => {
+                const rotatedV = rotate(v, obj.orientation);
+                // No need to re-project, as we are already in the object's translated frame
+                // We just need to scale them by the perspective factor of the center point
+                return {
+                    x: rotatedV.x * projectedPos.scale,
+                    y: -rotatedV.y * projectedPos.scale, // Screen Y is inverted
+                };
+            });
+
+            // Draw faces
+            ctx.strokeStyle = var(--header-color);
+            ctx.fillStyle = 'rgba(0, 123, 255, 0.2)';
+            ctx.lineWidth = 2 * projectedPos.scale;
+            obj.faces.forEach(face => {
+                ctx.beginPath();
+                face.forEach((vertexIndex, i) => {
+                    const p = projectedVertices[vertexIndex];
+                    if (i === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                });
+                ctx.closePath();
+                ctx.stroke();
+                ctx.fill();
+            });
+
+            // Draw line for rod
+            if (obj.type === 'rod') {
+                ctx.beginPath();
+                const p1 = projectedVertices[0];
+                const p2 = projectedVertices[1];
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+
+    // --- Analysis Panel Logic ---
+    function updateDofCounter() {
+        if (!state.object) return;
+
+        const calculationDiv = document.getElementById('dof-calculation');
+        const finalCountDiv = document.getElementById('dof-final-count');
+        let html = '';
+        let dof = 0;
+
+        const isPoint = state.object.type === 'point';
+        let transDof = 3;
+        let rotDof = isPoint ? 0 : 3;
+
+        html += `<p>Base: Free ${isPoint ? 'point mass' : 'rigid body'}</p>`;
+        html += `<p>+${transDof} translational DoF</p>`;
+        if (!isPoint) html += `<p>+${rotDof} rotational DoF</p>`;
+
+        let constraintText = '';
+        switch(state.constraint) {
+            case 'fix_point':
+                constraintText = `Constraint: Fix to Point`;
+                transDof = 0;
+                // rotDof remains 3 for rigid body
+                break;
+            case 'on_rail':
+                constraintText = `Constraint: On Rail (Line)`;
+                transDof = 1; // Can only move along X
+                rotDof = isPoint ? 0 : 1; // Can only rotate around X
+                break;
+            case 'on_plane':
+                 constraintText = `Constraint: On Surface (Plane)`;
+                 transDof = 2; // Can move in X and Z
+                 rotDof = isPoint ? 0 : 1; // Can only rotate around Y (yaw)
+                 break;
+        }
+
+        if (state.constraint !== 'none') {
+            html += `<p style="border-top: 1px solid #d0d8e0; margin-top: 5px; padding-top: 5px;">${constraintText}</p>`;
+            html += `<p>Result: ${transDof} translational + ${rotDof} rotational</p>`;
+        }
+
+        dof = transDof + rotDof;
+        state.object.dof = dof;
+
+        calculationDiv.innerHTML = html;
+        finalCountDiv.textContent = dof;
+    }
+
+    function drawConfigSpace() {
+        const w = configCanvas.width;
+        const h = configCanvas.height;
+        configCtx.setTransform(1, 0, 0, 1, 0, 0);
+        configCtx.fillStyle = '#eef2f5';
+        configCtx.fillRect(0, 0, w, h);
+
+        if (!state.object || !state.object.dof) return;
+
+        const { dof, pos, orientation } = state.object;
+
+        configCtx.save();
+        configCtx.translate(w / 2, h / 2);
+
+        // Draw axes
+        configCtx.strokeStyle = '#d0d8e0';
+        configCtx.lineWidth = 1;
+        configCtx.beginPath();
+        configCtx.moveTo(-w/2, 0); configCtx.lineTo(w/2, 0);
+        configCtx.moveTo(0, -h/2); configCtx.lineTo(0, h/2);
+        configCtx.stroke();
+
+        configCtx.fillStyle = 'var(--accent-color)';
+        const scale = 2;
+
+        switch(dof) {
+            case 1:
+                configCtx.beginPath();
+                configCtx.arc(pos.x * scale, 0, 8, 0, 2 * Math.PI);
+                configCtx.fill();
+                break;
+            case 2:
+                configCtx.beginPath();
+                configCtx.arc(pos.x * scale, pos.z * scale, 8, 0, 2 * Math.PI);
+                configCtx.fill();
+                break;
+            case 3:
+                if (state.object.type === 'point') {
+                    // 3D point in space
+                    const p = project({x: pos.x * scale, y: pos.y * scale, z: pos.z * scale});
+                    configCtx.beginPath();
+                    configCtx.arc(p.x, p.y, 8 * p.scale, 0, 2 * Math.PI);
+                    configCtx.fill();
+                } else { // body on plane
+                    const euler = quaternionToEuler(orientation);
+                    const p = project({x: pos.x * scale, y: euler.yaw * 50, z: pos.z * scale});
+                    configCtx.beginPath();
+                    configCtx.arc(p.x, p.y, 8 * p.scale, 0, 2 * Math.PI);
+                    configCtx.fill();
+                }
+                break;
+             // Higher DoF are too complex to visualize meaningfully here
+        }
+        configCtx.restore();
+    }
+
+    // --- 3D Math Helpers ---
+    function project(pos3d) {
+        // Apply camera rotation
+        let {x, y, z} = pos3d;
+        const cosX = Math.cos(state.view.rotX);
+        const sinX = Math.sin(state.view.rotX);
+        const cosY = Math.cos(state.view.rotY);
+        const sinY = Math.sin(state.view.rotY);
+
+        const tempY1 = y * cosX - z * sinX;
+        const tempZ1 = y * sinX + z * cosX;
+
+        const tempX2 = x * cosY + tempZ1 * sinY;
+        const tempZ2 = -x * sinY + tempZ1 * cosY;
+
+        // Perspective projection
+        const perspective = state.view.zoom / (state.view.zoom + tempZ2);
+        return {
+            x: tempX2 * perspective,
+            y: -tempY1 * perspective, // Screen Y is inverted
+            scale: perspective
+        };
+    }
+
+    function rotate(p, q) {
+        // Rotate point p by quaternion q
+        const q_inv = { w: q.w, x: -q.x, y: -q.y, z: -q.z };
+        const p_q = { w: 0, x: p.x, y: p.y, z: p.z };
+        const temp = quat_mul(q, p_q);
+        const final = quat_mul(temp, q_inv);
+        return { x: final.x, y: final.y, z: final.z };
+    }
+
+    function quat_mul(q1, q2) {
+        return {
+            w: q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z,
+            x: q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y,
+            y: q1.w*q2.y - q1.x*q2.z + q1.y*q2.w + q1.z*q2.x,
+            z: q1.w*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.w
+        };
+    }
+
+    function quaternionToEuler(q) {
+        const { w, x, y, z } = q;
+        const euler = { roll: 0, pitch: 0, yaw: 0 };
+
+        // roll (x-axis rotation)
+        const sinr_cosp = 2 * (w * x + y * z);
+        const cosr_cosp = 1 - 2 * (x * x + y * y);
+        euler.roll = Math.atan2(sinr_cosp, cosr_cosp);
+
+        // pitch (y-axis rotation)
+        const sinp = 2 * (w * y - z * x);
+        if (Math.abs(sinp) >= 1)
+            euler.pitch = Math.copySign(Math.PI / 2, sinp); // use 90 degrees if out of range
+        else
+            euler.pitch = Math.asin(sinp);
+
+        // yaw (z-axis rotation)
+        const siny_cosp = 2 * (w * z + x * y);
+        const cosy_cosp = 1 - 2 * (y * y + z * z);
+        euler.yaw = Math.atan2(siny_cosp, cosy_cosp);
+
+        return euler;
+    }
+
+    </script>
+</body>
+</html>
