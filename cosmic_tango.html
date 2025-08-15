@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Tango: Defect Interaction, Annihilation, and Evolution</title>
+    <style>
+        /* --- General Setup & Theming --- */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #1a1a1a;
+            --primary-color: #005fcc;
+            --secondary-color: #f0f0f0;
+            --header-color: #004c99;
+            --control-bg: #e9e9e9;
+            --control-border: #cccccc;
+            --canvas-bg: #000000;
+            --canvas-border: #333333;
+            --accent-color-1: #ff4136; /* Red for Monopoles */
+            --accent-color-2: #0074d9; /* Blue for Anti-Monopoles */
+            --accent-color-3: #f0de3d; /* Yellow for Strings */
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .dark-theme {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --primary-color: #4b89da;
+            --secondary-color: #1e1e1e;
+            --header-color: #5c9eff;
+            --control-bg: #2a2a2a;
+            --control-border: #444444;
+            --canvas-bg: #050505;
+            --canvas-border: #555555;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1em;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        /* --- Layout & Structure --- */
+        .container {
+            max-width: 1400px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            grid-template-areas:
+                "header header"
+                "suggestion-box suggestion-box"
+                "overview overview"
+                "simulation controls"
+                "guides guides"
+                "theory theory"
+                "footer footer";
+            gap: 2rem;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "suggestion-box"
+                    "overview"
+                    "controls"
+                    "simulation"
+                    "guides"
+                    "theory"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; }
+        .suggestion-box { grid-area: suggestion-box; }
+        .overview { grid-area: overview; }
+        #simulation-container { grid-area: simulation; }
+        #controls-container { grid-area: controls; }
+        .guides-container { grid-area: guides; }
+        .theory-container { grid-area: theory; }
+        footer { grid-area: footer; text-align: center; margin-top: 2rem; }
+
+        /* --- Component Styling --- */
+        h1, h2, h3 { color: var(--primary-color); }
+        h1 { font-size: 2.5rem; margin-bottom: 0.5rem; }
+        h2 { border-bottom: 2px solid var(--secondary-color); padding-bottom: 0.5rem; margin-top: 2rem; }
+
+        canvas {
+            width: 100%;
+            height: auto;
+            aspect-ratio: 16 / 9;
+            background-color: var(--canvas-bg);
+            border: 1px solid var(--canvas-border);
+            display: block;
+        }
+
+        .control-panel, .info-panel, .content-section {
+            background-color: var(--secondary-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        button, select, input[type="range"], input[type="number"] {
+            font-family: var(--font-family);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            border: 1px solid var(--control-border);
+            background-color: var(--control-bg);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover { background-color: #ddd; }
+        .dark-theme button:hover { background-color: #3a3a3a; }
+
+        .control-group { margin-bottom: 1.5rem; }
+        .control-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        .control-group .slider-container { display: flex; align-items: center; gap: 1rem; }
+        .control-group input[type="range"] { flex-grow: 1; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--control-border);
+        }
+        th { background-color: var(--control-bg); }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 200px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -100px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        #dev-console {
+            display: none; /* Collapsed by default */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Cosmic Tango: Defect Interaction, Annihilation, and Evolution</h1>
+            <p>An interactive 3D simulation of topological defects in the early universe.</p>
+            <div id="meta-bar">
+                <span>Est. FPS: 0</span> | <span>Size: ~35KB</span> | <span>Device: Desktop Recommended</span>
+            </div>
+        </header>
+
+        <section id="suggestion-box" class="suggestion-box content-section">
+            <h3>Tune Your Experience</h3>
+            <div id="user-choices">
+                <p>Quick-select your preferences:</p>
+                <!-- JS will populate these -->
+            </div>
+        </section>
+
+        <section id="overview" class="overview content-section">
+            <h2>Overview</h2>
+            <p>Imagine the universe just moments after the Big Bang, a roiling soup of energy rapidly cooling and settling. As it cooled, imperfections—like cracks forming in ice—could have become trapped. These 'topological defects' are not tiny particles, but vast structures like <strong>cosmic strings</strong> (immense, energetic filaments stretching across galaxies), <strong>domain walls</strong> (vast sheets of 'false vacuum'), or <strong>monopoles</strong> (heavy, isolated point-like particles). This simulation lets you explore how these incredible objects might have moved, interacted, and annihilated each other in the primordial cosmos. Their cosmic tango of creation and destruction is crucial to understanding whether any could have survived to be found today, and what signatures they might have left behind.</p>
+        </section>
+
+        <div id="simulation-container">
+            <canvas id="simulation-canvas"></canvas>
+            <div id="simulation-info-panels">
+                <div id="live-report-panel" class="info-panel">
+                    <h3>What Am I Seeing?</h3>
+                    <p>Live action report will appear here...</p>
+                </div>
+                <div id="quantitative-panel" class="info-panel">
+                    <h3>Quantitative Analysis</h3>
+                    <p>Live plots and event logs will appear here...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="controls-container">
+            <div class="control-panel">
+                <h3>Main Controls</h3>
+                <div class="control-group">
+                    <button id="play-pause-btn" aria-label="Play/Pause (Space)" title="Play/Pause (Space)">Play</button>
+                    <button id="step-btn" aria-label="Step Forward (Right Arrow)" title="Step Forward (Right Arrow)">Step</button>
+                    <button id="reset-btn" aria-label="Reset (r)" title="Reset (r)">Reset</button>
+                </div>
+                <div class="control-group">
+                    <label for="speed-slider">Speed: <span id="speed-value">1.0</span>x</label>
+                    <div class="slider-container">
+                        <input type="range" id="speed-slider" min="0.1" max="10" step="0.1" value="1" aria-label="Simulation Speed">
+                    </div>
+                </div>
+                <hr>
+                <h3>Defect Setup</h3>
+                <div class="control-group">
+                    <label for="defect-a-select">Defect Type A</label>
+                    <select id="defect-a-select" aria-label="Select first defect type"></select>
+                </div>
+                <div class="control-group">
+                    <label for="defect-b-select">Defect Type B</label>
+                    <select id="defect-b-select" aria-label="Select second defect type"></select>
+                </div>
+                <div class="control-group">
+                    <label>Initial Conditions</label>
+                    <button id="init-manual-btn" title="Click and drag to place defects">Place Manually</button>
+                    <button id="init-random-btn" title="Fill space with a random network">Generate Random Network</button>
+                    <button id="init-pair-btn" title="Create a simple interacting pair">Create Pair</button>
+                </div>
+                <hr>
+                <h3>Physics Parameters</h3>
+                <div class="control-group">
+                    <label for="friction-slider">Universe "Friction": <span id="friction-value">20</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="friction-slider" min="0" max="100" step="1" value="20" aria-label="Universe Friction">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="tension-slider">String Tension (μ): <span id="tension-value">100</span></label>
+                    <div class="slider-container">
+                        <input type="range" id="tension-slider" min="1" max="1000" step="1" value="100" aria-label="String Tension">
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label for="intercomm-slider">Intercommutation Probability: <span id="intercomm-value">100</span>%</label>
+                    <div class="slider-container">
+                        <input type="range" id="intercomm-slider" min="0" max="100" step="1" value="100" aria-label="Intercommutation Probability">
+                    </div>
+                </div>
+                <hr>
+                <h3>Utilities</h3>
+                <div class="control-group">
+                     <button id="export-png-btn" aria-label="Export PNG (e)" title="Export PNG (e)">Export PNG</button>
+                     <button id="export-json-btn" title="Export current parameters as a JSON file">Export JSON</button>
+                     <button id="share-btn" title="Copy a shareable link with current settings to clipboard">Share Preset</button>
+                </div>
+                 <div class="control-group">
+                    <label for="perf-toggle" class="tooltip">Performance Mode <span class="tooltiptext">Reduces detail for smoother framerate.</span></label>
+                    <input type="checkbox" id="perf-toggle">
+                    <label for="theme-toggle" class="tooltip">High-Contrast <span class="tooltiptext">Toggle light/dark theme.</span></label>
+                    <input type="checkbox" id="theme-toggle">
+                </div>
+            </div>
+        </div>
+
+        <div class="guides-container">
+            <section id="beginners-guide" class="content-section">
+                <h2>Beginner's Guide: What is a Topological Defect?</h2>
+                <p>Welcome to the weird and wonderful world of cosmology! This guide will walk you through the fascinating concept of topological defects without any scary math. Think of it as a field guide to some of the most exotic and gargantuan structures that might have existed in our universe.</p>
+
+                <h3>1. The Big Chill: How to Make a Defect</h3>
+                <p>Imagine a large, still lake on a cold day. As the temperature drops, ice crystals begin to form in the water. They don't all start in one place; they appear independently in many different locations. Each tiny crystal has its water molecules aligned in a specific direction, forming a perfect grid. As these independent crystals grow larger, they eventually meet. But what happens at the boundary? Because they started with random orientations, their grids won't line up perfectly. The result is a network of fractures and fault lines running through the ice. These imperfections are a great analogy for topological defects.</p>
+                <p>The early universe, in the first fractions of a second after the Big Bang, was a sea of unfathomable energy—a hot, uniform soup. As it expanded, it cooled rapidly. This cooling caused it to undergo a series of "phase transitions," which are just a fancy way of saying it changed its state, much like steam condensing to water, and water freezing to ice. During these transitions, fundamental fields (the basic ingredients of our universe) settled into new, lower-energy states. Just like the ice crystals, different regions of the universe settled independently. Where these vast regions met, their fields might have been misaligned, unable to smoothly transition into one another. This misalignment trapped a huge amount of energy from the hot early universe into the boundaries, creating topological defects.</p>
+
+                <h3>2. A Zoo of Cosmic Creatures</h3>
+                <p>The type of defect formed depends on the symmetries of the fields involved—essentially, on the "shape" of the misalignment. This gives us a whole zoo of potential cosmic creatures:</p>
+                <ul>
+                    <li><strong>Monopoles (0-dimensional):</strong> These are point-like defects. The hedgehog analogy is a classic: imagine combing the spines of a hedgehog so they all point directly away from the center. You are left with one point—the center itself—where the direction is undefined. This is a monopole. They are predicted to be incredibly massive and carry a single magnetic charge (like the north pole of a magnet without a south pole). An anti-monopole is the opposite, like a hedgehog with all its spines combed inward.</li>
+                    <li><strong>Cosmic Strings (1-dimensional):</strong> These are line-like defects. Returning to our ice analogy, the lines where different crystal grids meet are 1D defects. Cosmic strings would be filaments of pure energy, thinner than an atom but potentially stretching for millions of light-years. They possess enormous tension, meaning they are constantly trying to straighten themselves out like a taut rubber band. They have a "winding" direction (think of it as clockwise or counter-clockwise), and a string's opposite is an anti-string, which winds the other way.</li>
+                    <li><strong>Domain Walls (2-dimensional):</strong> These are sheet-like defects. Imagine a universe where the field could settle into one of two equally likely states, like a coin toss resulting in "heads" or "tails". If one vast region of space settled into the "heads" state and its neighbor settled into the "tails" state, the boundary between them would be a domain wall. These are considered the most dangerous of the defects; a single stable domain wall stretching across the observable universe would have an energy density so enormous that it would disastrously alter cosmic expansion.</li>
+                </ul>
+
+                <h3>3. The Cosmic Dance: Interaction and Annihilation</h3>
+                <p>These defects aren't static; they are dynamic, ever-changing structures. Their evolution is driven by a fundamental principle: they want to release their trapped energy and disappear. This leads to a "cosmic tango" of motion and interaction.</p>
+                <ol>
+                    <li><strong>Tension is Key:</strong> The defining feature of strings and walls is their tension. This isn't just like a rubber band; it's a consequence of their immense energy density. This tension acts to accelerate the defect, trying to smooth out any wrinkles or curves. This is what makes strings wiggle and oscillate, and what causes closed loops of string to shrink and collapse.</li>
+                    <li><strong>Meeting Your Opposite:</strong> Just like matter has anti-matter, defects have anti-defects. When a monopole meets an anti-monopole, or a string meets an anti-string, their opposite topological "charges" cancel out. The misalignment is resolved, and the field can finally settle into its true, lowest-energy state. The trapped energy is released in a spectacular burst of high-energy particles and radiation. Poof! The defects are gone.</li>
+                    <li><strong>Swapping Partners (Intercommutation):</strong> When two cosmic strings cross, they don't just pass through each other like ghosts. The most likely outcome is that they cut each other and swap partners, a process called "intercommutation." Imagine two dancers holding hands and spinning; as they cross, they release their partner's hand and grab the hand of the other dancer. This event dramatically changes the shape of the string network and creates sharp "kinks" that then propagate down the new strings at the speed of light. These kinks are a primary source of gravitational wave emission.</li>
+                </ol>
+
+                <h3>4. Searching for the Evidence</h3>
+                <p>If these defects really existed, where are they now? Most theories predict that the network of defects would have rapidly decayed, annihilating and chopping itself up into smaller and smaller loops. However, their brief existence would have left indelible fingerprints on the cosmos. Cosmologists search for these signatures today:</p>
+                <ul>
+                    <li><strong>Gravitational Waves:</strong> The violent oscillations, intercommutations, and collapses of cosmic strings would produce powerful ripples in spacetime. Observatories like LIGO, Virgo, and the future LISA are actively searching for a "stochastic background" of these waves from the early universe.</li>
+                    <li><strong>Cosmic Microwave Background (CMB):</strong> A passing cosmic string would slightly distort the path of the ancient light from the Big Bang, leaving a characteristic line-like pattern of temperature fluctuations in the CMB.</li>
+                    <li><strong>High-Energy Cosmic Rays:</strong> Annihilation events or collapsing loops could be the source of some of the most energetic particles we observe hitting our atmosphere, whose origins are still a mystery.</li>
+                </ul>
+                <p>So far, no definitive evidence has been found, which has allowed scientists to place strict limits on how many defects could have existed. By simulating their evolution, we can predict the strength of these signals, helping to guide the search and test our most fundamental theories about the universe's birth.</p>
+            </section>
+
+            <section id="parameters-summary" class="content-section">
+                <h2>Parameters & Controls Summary</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Description</th>
+                            <th>Units / Type</th>
+                            <th>Range</th>
+                            <th>Default</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Defect Type A/B</td>
+                            <td>Choose the two types of defects to place in the simulation.</td>
+                            <td>Dropdown</td>
+                            <td>Monopole, String, etc.</td>
+                            <td>String / Anti-String</td>
+                        </tr>
+                        <tr>
+                            <td>Initial Conditions</td>
+                            <td>How the defects are initially placed in the box.</td>
+                            <td>Buttons</td>
+                            <td>Manual, Random, Pair</td>
+                            <td>Create Pair</td>
+                        </tr>
+                        <tr>
+                            <td>Universe "Friction"</td>
+                            <td>The strength of Hubble Drag, which slows defects down due to cosmic expansion.</td>
+                            <td>Relative</td>
+                            <td>0 - 100</td>
+                            <td>20</td>
+                        </tr>
+                        <tr>
+                            <td>String Tension (μ)</td>
+                            <td>Energy per unit length. Higher tension means more massive, rigid strings that straighten faster.</td>
+                            <td>Relative Energy</td>
+                            <td>1 - 1000</td>
+                            <td>100</td>
+                        </tr>
+                        <tr>
+                            <td>Intercommutation Probability</td>
+                            <td>The chance that two crossing strings will swap partners. Physics predicts this is 100%.</td>
+                            <td>Percent (%)</td>
+                            <td>0 - 100</td>
+                            <td>100</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <h4>Worked Example: Hubble Drag</h4>
+                <p>The drag force on a piece of string can be modeled as <code>F_drag = -γ * v</code>, where <code>γ</code> is the friction coefficient (our slider value) and <code>v</code> is the velocity. If a string segment moves at <strong>v = 0.5c</strong> and friction is set to <strong>γ = 20</strong>, the decelerating force is proportional to <code>20 * 0.5 = 10</code> arbitrary units. If you increase friction to <strong>100</strong>, the force becomes <code>100 * 0.5 = 50</code> units, five times stronger.</p>
+            </section>
+
+            <section id="examples" class="content-section">
+                <h2>Try These Examples</h2>
+                <div id="presets-container">
+                    <div class="control-group">
+                        <h4>Preset 1: Simple Annihilation</h4>
+                        <p>A string and anti-string are placed on a collision course. Observe their acceleration and clean annihilation.</p>
+                        <button id="preset-1-btn" class="preset-button">Load Preset</button>
+                    </div>
+                    <div class="control-group">
+                        <h4>Preset 2: Intercommutation Dance</h4>
+                        <p>Two strings cross paths. Observe them swap partners and form propagating "kinks".</p>
+                        <button id="preset-2-btn" class="preset-button">Load Preset</button>
+                    </div>
+                    <div class="control-group">
+                        <h4>Preset 3: Random Network Decay</h4>
+                        <p>A complex, tangled network of strings evolves, simplifying itself through annihilations and loop formation.</p>
+                        <button id="preset-3-btn" class="preset-button">Load Preset</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="walkthroughs" class="content-section">
+                <h2>Worked Walkthroughs & Micro-Experiments</h2>
+                <p>Use these short experiments to build your intuition.</p>
+                <ol>
+                    <li><strong>Experiment 1: The Power of Tension.</strong> Create a single, wavy string. Set Hubble Friction to 0 and Tension to 10. Press play. The string will oscillate wildly. Now, reset and set Tension to 500. The string will snap straight almost instantly. This shows how tension drives the system to its lowest energy state (a straight line).</li>
+                    <li><strong>Experiment 2: Hubble Drag vs. Tension.</strong> Create a string-antistring pair. Set Tension to 100 and Friction to 10. They will accelerate towards each other and annihilate. Now, reset and set Friction to 100. They will still attract, but they will move much more slowly, as if moving through thick molasses. This is how cosmic expansion slows everything down.</li>
+                    <li><strong>Experiment 3: The Intercommutation Kink.</strong> Manually place two strings so they will cross. Set Intercommutation Probability to 100%. When they collide, watch for the sharp "kink" that forms and travels down the new string segments. This kink is a primary source of gravitational wave emission.</li>
+                    <li><strong>Experiment 4: Thwarted Annihilation.</strong> Set up a string-antistring pair. Now, set Intercommutation Probability to 0%. When they meet, they will simply pass through each other! This is not what's expected in reality, but it shows the importance of this quantum process.</li>
+                </ol>
+            </section>
+        </div>
+
+        <div class="theory-container">
+            <section id="core-theory" class="content-section">
+                <h2>Core Theory: The Physics of Cosmic Dynamics</h2>
+                <div id="physics-of-dynamics">
+                    <h4>Part A: Equations of Motion & The Nambu-Goto Action</h4>
+                    <p>The motion of a cosmic string is governed by the principle of least action, specifically the Nambu-Goto action. In plain English, a string moves in such a way as to <strong>minimize its surface area in spacetime</strong>. This surface, traced out by the string as it moves through time, is called its "worldsheet."</p>
+                    <p>This principle leads to a force on any segment of the string that is proportional to its curvature. A simplified equation of motion for a point <strong>x</strong> on the string is:</p>
+                    <p><code>d²<strong>x</strong>/dt² ∝ μ * (d²<strong>x</strong>/ds²)</code></p>
+                    <p><strong>Translation:</strong> The acceleration of a point on the string (left side) is proportional to the string's tension (μ) times its local curvature (the second derivative with respect to string length, s). A more curved bit of string will feel a stronger force trying to straighten it out.</p>
+
+                    <h4>Part B: Annihilation & Intercommutation</h4>
+                    <p>These interactions are rooted in the topology of the underlying field. A string has a "topological charge" or "winding number" associated with how the field twists around it. An anti-string has the opposite winding. When they meet, the windings are (+1) + (-1) = 0. The topology becomes trivial, and the field can settle into its true vacuum state, releasing the string's energy. Intercommutation happens when two strings cross, and the lowest energy path forward is for the fields to reconnect in a swapped configuration.</p>
+
+                    <h4>Part C: Cusps, Kinks, and Gravitational Waves</h4>
+                    <p>When strings interact, they can develop two important features:</p>
+                    <ul>
+                        <li><strong>Kinks:</strong> Sharp, discontinuous bends that propagate along the string at the speed of light. They are formed during intercommutation events.</li>
+                        <li><strong>Cusps:</strong> Points where a loop of string momentarily doubles back on itself. For an instant, the point on the cusp is moving at the speed of light.</li>
+                    </ul>
+                    <p>These features, especially cusps, are incredibly powerful sources of beamed gravitational radiation. The immense acceleration and velocity create strong ripples in spacetime, making cosmic string networks a prime target for gravitational wave observatories.</p>
+
+                    <h4>Part D: The Domain Wall Problem</h4>
+                    <p>A stable domain wall is a cosmological catastrophe. The energy density of a wall (σ, energy per unit area) decreases with the expansion of the universe much slower than the energy density of matter or radiation. The energy of a wall is <code>E_wall ∝ σ * R²</code> (where R is the scale factor of the universe), while the energy density of matter is <code>ρ_matter ∝ 1/R³</code>. If a single stable wall existed, its energy would quickly come to dominate the entire energy budget of the universe, which is starkly contrary to our observations. Therefore, any theory predicting domain walls must also provide a mechanism for them to decay very early in the universe's history.</p>
+                </div>
+            </section>
+
+            <section id="advanced-notes" class="content-section">
+                <h2>Advanced Notes / Extensions</h2>
+                <h4>Particle Production from Annihilation</h4>
+                <p>When defects annihilate, their enormous stored energy (e.g., the tension μ) is converted into a shower of fundamental particles. In Grand Unified Theories (GUTs), the particles produced would be the super-heavy X and Y bosons. These are unstable and would immediately decay into a cascade of standard model particles: quarks, leptons, photons, etc. An observatory would see this as a burst of very high-energy gamma rays and other particles, potentially contributing to the observed cosmic ray flux.</p>
+
+                <h4>Loop Formation and Decay</h4>
+                <p>When a string intersects with itself, it can "intercommute" and pinch off a closed loop. These loops are not stable. They oscillate under their own tension, forming cusps and kinks, which radiate energy away as gravitational waves. This causes the loop to shrink and eventually annihilate completely. The lifetime (τ) of a loop is proportional to its initial size (L) and inversely proportional to its tension (μ) and the gravitational constant (G): <code>τ ≈ L / (G * μ)</code>. Tracking the population and decay of these loops is a key part of modern cosmic string simulations.</p>
+
+                <h4>Hybrid Defects: Walls Bounded by Strings</h4>
+                <p>Some theories predict hybrid defects. For example, if the vacuum has multiple states, you could form a domain wall that ends on a cosmic string. This creates a fascinating dynamic system: the domain wall has immense tension (energy per area) and pulls on the bounding strings, causing the entire structure to collapse and accelerate rapidly. This is one way to get rid of domain walls: they are attached to strings that pull them together to annihilate.</p>
+            </section>
+
+            <section id="analogies" class="content-section">
+                <h2>Analogies & Intuition</h2>
+                <h4>1. The Physical Analogy: Wrinkles in a Tablecloth</h4>
+                <p>Imagine a huge tablecloth being laid down over a table. If it's laid down too quickly, wrinkles will inevitably get trapped. These wrinkles are like cosmic strings. They store energy (you'd have to pull to flatten them), they have tension, and they can move and interact. If you push two wrinkles together, they can merge or pass through each other. A loop-shaped wrinkle is like a cosmic string loop. <strong>Limitation:</strong> This is a 2D analogy for a 3D object, and it doesn't capture the anti-string concept or intercommutation.</p>
+
+                <h4>2. The Visualization Analogy: Topographic Map Contours</h4>
+                <p>Think of the underlying quantum field as a landscape, with hills and valleys representing its value. A cosmic string is like a contour line that is "stuck" at a high altitude and can't go down. It forms a closed loop or stretches to infinity. The string's tension is the "steepness" of the landscape trying to flatten out. Annihilation is when a contour from a "hill" meets an anti-contour from a "valley," and they cancel out, flattening the map. <strong>Limitation:</strong> This is a static analogy for a highly dynamic process.</p>
+
+                <h4>3. The Computational Analogy: A Chain of Linked Nodes</h4>
+                <p>In the simulation's code, a cosmic string is just a list of points (nodes) in 3D space, connected by virtual springs. Each node feels a force from its two neighbors, trying to pull it to their midpoint. This simple rule creates the "tension" effect. Intercommutation is just swapping which nodes are linked to which, like re-wiring a circuit. <strong>Limitation:</strong> This is a discretized model. Real cosmic strings are continuous and have relativistic effects not perfectly captured by simple springs.</p>
+            </section>
+
+            <section id="faq" class="content-section">
+                <h2>FAQ & Troubleshooting</h2>
+                <dl>
+                    <dt>Why can't we see these defects with a telescope?</dt>
+                    <dd>They don't shine with light in the conventional sense. We look for their indirect effects: gravitational waves from their motion, high-energy particles from their decay, or subtle distortions in the cosmic microwave background radiation.</dd>
+                    <dt>What's the difference between a string and an anti-string?</dt>
+                    <dd>It's a topological property. Imagine the field "winds" clockwise around a string. It would wind counter-clockwise around an anti-string. To our eyes they'd look the same, but their opposite nature is revealed when they interact and annihilate.</dd>
+                    <dt>Why is the Intercommutation Probability 100% by default?</dt>
+                    <dd>Quantum mechanical calculations show that for the simplest types of cosmic strings, the probability of swapping partners upon intersection is virtually 1. Lower probabilities are interesting for exploring alternative theories but 100% is the standard assumption.</dd>
+                    <dt>Is this simulation physically accurate?</dt>
+                    <dd>This is a simplified "toy model." It captures the essential dynamics (tension, drag, annihilation, intercommutation) but ignores many complexities, such as the full effects of General Relativity, the microscopic physics of the string core, and the precise spectrum of radiated particles. Professional simulations are much more complex.</dd>
+                    <dt>What happens to the energy when defects annihilate?</dt>
+                    <dd>It's converted into a shower of other fundamental particles and radiation, according to Einstein's E=mc². In the early universe, this would have created a burst of incredibly energetic particles.</dd>
+                    <dt>The simulation is running slow. What can I do?</dt>
+                    <dd>Try reducing the complexity. Use the "Generate Pair" initial condition instead of a "Random Network," which has many more objects. You can also try toggling the "Performance Mode" if available, which may reduce the number of points used to draw the strings.</dd>
+                </dl>
+            </section>
+        </div>
+
+        <footer>
+            <div id="quality-check-panel"></div>
+            <button id="dev-console-toggle">Toggle Developer Console</button>
+            <div id="dev-console" class="content-section"></div>
+            <p>Cosmic Tango Simulation &copy; 2025</p>
+        </footer>
+
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- CORE ELEMENTS ---
+        const canvas = document.getElementById('simulation-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // --- 3D MATH UTILITIES ---
+        class Vec3 {
+            constructor(x = 0, y = 0, z = 0) {
+                this.x = x; this.y = y; this.z = z;
+            }
+            clone() { return new Vec3(this.x, this.y, this.z); }
+            add(v) { return new Vec3(this.x + v.x, this.y + v.y, this.z + v.z); }
+            sub(v) { return new Vec3(this.x - v.x, this.y - v.y, this.z - v.z); }
+            scale(s) { return new Vec3(this.x * s, this.y * s, this.z * s); }
+            dot(v) { return this.x * v.x + this.y * v.y + this.z * v.z; }
+            cross(v) {
+                return new Vec3(
+                    this.y * v.z - this.z * v.y,
+                    this.z * v.x - this.x * v.z,
+                    this.x * v.y - this.y * v.x
+                );
+            }
+            magnitude() { return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z); }
+            normalize() {
+                const mag = this.magnitude();
+                return mag > 0 ? this.scale(1 / mag) : new Vec3();
+            }
+        }
+
+        // --- CAMERA AND RENDER STATE ---
+        let camera = {
+            position: new Vec3(0, 5, -15),
+            target: new Vec3(0, 0, 0),
+            up: new Vec3(0, 1, 0),
+            fov: 45,
+            // Orbit controls
+            theta: -Math.PI / 2,
+            phi: Math.PI / 2,
+            radius: 15,
+            zoomSpeed: 0.5
+        };
+        let sceneObjects = []; // This will hold our defects
+
+        // --- 3D PROJECTION LOGIC ---
+        let viewMatrix = new Float32Array(16);
+        let projectionMatrix = new Float32Array(16);
+
+        function updateViewMatrix() {
+            // Simple lookAt matrix calculation
+            const zAxis = camera.position.sub(camera.target).normalize();
+            const xAxis = camera.up.clone().cross(zAxis).normalize();
+            const yAxis = zAxis.clone().cross(xAxis).normalize();
+
+            viewMatrix.set([
+                xAxis.x, yAxis.x, zAxis.x, 0,
+                xAxis.y, yAxis.y, zAxis.y, 0,
+                xAxis.z, yAxis.z, zAxis.z, 0,
+                -xAxis.dot(camera.position), -yAxis.dot(camera.position), -zAxis.dot(camera.position), 1
+            ]);
+        }
+
+        function updateProjectionMatrix() {
+            const aspect = canvas.width / canvas.height;
+            const f = 1.0 / Math.tan((camera.fov * Math.PI / 180) / 2);
+            const zNear = 0.1, zFar = 1000;
+            const rangeInv = 1 / (zNear - zFar);
+
+            projectionMatrix.set([
+                f / aspect, 0, 0, 0,
+                0, f, 0, 0,
+                0, 0, (zNear + zFar) * rangeInv, -1,
+                0, 0, zNear * zFar * rangeInv * 2, 0
+            ]);
+        }
+
+        function project3D(p) {
+            // Apply view matrix
+            const vx = p.x * viewMatrix[0] + p.y * viewMatrix[4] + p.z * viewMatrix[8] + viewMatrix[12];
+            const vy = p.x * viewMatrix[1] + p.y * viewMatrix[5] + p.z * viewMatrix[9] + viewMatrix[13];
+            const vz = p.x * viewMatrix[2] + p.y * viewMatrix[6] + p.z * viewMatrix[10] + viewMatrix[14];
+            const vw = p.x * viewMatrix[3] + p.y * viewMatrix[7] + p.z * viewMatrix[11] + viewMatrix[15];
+
+            // Apply projection matrix
+            const px = vx * projectionMatrix[0];
+            const py = vy * projectionMatrix[5];
+            const pz = vz * projectionMatrix[10] + vw * projectionMatrix[14];
+            const pw = -vz; // Perspective divide
+
+            if (pw < 0) return null; // Behind camera
+
+            const ndcX = px / pw;
+            const ndcY = py / pw;
+
+            return {
+                x: (ndcX + 1) * 0.5 * canvas.width,
+                y: (1 - ndcY) * 0.5 * canvas.height,
+                depth: (pz / pw + 1) * 0.5
+            };
+        }
+
+        // --- DRAWING FUNCTIONS ---
+        function drawPoint(p3d, color = 'white', size = 5) {
+            const p2d = project3D(p3d);
+            if (!p2d) return;
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(p2d.x, p2d.y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function drawLine(p1_3d, p2_3d, color = 'white', width = 1) {
+            const p1_2d = project3D(p1_3d);
+            const p2_2d = project3D(p2_3d);
+            if (!p1_2d || !p2_2d) return;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = width;
+            ctx.beginPath();
+            ctx.moveTo(p1_2d.x, p1_2d.y);
+            ctx.lineTo(p2_2d.x, p2_2d.y);
+            ctx.stroke();
+        }
+
+        // --- CAMERA MOUSE CONTROLS ---
+        let isDragging = false;
+        let lastMouseX, lastMouseY;
+
+        canvas.addEventListener('mousedown', e => {
+            isDragging = true;
+            lastMouseX = e.offsetX;
+            lastMouseY = e.offsetY;
+        });
+        canvas.addEventListener('mouseup', () => isDragging = false);
+        canvas.addEventListener('mouseleave', () => isDragging = false);
+        canvas.addEventListener('mousemove', e => {
+            if (!isDragging) return;
+            const dx = e.offsetX - lastMouseX;
+            const dy = e.offsetY - lastMouseY;
+
+            camera.theta -= dx * 0.01;
+            camera.phi -= dy * 0.01;
+            camera.phi = Math.max(0.1, Math.min(Math.PI - 0.1, camera.phi)); // Clamp polar angle
+
+            lastMouseX = e.offsetX;
+            lastMouseY = e.offsetY;
+        });
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            camera.radius += e.deltaY * 0.05 * camera.zoomSpeed;
+            camera.radius = Math.max(2, Math.min(50, camera.radius)); // Clamp zoom
+        });
+
+        function updateCameraPosition() {
+            camera.position.x = camera.target.x + camera.radius * Math.sin(camera.phi) * Math.cos(camera.theta);
+            camera.position.y = camera.target.y + camera.radius * Math.cos(camera.phi);
+            camera.position.z = camera.target.z + camera.radius * Math.sin(camera.phi) * Math.sin(camera.theta);
+        }
+
+        // --- SIMULATION & PHYSICS ENGINE ---
+        let simState = {
+            isPlaying: false,
+            time: 0,
+            dt: 0.02,
+            boxSize: 10,
+        };
+
+        let simParams = {
+            hubbleFriction: 20,
+            tension: 100,
+            intercommProb: 1.0,
+        };
+
+        class SimPoint {
+            constructor(pos) {
+                this.pos = pos;
+                this.prevPos = pos.clone();
+                this.acc = new Vec3();
+            }
+            update(dt) {
+                const vel = this.pos.sub(this.prevPos);
+                this.prevPos = this.pos.clone();
+                this.pos = this.pos.add(vel).add(this.acc.scale(dt * dt));
+                this.acc = new Vec3(); // Clear acceleration
+            }
+        }
+
+        class CosmicString {
+            constructor(points, type = 'string') {
+                this.id = Math.random();
+                this.points = points.map(p => new SimPoint(p));
+                this.type = type; // 'string' or 'anti-string'
+                this.color = type === 'string' ? 'yellow' : 'orange';
+            }
+        }
+
+        function updatePhysics() {
+            if (!simState.isPlaying) return;
+
+            const dt = simState.dt;
+
+            // 1. Calculate forces
+            sceneObjects.forEach(obj => {
+                if (obj instanceof CosmicString) {
+                    for (let i = 1; i < obj.points.length - 1; i++) {
+                        const p_prev = obj.points[i-1].pos;
+                        const p_curr = obj.points[i].pos;
+                        const p_next = obj.points[i+1].pos;
+
+                        // Tension force
+                        const force_tension = p_prev.add(p_next).sub(p_curr.scale(2)).scale(simParams.tension);
+                        obj.points[i].acc = obj.points[i].acc.add(force_tension);
+
+                        // Hubble drag force
+                        const vel = obj.points[i].pos.sub(obj.points[i].prevPos);
+                        const force_drag = vel.scale(-simParams.hubbleFriction * 0.1);
+                        obj.points[i].acc = obj.points[i].acc.add(force_drag);
+                    }
+                }
+            });
+
+            // 2. Update positions (Verlet integration)
+            sceneObjects.forEach(obj => {
+                if (obj instanceof CosmicString) {
+                    obj.points.forEach(p => p.update(dt));
+                    // Boundary conditions (clamp to box)
+                    obj.points.forEach(p => {
+                        const s = simState.boxSize / 2;
+                        p.pos.x = Math.max(-s, Math.min(s, p.pos.x));
+                        p.pos.y = Math.max(-s, Math.min(s, p.pos.y));
+                        p.pos.z = Math.max(-s, Math.min(s, p.pos.z));
+                    });
+                }
+            });
+
+            // 3. Handle interactions (simplified for now)
+            handleInteractions();
+
+            simState.time += dt;
+        }
+
+        function handleInteractions() {
+            // More robust interaction logic will go here.
+            // For now, this is a simplified version.
+            const interactionDistSq = 1.0; // using squared distance
+            let objectsToRemove = new Set();
+            let objectsToAdd = [];
+
+            // Annihilation
+            const strings = sceneObjects.filter(o => o instanceof CosmicString);
+            for (let i = 0; i < strings.length; i++) {
+                for (let j = i + 1; j < strings.length; j++) {
+                    const s1 = strings[i];
+                    const s2 = strings[j];
+                    if (s1.type === s2.type) continue;
+
+                    for (let p1_idx = 0; p1_idx < s1.points.length; p1_idx++) {
+                        for (let p2_idx = 0; p2_idx < s2.points.length; p2_idx++) {
+                            const p1 = s1.points[p1_idx].pos;
+                            const p2 = s2.points[p2_idx].pos;
+                            if (p1.sub(p2).magnitudeSq() < interactionDistSq) {
+                                objectsToRemove.add(s1.id);
+                                objectsToRemove.add(s2.id);
+                                logEvent(`Annihilation event!`);
+                                updateLiveReport(`A string and anti-string annihilated!`);
+                                break;
+                            }
+                        }
+                        if(objectsToRemove.has(s1.id)) break;
+                    }
+                }
+            }
+
+            if (objectsToRemove.size > 0) {
+                sceneObjects = sceneObjects.filter(obj => !objectsToRemove.has(obj.id));
+            }
+        }
+
+        // --- INITIAL CONDITION GENERATORS ---
+        function resetScene(generator) {
+            simState.isPlaying = false;
+            document.getElementById('play-pause-btn').textContent = 'Play';
+            sceneObjects = [];
+            if(generator) generator();
+        }
+
+        function createAnnihilationPair() {
+            sceneObjects = [];
+            const s = simState.boxSize * 0.4;
+            let points1 = [];
+            let points2 = [];
+            for(let i=0; i<20; i++) {
+                const prog = i/19;
+                points1.push(new Vec3(-s + 2*s*prog, 0.5, 0));
+                points2.push(new Vec3(-s + 2*s*prog, -0.5, 0));
+            }
+            sceneObjects.push(new CosmicString(points1, 'string'));
+            sceneObjects.push(new CosmicString(points2, 'anti-string'));
+            updateLiveReport("A string and anti-string pair approach each other, pulled by tension.");
+        }
+
+        function createRandomNetwork() {
+            sceneObjects = [];
+            const numStrings = 5;
+            const s = simState.boxSize / 2;
+            for(let i=0; i<numStrings; i++) {
+                const start = new Vec3(Math.random()*s-s/2, Math.random()*s-s/2, Math.random()*s-s/2);
+                const end = new Vec3(Math.random()*s-s/2, Math.random()*s-s/2, Math.random()*s-s/2);
+                const points = [];
+                for(let j=0; j<15; j++) {
+                    const prog = j/14;
+                    points.push(start.scale(1-prog).add(end.scale(prog)));
+                }
+                sceneObjects.push(new CosmicString(points, Math.random() > 0.5 ? 'string' : 'anti-string'));
+            }
+            updateLiveReport("A random network of defects evolves under tension and friction.");
+        }
+
+        // --- DATA PANELS AND UI ---
+        const liveReportEl = document.querySelector('#live-report-panel p');
+        const eventLogEl = document.querySelector('#quantitative-panel');
+        let lastFrameTime = 0;
+        let frameCount = 0;
+        let fps = 0;
+
+        function updateLiveReport(message) {
+            liveReportEl.textContent = message;
+        }
+
+        function logEvent(message, isError = false) {
+            const time = simState.time.toFixed(2);
+            const p = document.createElement('p');
+            p.textContent = `[t=${time}s] ${message}`;
+            eventLogEl.insertBefore(p, eventLogEl.firstChild.nextSibling.nextSibling);
+            if (eventLogEl.children.length > 10) {
+                eventLogEl.removeChild(eventLogEl.lastChild);
+            }
+
+            // Also log to dev console
+            const devp = document.createElement('p');
+            devp.textContent = `[t=${time}s] ${message}`;
+            if(isError) devp.style.color = 'red';
+            document.getElementById('dev-console').appendChild(devp);
+        }
+
+        function updateDataPanels() {
+            // FPS counter
+            frameCount++;
+            const now = performance.now();
+            if (now - lastFrameTime > 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastFrameTime = now;
+                document.querySelector('#meta-bar span:first-child').textContent = `Est. FPS: ${fps}`;
+            }
+        }
+
+        // --- MAIN RENDER LOOP ---
+        function render(now) {
+            if(!lastFrameTime) lastFrameTime = now;
+
+            // ... (responsive canvas logic)
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+            if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+            }
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = getComputedStyle(canvas).backgroundColor;
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+
+            const speed = parseFloat(document.getElementById('speed-slider').value);
+            for(let i=0; i<speed; i++) { // Run physics multiple times for higher speed
+                updatePhysics();
+            }
+
+            updateCameraPosition();
+            updateViewMatrix();
+            updateProjectionMatrix();
+
+            updateDataPanels();
+
+            // Draw scene
+            sceneObjects.forEach(obj => {
+                if (obj instanceof CosmicString) {
+                    for (let i = 0; i < obj.points.length - 1; i++) {
+                        drawLine(obj.points[i].pos, obj.points[i+1].pos, obj.color, 2);
+                    }
+                }
+            });
+
+            // Draw box outline
+            drawBoxOutline();
+
+            requestAnimationFrame(render);
+        }
+
+        function drawBoxOutline() {
+            const s = simState.boxSize / 2;
+            const p = [
+                new Vec3(-s,-s,-s), new Vec3(s,-s,-s), new Vec3(s,s,-s), new Vec3(-s,s,-s),
+                new Vec3(-s,-s,s), new Vec3(s,-s,s), new Vec3(s,s,s), new Vec3(-s,s,s)
+            ];
+            const lines = [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]];
+            lines.forEach(l => drawLine(p[l[0]], p[l[1]], 'grey', 0.5));
+        }
+
+        // --- UTILITY & FINALIZATION ---
+        function exportPNG() {
+            const link = document.createElement('a');
+            link.download = `cosmic_tango_t${simState.time.toFixed(1)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            logEvent("Exported canvas as PNG.");
+        }
+
+        function exportJSON() {
+            const data = {
+                params: simParams,
+                // Could also save sceneObjects state here for full reproducibility
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const link = document.createElement('a');
+            link.download = `cosmic_tango_params.json`;
+            link.href = URL.createObjectURL(blob);
+            link.click();
+            logEvent("Exported parameters as JSON.");
+        }
+
+        function sharePreset() {
+            const data = { params: simParams };
+            const jsonString = JSON.stringify(data);
+            const encoded = btoa(jsonString); // Base64 encode
+            const url = `${window.location.origin}${window.location.pathname}#data=${encoded}`;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Shareable link copied to clipboard!');
+                logEvent("Shareable link copied.");
+            }, () => {
+                alert('Failed to copy link.');
+            });
+        }
+
+        function loadFromURL() {
+            if (window.location.hash.startsWith('#data=')) {
+                try {
+                    const encoded = window.location.hash.substring(6);
+                    const jsonString = atob(encoded);
+                    const data = JSON.parse(jsonString);
+                    if (data.params) {
+                        simParams = data.params;
+                        // update sliders to reflect loaded params
+                        document.getElementById('friction-slider').value = simParams.hubbleFriction;
+                        document.getElementById('tension-slider').value = simParams.tension;
+                        document.getElementById('intercomm-slider').value = simParams.intercommProb * 100;
+                        // Manually trigger input event to update UI text
+                        document.getElementById('friction-slider').dispatchEvent(new Event('input'));
+                        document.getElementById('tension-slider').dispatchEvent(new Event('input'));
+                        document.getElementById('intercomm-slider').dispatchEvent(new Event('input'));
+                        logEvent("Loaded parameters from URL.");
+                        updateLiveReport("Loaded shared preset.");
+                    }
+                } catch (e) {
+                    console.error("Failed to load preset from URL", e);
+                    logEvent("Error loading preset from URL.");
+                }
+            }
+        }
+
+        function qualityCheck() {
+            const checks = {
+                'Canvas exists': !!canvas,
+                'Play button exists': !!document.getElementById('play-pause-btn'),
+                'Reset button exists': !!document.getElementById('reset-btn'),
+            };
+            const errorPanel = document.getElementById('quality-check-panel');
+            errorPanel.innerHTML = '<h4>Quality Checks</h4>';
+            let allPassed = true;
+            for(const [name, passed] of Object.entries(checks)) {
+                const p = document.createElement('p');
+                p.textContent = `${name}: ${passed ? '✅' : '❌'}`;
+                p.style.color = passed ? 'green' : 'red';
+                errorPanel.appendChild(p);
+                if (!passed) allPassed = false;
+            }
+        }
+
+        // --- INITIALIZATION ---
+        function init() {
+            console.log("Simulation Initialized");
+            // Keyboard shortcuts
+            window.addEventListener('keydown', (e) => {
+                if(e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return; // Ignore inputs
+                switch(e.code) {
+                    case 'Space':
+                        e.preventDefault();
+                        document.getElementById('play-pause-btn').click();
+                        break;
+                    case 'ArrowRight':
+                        e.preventDefault();
+                        document.getElementById('step-btn').click();
+                        break;
+                    case 'KeyR':
+                        e.preventDefault();
+                        document.getElementById('reset-btn').click();
+                        break;
+                    case 'KeyE':
+                        e.preventDefault();
+                        document.getElementById('export-png-btn').click();
+                        break;
+                }
+            });
+
+            // Wire up controls
+            document.getElementById('play-pause-btn').addEventListener('click', () => {
+                simState.isPlaying = !simState.isPlaying;
+                document.getElementById('play-pause-btn').textContent = simState.isPlaying ? 'Pause' : 'Play';
+            });
+            document.getElementById('step-btn').addEventListener('click', () => {
+                if (!simState.isPlaying) {
+                    updatePhysics();
+                    logEvent("Stepped simulation forward.");
+                }
+            });
+            document.getElementById('reset-btn').addEventListener('click', () => resetScene(createAnnihilationPair));
+
+            document.getElementById('init-pair-btn').addEventListener('click', () => resetScene(createAnnihilationPair));
+            document.getElementById('init-random-btn').addEventListener('click', () => resetScene(createRandomNetwork));
+
+            // Sliders
+            const frictionSlider = document.getElementById('friction-slider');
+            frictionSlider.addEventListener('input', () => {
+                simParams.hubbleFriction = parseFloat(frictionSlider.value);
+                document.getElementById('friction-value').textContent = frictionSlider.value;
+            });
+            const tensionSlider = document.getElementById('tension-slider');
+            tensionSlider.addEventListener('input', () => {
+                simParams.tension = parseFloat(tensionSlider.value);
+                document.getElementById('tension-value').textContent = tensionSlider.value;
+            });
+            const intercommSlider = document.getElementById('intercomm-slider');
+            intercommSlider.addEventListener('input', () => {
+                simParams.intercommProb = parseFloat(intercommSlider.value) / 100;
+                document.getElementById('intercomm-value').textContent = intercommSlider.value;
+            });
+            const speedSlider = document.getElementById('speed-slider');
+            speedSlider.addEventListener('input', () => {
+                document.getElementById('speed-value').textContent = parseFloat(speedSlider.value).toFixed(1);
+            });
+
+            // Utility Buttons
+            document.getElementById('export-png-btn').addEventListener('click', exportPNG);
+            document.getElementById('export-json-btn').addEventListener('click', exportJSON);
+            document.getElementById('share-btn').addEventListener('click', sharePreset);
+
+            // Dev Console
+            const devConsole = document.getElementById('dev-console');
+            document.getElementById('dev-console-toggle').addEventListener('click', () => {
+                devConsole.style.display = devConsole.style.display === 'none' ? 'block' : 'none';
+            });
+
+            // Theme toggle
+            document.getElementById('theme-toggle').addEventListener('change', (e) => {
+                document.body.classList.toggle('dark-theme', e.target.checked);
+            });
+
+            qualityCheck();
+            loadFromURL();
+
+            // Initial scene
+            resetScene(createAnnihilationPair);
+            render(performance.now());
+        }
+
+        // Add Vec3.magnitudeSq for performance
+        Vec3.prototype.magnitudeSq = function() { return this.x*this.x + this.y*this.y + this.z*this.z; };
+
+        init();
+    });
+    </script>
+</body>
+</html>
