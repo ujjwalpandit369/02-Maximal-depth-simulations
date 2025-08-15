@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Lonely End: Charting the de Sitter Universe</title>
+    <style>
+        body { font-family: 'Verdana', sans-serif; background-color: #000; color: #eee; }
+        .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; }
+        .panel { background-color: #112; border-radius: 8px; padding: 20px; }
+        canvas { background-color: #000; border-radius: 4px; width: 100%; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h2>3D Expanding Grid</h2>
+            <canvas id="3d-grid-canvas" height="400"></canvas>
+            <h3>Controls</h3>
+            <label for="lambda-slider">Cosmological Constant (Λ):</label>
+            <input type="range" id="lambda-slider" min="0.1" max="1" step="0.01" value="0.5">
+            <button id="place-observer">Place Observer</button>
+        </div>
+        <div class="panel">
+            <h2>Penrose Diagram</h2>
+            <canvas id="penrose-canvas" height="400"></canvas>
+        </div>
+        <div class="panel" style="grid-column: 1 / 3;">
+            <h2>Tales from an Empty Universe</h2>
+            <div id="tales-content">
+                <p>Place observers to see their stories unfold. Each observer's worldline travels from past infinity (bottom) to future infinity (top). However, due to the universe's acceleration, they are causally isolated from each other. Each observer has their own private event horizon.</p>
+            </div>
+        </div>
+        <div class="panel" style="grid-column: 1 / 3;">
+            <h2>The Physics of an Accelerating Cosmos</h2>
+            <div id="physics-content">
+                <h3>The de Sitter Solution</h3>
+                <p>De Sitter space is the maximally symmetric vacuum solution to Einstein's equations with a positive cosmological constant (Λ). It describes an empty universe undergoing exponential expansion. This is a key model for both the inflationary epoch and the potential far future of our own universe.</p>
+                <h3>Observer-Dependent Horizons</h3>
+                <p>Unlike a black hole, which has a single, absolute event horizon, every observer in de Sitter space has their own private cosmological event horizon. This isn't a physical barrier, but a point of no return created by the accelerating expansion of space itself. If another galaxy crosses your horizon, it has been carried away from you faster than the speed of light.</p>
+                <h3>Anatomy of the de Sitter Square</h3>
+                <p>The Penrose diagram for de Sitter space is a square. The top and bottom edges represent future and past timelike infinity (i⁺ and i⁻), where comoving observers begin and end their journeys. The left and right corners are future and past null infinity (ℐ⁺ and ℐ⁻), where light rays enter and leave the spacetime.</p>
+            </div>
+        </div>
+        <div class="panel" style="grid-column: 1 / 3;">
+            <h2>Horizon & Causality Data</h2>
+            <div id="data-content">Adjust the cosmological constant to see the data.</div>
+        </div>
+        <div class="panel" style="grid-column: 1 / 3;">
+            <h2>Maximal Depth</h2>
+            <div id="maximal-depth-content">
+                <h3>Advanced Scenarios</h3>
+                <button id="matter-to-ds-scenario">Matter-dominated to de Sitter</button>
+                <button id="ads-scenario">Show Anti-de Sitter Space</button>
+                <button id="eternal-inflation-scenario">Model Eternal Inflation</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const penroseCanvas = document.getElementById('penrose-canvas');
+            const pCtx = penroseCanvas.getContext('2d');
+            const lambdaSlider = document.getElementById('lambda-slider');
+            const dataContent = document.getElementById('data-content');
+
+            let lambda = 0.5;
+            let observers = [];
+
+            function draw() {
+                drawPenrose();
+                updateData();
+            }
+
+            function drawPenrose() {
+                pCtx.clearRect(0, 0, penroseCanvas.width, penroseCanvas.height);
+                const w = penroseCanvas.width;
+                const h = penroseCanvas.height;
+                pCtx.strokeStyle = 'white';
+                pCtx.lineWidth = 2;
+
+                pCtx.beginPath();
+                pCtx.moveTo(w/2, 10); // Top
+                pCtx.lineTo(10, h/2); // Left
+                pCtx.lineTo(w/2, h-10); // Bottom
+                pCtx.lineTo(w-10, h/2); // Right
+                pCtx.closePath();
+                pCtx.stroke();
+
+                // Draw observer worldlines
+                pCtx.strokeStyle = '#6a7dff';
+                observers.forEach(obs => {
+                    pCtx.beginPath();
+                    pCtx.moveTo(obs.x, h-10);
+                    pCtx.lineTo(obs.x, 10);
+                    pCtx.stroke();
+                });
+            }
+
+            function updateData() {
+                const H = Math.sqrt(lambda / 3);
+                const R = 1 / H; // c=1
+                const T = H / (2 * Math.PI);
+                dataContent.innerHTML = `
+                    <p>Horizon Radius (R = 1/H): ${R.toFixed(3)}</p>
+                    <p>Gibbons-Hawking Temperature (T = H/2π): ${T.toFixed(4)}</p>
+                `;
+            }
+
+            lambdaSlider.addEventListener('input', (e) => {
+                lambda = parseFloat(e.target.value);
+                draw();
+            });
+
+            document.getElementById('place-observer').onclick = () => {
+                observers.push({ x: Math.random() * (penroseCanvas.width - 20) + 10 });
+                draw();
+            };
+
+            draw();
+        });
+    </script>
+</body>
+</html>
