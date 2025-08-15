@@ -131,6 +131,7 @@
                     this.wittenDiagrams = [];
                     this.complexity = 0;
                     this.activeTool = 'bulk_action';
+                    this.entangleStart = null;
 
                     this.setupUI();
                     this.animate();
@@ -142,14 +143,18 @@
                             document.querySelector('.tool-btn.active').classList.remove('active');
                             btn.classList.add('active');
                             this.activeTool = btn.dataset.tool;
+                            this.entangleStart = null; // Reset entanglement on tool switch
                         });
                     });
                     document.getElementById('complexity-slider').addEventListener('input', (e) => {
                         this.complexity = parseFloat(e.target.value);
+                        this.updateDictionary(`Complexity set to ${this.complexity.toFixed(2)}. This may correspond to the volume of a Wheeler-DeWitt patch in the bulk.`);
                     });
                     document.getElementById('clear-operators-btn').addEventListener('click', () => {
                         this.operators = [];
                         this.wittenDiagrams = [];
+                        this.entangledPairs = [];
+                        this.updateDictionary("Cleared all operators and entanglement pairs.");
                     });
 
                     this.bulkCanvas.addEventListener('click', (e) => this.handleCanvasClick(e, 'bulk'));
@@ -166,23 +171,22 @@
                         const distFromCenter = Math.sqrt((x-w/2)**2 + (y-h/2)**2);
                         if (distFromCenter < w/2 * 0.8) {
                             this.events.push({x, y, t: 0, alpha: 1});
-                            // Map to boundary
                             const angle = Math.atan2(y - h/2, x - w/2);
                             const op_x = w/2 + Math.cos(angle) * w/2 * 0.8;
                             const op_y = h/2 + Math.sin(angle) * h/2 * 0.8;
-                            this.operators.push({x: op_x, y: op_y});
+                            this.operators.push({x: op_x, y: op_y, type: 'particle'});
                             this.updateDictionary("Bulk particle created ↔ Boundary operator inserted.");
                         }
                     } else if (this.activeTool === 'boundary_op' && canvasType === 'boundary') {
                         const distFromCenter = Math.sqrt((x-w/2)**2 + (y-h/2)**2);
-                        if (Math.abs(distFromCenter - w/2 * 0.8) < 10) {
-                            this.operators.push({x, y});
+                        if (Math.abs(distFromCenter - w/2 * 0.8) < 15) {
+                            this.operators.push({x, y, type: 'operator'});
                             this.computeWittenDiagram();
                             this.updateDictionary("Boundary operator inserted. Correlator computed via Witten diagram in bulk.");
                         }
                     } else if (this.activeTool === 'entangle' && canvasType === 'boundary') {
                         const distFromCenter = Math.sqrt((x-w/2)**2 + (y-h/2)**2);
-                        if (Math.abs(distFromCenter - w/2 * 0.8) < 10) {
+                        if (Math.abs(distFromCenter - w/2 * 0.8) < 15) {
                             if (!this.entangleStart) {
                                 this.entangleStart = {x, y};
                             } else {
@@ -199,17 +203,24 @@
                 }
 
                 computeWittenDiagram() {
+                    this.wittenDiagrams = [];
                     if (this.operators.length < 2) return;
-                    // Simple Witten diagram: connect all operators to a central point
+
                     const w = this.bulkCanvas.width, h = this.bulkCanvas.height;
-                    const center = {x: w/2, y: h/2};
-                    this.wittenDiagrams = this.operators.map(op => {
-                        // A real mapping from boundary to bulk would be needed here.
-                        // We'll fake it for visualization.
-                        const bulk_x = op.x;
-                        const bulk_y = op.y;
-                        return {start: {x: bulk_x, y: bulk_y}, end: center};
-                    });
+                    const center_x = w / 2;
+                    const center_y = h / 2;
+
+                    // Create a diagram for every set of operators
+                    let interactionPoint = { x: center_x, y: center_y };
+                    let diagram = {
+                        interactionPoint,
+                        legs: this.operators.map(op => ({
+                            start: {x: op.x, y: op.y},
+                            end: interactionPoint
+                        }))
+                    };
+                    this.wittenDiagrams.push(diagram);
+                    document.getElementById('correlator-content').innerHTML = `<p>Computing ${this.operators.length}-point function...</p><p>Diagram generated in bulk.</p>`;
                 }
 
                 draw() {
@@ -220,30 +231,74 @@
                 drawBulk() {
                     const w = this.bulkCanvas.width, h = this.bulkCanvas.height;
                     this.bCtx.clearRect(0,0,w,h);
-                    // Draw Sphere
-                    const gradient = this.bCtx.createRadialGradient(w/2, h/2, 5, w/2, h/2, w/2 * 0.8);
+                    const centerX = w/2, centerY = h/2;
+                    const radius = w/2 * 0.8;
+
+                    const gradient = this.bCtx.createRadialGradient(centerX, centerY, 5, centerX, centerY, radius);
                     gradient.addColorStop(0, '#222');
                     gradient.addColorStop(1, 'var(--primary-color)');
                     this.bCtx.fillStyle = gradient;
-                    this.bCtx.beginPath(); this.bCtx.arc(w/2, h/2, w/2 * 0.8, 0, 2*Math.PI); this.bCtx.fill();
+                    this.bCtx.beginPath(); this.bCtx.arc(centerX, centerY, radius, 0, 2*Math.PI); this.bCtx.fill();
 
-                    // Draw complexity volume
-                    this.bCtx.fillStyle = 'rgba(255, 255, 255, 0.1)';
-                    this.bCtx.beginPath(); this.bCtx.arc(w/2, h/2, w/2 * 0.8 * this.complexity, 0, 2*Math.PI); this.bCtx.fill();
+                    this.bCtx.fillStyle = `rgba(77, 255, 77, ${0.05 + 0.2 * this.complexity})`;
+                    this.bCtx.beginPath(); this.bCtx.arc(centerX, centerY, radius * this.complexity, 0, 2*Math.PI); this.bCtx.fill();
+
+                    // Draw ER bridges
+                    this.entangledPairs.forEach(pair => {
+                        this.bCtx.beginPath();
+                        this.bCtx.moveTo(pair[0].x, pair[0].y);
+                        this.bCtx.quadraticCurveTo(centerX, centerY, pair[1].x, pair[1].y);
+                        this.bCtx.strokeStyle = 'rgba(255, 77, 77, 0.7)';
+                        this.bCtx.lineWidth = 4;
+                        this.bCtx.stroke();
+                    });
+
+                    // Draw Witten diagrams
+                    this.wittenDiagrams.forEach(diagram => {
+                        this.bCtx.strokeStyle = 'rgba(255, 255, 100, 0.8)';
+                        this.bCtx.lineWidth = 2;
+                        diagram.legs.forEach(leg => {
+                            this.bCtx.beginPath();
+                            this.bCtx.moveTo(leg.start.x, leg.start.y);
+                            this.bCtx.lineTo(leg.end.x, leg.end.y);
+                            this.bCtx.stroke();
+                        });
+                        this.bCtx.fillStyle = 'yellow';
+                        this.bCtx.beginPath();
+                        this.bCtx.arc(diagram.interactionPoint.x, diagram.interactionPoint.y, 5, 0, 2*Math.PI);
+                        this.bCtx.fill();
+                    });
+                     // Draw events
+                    this.events.forEach((event, index) => {
+                        this.bCtx.fillStyle = `rgba(255, 255, 255, ${event.alpha})`;
+                        this.bCtx.beginPath();
+                        this.bCtx.arc(event.x, event.y, 3, 0, 2*Math.PI);
+                        this.bCtx.fill();
+                        event.alpha -= 0.01;
+                        if(event.alpha < 0) this.events.splice(index, 1);
+                    });
                 }
 
                 drawBoundary() {
                     const w = this.boundaryCanvas.width, h = this.boundaryCanvas.height;
+                    const centerX = w/2, centerY = h/2;
+                    const radius = w/2 * 0.8;
                     this.xCtx.clearRect(0,0,w,h);
                     this.xCtx.strokeStyle = 'var(--secondary-color)';
                     this.xCtx.lineWidth = 3;
-                    this.xCtx.beginPath(); this.xCtx.arc(w/2, h/2, w/2 * 0.8, 0, 2*Math.PI); this.xCtx.stroke();
+                    this.xCtx.beginPath(); this.xCtx.arc(centerX, centerY, radius, 0, 2*Math.PI); this.xCtx.stroke();
 
-                    // Draw operators
                     this.operators.forEach(op => {
-                        this.xCtx.fillStyle = 'var(--accent-color)';
-                        this.xCtx.beginPath(); this.xCtx.arc(op.x, op.y, 5, 0, 2*Math.PI); this.xCtx.fill();
+                        this.xCtx.fillStyle = op.type === 'particle' ? 'white' : 'var(--accent-color)';
+                        this.xCtx.beginPath(); this.xCtx.arc(op.x, op.y, 6, 0, 2*Math.PI); this.xCtx.fill();
                     });
+
+                    if(this.entangleStart) {
+                        this.xCtx.fillStyle = 'rgba(255, 77, 77, 0.8)';
+                        this.xCtx.beginPath();
+                        this.xCtx.arc(this.entangleStart.x, this.entangleStart.y, 8, 0, 2*Math.PI);
+                        this.xCtx.fill();
+                    }
                 }
 
                 animate() {
