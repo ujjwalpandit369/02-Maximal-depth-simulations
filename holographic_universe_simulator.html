@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Holographic Universe - Degrees of Freedom on the Edge</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1d;
+            --primary-text: #c5c6c7;
+            --secondary-text: #9fa0a1;
+            --panel-bg: #2c2f33;
+            --border-color: #4b4f56;
+            --accent-color: #ff4081; /* A pink/magenta for a cosmic feel */
+            --accent-hover: #f50057;
+            --slider-track: #4b4f56;
+            --slider-thumb: #ff4081;
+            --button-bg: #4b4f56;
+            --button-text: #c5c6c7;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-text);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 {
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3em;
+        }
+        h1 { font-size: 2.5em; text-align: center; }
+        h2 { font-size: 1.8em; margin-top: 1.5em; }
+        h3 { font-size: 1.4em; }
+        p, li, dt, dd { color: var(--secondary-text); }
+        strong { color: var(--primary-text); }
+        code { background-color: var(--panel-bg); padding: 0.2em 0.4em; border-radius: 3px; }
+
+        .container { max-width: 1600px; margin: 0 auto; padding: 1em; }
+        .main-layout { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+        .simulation-column { display: flex; flex-direction: column; gap: 20px; }
+        .controls-column { display: flex; flex-direction: column; gap: 20px; }
+        .panel { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.2em; }
+
+        .sim-area-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .sim-canvas-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1;
+        }
+
+        .sim-canvas-wrapper canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+            border-radius: 8px;
+        }
+
+        .canvas-label {
+            text-align: center;
+            font-weight: bold;
+            color: var(--accent-color);
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 1100px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .controls-column { order: -1; }
+        }
+        @media (max-width: 600px) {
+            .sim-area-container { grid-template-columns: 1fr; }
+        }
+
+        .control-group { margin-bottom: 1.5em; }
+        .control-group label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        .control-group input[type="range"] { width: 100%; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-weight: bold;
+        }
+        button:hover, button:focus { background-color: var(--accent-hover); color: var(--bg-color); }
+
+        #qualityCheckPanel { display: none; background-color: #dc3545; color: #fff; padding: 1em; border-radius: 5px; }
+        .collapsible { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 5px; margin-top: 1em; }
+        .collapsible-header { padding: 0.5em 1em; cursor: pointer; font-weight: bold; }
+        .collapsible-content { padding: 0 1em 1em 1em; max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .collapsible-content.open { max-height: 500px; overflow-y: auto; }
+        #devConsoleLog { background-color: #000; color: #0f0; font-family: monospace; font-size: 0.9em; height: 150px; overflow-y: scroll; padding: 5px; border-radius: 3px; white-space: pre-wrap; }
+        dt { font-weight: bold; color: var(--primary-text); margin-top: 1em;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Holographic Universe</h1>
+            <p style="text-align:center; font-style:italic;">Degrees of Freedom on the Edge</p>
+        </header>
+
+        <main>
+            <section id="overview">
+                <h2>Overview</h2>
+                <p>This simulation explores the <strong>Holographic Principle</strong>, one of the most profound and counter-intuitive ideas in modern physics. Stemming from the study of black holes, it suggests that the information required to describe a volume of space might actually be encoded on its 2D boundary, much like a 3D image is stored on a 2D hologram. Here, you will interact with a black hole, observe how its properties challenge traditional physics, and visualize how information and geometry might be fundamentally linked at the edge of spacetime.</p>
+            </section>
+
+            <div class="main-layout">
+                <div class="simulation-column">
+                    <div class="sim-area-container">
+                        <div class="sim-canvas-container">
+                            <div class="canvas-label">3D View: Spacetime</div>
+                            <div class="sim-canvas-wrapper">
+                                <canvas id="mainCanvas"></canvas>
+                            </div>
+                        </div>
+                        <div class="sim-canvas-container">
+                            <div class="canvas-label">2D View: Event Horizon</div>
+                            <div class="sim-canvas-wrapper">
+                                <canvas id="horizonCanvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel" id="live-commentary">
+                        <h3>Black Hole Information Log</h3>
+                        <p id="commentaryText">Simulation ready. Adjust the black hole's mass or drop an object to begin.</p>
+                    </div>
+                </div>
+
+                <div class="controls-column">
+                    <div class="panel">
+                        <h3>Controls</h3>
+                        <div class="control-group">
+                            <label>Object Dropper</label>
+                            <div class="button-group">
+                                <button id="dropParticleBtn">Drop Particle (1 bit)</button>
+                                <button id="dropBookBtn">Drop Book (10⁷ bits)</button>
+                                <button id="dropStarBtn">Drop Star (10⁵⁷ bits)</button>
+                            </div>
+                        </div>
+                        <div class="control-group">
+                            <label for="massSlider">Black Hole Mass (M): <span id="massValue">10</span> M☉</label>
+                            <input type="range" id="massSlider" min="1" max="100" value="10" step="1">
+                        </div>
+                        <div class="control-group">
+                            <label for="scrambleToggle">Information Scrambling</label>
+                            <input type="checkbox" id="scrambleToggle" checked>
+                        </div>
+                        <div class="control-group">
+                            <label for="zoomSlider">Horizon Zoom: <span id="zoomValue">1</span>x</label>
+                            <input type="range" id="zoomSlider" min="1" max="10" value="1" step="0.5">
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <h3>Entropy & Area Calculator</h3>
+                        <p><strong>Horizon Area (A):</strong> <span id="areaValue">--</span> m²</p>
+                        <p><strong>Information Capacity (A/L_p²):</strong> <span id="planckAreaCount">--</span></p>
+                        <p><strong>Entropy (S/k_B):</strong> <span id="entropyValue">--</span></p>
+                        <hr>
+                        <p><strong>Equivalent Volume Radius:</strong> <span id="volRadiusValue">--</span> m</p>
+                        <p><strong>Max Volume Entropy (Bekenstein):</strong> <span id="bekensteinBound">--</span> k_B</p>
+                    </div>
+                </div>
+            </div>
+
+            <section id="beginners-guide">
+                <h2>Beginner's Guide</h2>
+                <p>Welcome to the edge of reality! This simulation dives into one of the most bizarre and fascinating concepts in physics: the <strong>Holographic Principle</strong>. Before we get to the hologram, let's start with something a bit more familiar: a black hole.</p>
+                <p><strong>Step 1: What is a Black Hole?</strong><br/>
+                A black hole is an object so massive and dense that its gravity is inescapable. Nothing, not even light, can get out once it crosses a boundary called the <strong>event horizon</strong>. In our simulation, the black circle in the "3D View" is the event horizon. You can make it bigger or smaller by changing its mass with the <strong>Black Hole Mass</strong> slider. Notice how a more massive black hole has a larger event horizon.</p>
+                <p><strong>Step 2: Information and Entropy</strong><br/>
+                In physics, "information" is a fundamental concept. It's the data needed to describe a physical system completely. The book you are reading, the atoms in your body, a star—they all contain information. A core rule of quantum mechanics is that information can never be truly destroyed. So, what happens when you throw something, like a book, into a black hole? The information seems to disappear forever. This is the famous <strong>Black Hole Information Paradox</strong>.</p>
+                <p>Scientists use a concept called <strong>entropy</strong> to measure hidden information or the number of ways you can rearrange the internal parts of a system without changing its outward appearance. A scrambled egg has higher entropy than a whole egg because there are many more ways to arrange its molecules while it still looks like a "scrambled egg."</p>
+                <p><strong>Step 3: The Big Surprise - Information on the Surface</strong><br/>
+                Physicists Jacob Bekenstein and Stephen Hawking made a shocking discovery. They found that the entropy of a black hole—its total information content—is not proportional to its 3D volume, as one would expect. Instead, it's proportional to the <strong>2D surface area of its event horizon</strong>. This was the first clue that something strange was going on.</p>
+                <p>Try it yourself. Click the "Drop Book" button. You've just added 10 million bits of information to the black hole. Watch the "Entropy & Area Calculator". The black hole's <strong>Horizon Area</strong> and <strong>Entropy</strong> increase by just enough to account for the new information. The information isn't "inside" in the way we normally think; it's plastered onto the surface.</p>
+                <p><strong>Step 4: The Holographic Principle</strong><br/>
+                This area law led to a radical idea. What if this isn't just true for black holes? What if it's true for <em>any</em> volume of space? The Holographic Principle suggests that all the information needed to describe a 3D volume of space is actually encoded on its 2D boundary. The 3D world we experience could be a "projection" of information living on a distant 2D surface, just like a 3D hologram is projected from a 2D film.</p>
+                <p>The "2D View" in the simulation is a visual metaphor for this idea. It shows the event horizon's surface, divided into fundamental units called <strong>Planck areas</strong>. Each tiny square can hold one "bit" of information. When you drop an object in, you can see the number of required Planck areas increase, and the information gets "scrambled" across the surface. This simulation lets you visualize the universe's ultimate hard drive: the boundary of spacetime itself.</p>
+            </section>
+
+            <section id="physics-explained">
+                <h2>The Physics of Holography</h2>
+                <div class="panel">
+                    <h3>Part A: The Black Hole Information Paradox</h3>
+                    <p>The Black Hole Information Paradox highlights a fundamental clash between two pillars of modern physics: Einstein's General Relativity and Quantum Mechanics. General Relativity predicts that once an object crosses the event horizon, it is destined to hit the singularity, a point of infinite density where the information it carried is obliterated from the universe. However, a core tenet of quantum mechanics is <strong>unitarity</strong>, which states that information about a system can never be permanently lost. The quantum state of the universe must evolve in a way that is, in principle, reversible. If you know the final state, you can work backward to find the initial state. The destruction of information in a black hole violates this principle, creating a deep and unresolved paradox.</p>
+                </div>
+                <div class="panel">
+                    <h3>Part B: Bekenstein-Hawking Entropy</h3>
+                    <p>The first major clue to resolving the paradox came from thermodynamics. Jacob Bekenstein realized that if you throw an object with entropy into a black hole, you seem to decrease the total entropy of the universe, violating the Second Law of Thermodynamics. He postulated that a black hole must have its own entropy to compensate. Stephen Hawking later made this precise by showing that black holes radiate thermally (Hawking radiation) and have a specific temperature. From this, he derived the famous Bekenstein-Hawking formula for the entropy (S) of a black hole:</p>
+                    <p><code>S = (k_B * A) / (4 * L_p²)</code></p>
+                    <p>Where <code>k_B</code> is the Boltzmann constant, <code>A</code> is the area of the event horizon, and <code>L_p²</code> is the Planck area (Għ/c³). The astounding implication is that the maximum information content of a black hole scales with its <strong>area, not its volume</strong>. This was the first hint that our 3D world might be described by 2D physics.</p>
+                </div>
+                <div class="panel">
+                    <h3>Part C: The Holographic Principle</h3>
+                    <p>Gerard 't Hooft and Leonard Susskind expanded on the Bekenstein-Hawking entropy to formulate the Holographic Principle. It states that the entropy, or number of degrees of freedom (the fundamental "wiggles" a system can have), within any region of space is limited not by its volume, but by the surface area of its boundary. The maximum number of degrees of freedom is one per Planck area on the boundary. This is a radical departure from all other physical theories, where degrees of freedom are typically extensive (proportional to volume).</p>
+                    <p>If the principle is correct, it means that our seemingly 3D universe could be a holographic projection of physical processes occurring on a distant 2D screen. This doesn't mean the world is a "simulation" in the colloquial sense, but rather that the mathematical description of reality might be fundamentally lower-dimensional than it appears.</p>
+                </div>
+            </section>
+
+            <section id="advanced-notes">
+                <h2>Advanced Notes & Extensions</h2>
+                <h3>1. Hawking Radiation and Information Recovery</h3>
+                <p>Stephen Hawking showed that quantum effects at the horizon cause black holes to radiate particles as if they were hot objects. This <strong>Hawking radiation</strong> causes the black hole to slowly lose mass and eventually evaporate. But this deepens the paradox: if the black hole evaporates, what happens to the information it contained? The radiation appears to be thermal and random. However, modern theories suggest that subtle quantum correlations within the outgoing radiation must somehow encode the information that originally fell in. Reconstructing the "book" from the "smoke" of Hawking radiation is a problem of immense complexity, but it is believed to be possible in principle, thus preserving unitarity.</p>
+
+                <h3>2. AdS/CFT Correspondence</h3>
+                <p>The most concrete realization of the holographic principle is the <strong>Anti-de Sitter/Conformal Field Theory (AdS/CFT) correspondence</strong>. It proposes an exact mathematical duality: a theory of quantum gravity in a 5-dimensional, negatively curved "bulk" spacetime (AdS) is mathematically equivalent to a simpler, non-gravitational quantum field theory living on its 4-dimensional boundary (CFT). Every complex process in the bulk gravity theory (like two black holes merging) has a corresponding, albeit complex, description in the simpler boundary theory. This provides a powerful "holographic dictionary" to study quantum gravity by using the more manageable tools of quantum field theory.</p>
+
+                <h3>3. ER = EPR and Quantum Entanglement</h3>
+                <p>A more recent, speculative development is the <strong>ER=EPR conjecture</strong>. It proposes a deep connection between quantum entanglement (the "spooky action at a distance" that Einstein called EPR) and spacetime geometry, specifically Einstein-Rosen bridges or "wormholes" (ER). The conjecture suggests that two entangled particles, no matter how far apart, might be connected by a microscopic wormhole. This idea, applied to black holes, suggests that the entanglement between the interior of a black hole and its outgoing Hawking radiation is what "weaves" the smooth spacetime fabric of the black hole's interior. This implies that spacetime geometry itself is not fundamental but rather an emergent property of quantum entanglement.</p>
+            </section>
+
+            <section id="faq">
+                <h2>FAQ & Troubleshooting</h2>
+                <dl>
+                    <dt><strong>Why can't I make the black hole have zero mass?</strong></dt>
+                    <dd>A black hole is defined by its mass. In this simulation, we've set a minimum of one solar mass, as objects with less mass wouldn't form a stable black hole in this way.</dd>
+                    <dt><strong>What does the "Bekenstein Bound" in the calculator mean?</strong></dt>
+                    <dd>The Bekenstein Bound is the theoretical maximum entropy or information that can be contained within a given volume of space with a given amount of energy. Notice how the black hole's actual entropy is vastly smaller than the Bekenstein Bound for a sphere of the same size. This reinforces the idea that the black hole's information is constrained by its area, not its volume.</dd>
+                    <dt><strong>Why does dropping a star (10⁵⁷ bits) make the black hole so huge?</strong></dt>
+                    <dd>This demonstrates the power of the area law. To accommodate that much information, the surface area of the event horizon must become enormous. Since Area ~ Radius², and Mass ~ Radius, the mass required to store the information of a single star is astronomical, far larger than the star's original mass. This is because the star's information was stored in a 3D volume, but the black hole must store it on a 2D surface.</dd>
+                </dl>
+            </section>
+
+            <div class="collapsible">
+                <div class="collapsible-header">Developer Console</div>
+                <div class="collapsible-content">
+                    <div id="devConsoleLog">Dev console initialized...</div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+// --- Polyfill for requestAnimationFrame ---
+window.requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+
+// --- DOM Element References ---
+const dom = {
+    mainCanvas: document.getElementById('mainCanvas'),
+    horizonCanvas: document.getElementById('horizonCanvas'),
+    commentaryText: document.getElementById('commentaryText'),
+
+    dropParticleBtn: document.getElementById('dropParticleBtn'),
+    dropBookBtn: document.getElementById('dropBookBtn'),
+    dropStarBtn: document.getElementById('dropStarBtn'),
+
+    massSlider: document.getElementById('massSlider'),
+    massValue: document.getElementById('massValue'),
+    scrambleToggle: document.getElementById('scrambleToggle'),
+    zoomSlider: document.getElementById('zoomSlider'),
+    zoomValue: document.getElementById('zoomValue'),
+
+    areaValue: document.getElementById('areaValue'),
+    planckAreaCount: document.getElementById('planckAreaCount'),
+    entropyValue: document.getElementById('entropyValue'),
+    volRadiusValue: document.getElementById('volRadiusValue'),
+    bekensteinBound: document.getElementById('bekensteinBound'),
+};
+
+// --- Simulation State ---
+const simState = {
+    mass: 10 * 1.989e30, // kg, start with 10 solar masses
+    radius: 0, // Schwarzschild radius in m
+    area: 0, // m^2
+    entropy: 0, // in bits (or planck areas)
+    scrambling: true,
+    zoom: 1,
+    lastTime: 0,
+    needsRender: true,
+    // For animation
+    particles: [],
+};
+
+// --- Constants ---
+const constants = {
+    SOLAR_MASS: 1.989e30, // kg
+    G: 6.674e-11,         // m^3 kg^-1 s^-2
+    C: 2.998e8,           // m/s
+    H_BAR: 1.054e-34,     // J s
+    K_B: 1.380e-23,       // J/K
+    PLANCK_AREA: 0,       // m^2, will be calculated
+};
+constants.PLANCK_AREA = (constants.G * constants.H_BAR) / Math.pow(constants.C, 3);
+
+
+// --- Main Functions ---
+
+function init() {
+    console.log("Initializing Holographic Universe simulation...");
+    setupEventListeners();
+    // Initialize with the slider's default value
+    const initialSolarMasses = parseInt(dom.massSlider.value);
+    const initialMass = initialSolarMasses * constants.SOLAR_MASS;
+    dom.massValue.textContent = `${initialSolarMasses} M☉`;
+    updateBlackHoleByMass(initialMass);
+
+    mainLoop();
+}
+
+function setupEventListeners() {
+    dom.massSlider.addEventListener('input', handleMassChange);
+    dom.dropParticleBtn.addEventListener('click', () => addObject(1, 'Particle'));
+    dom.dropBookBtn.addEventListener('click', () => addObject(1e7, 'Book'));
+    dom.dropStarBtn.addEventListener('click', () => addObject(1e57, 'Star')); // This will be huge
+
+    dom.scrambleToggle.addEventListener('change', (e) => {
+        simState.scrambling = e.target.checked;
+    });
+    dom.zoomSlider.addEventListener('input', (e) => {
+        simState.zoom = parseFloat(e.target.value);
+        dom.zoomValue.textContent = `${simState.zoom.toFixed(1)}x`;
+        simState.needsRender = true;
+    });
+}
+
+function handleMassChange(event) {
+    const solarMasses = parseInt(event.target.value);
+    dom.massValue.textContent = `${solarMasses} M☉`;
+    const newMass = solarMasses * constants.SOLAR_MASS;
+    updateBlackHoleByMass(newMass);
+}
+
+function addObject(bits, objectName) {
+    console.log(`Adding ${bits} bits of information.`);
+    animateObjectFall(objectName, bits);
+}
+
+function updateBlackHoleByMass(mass) {
+    simState.mass = mass;
+    simState.radius = (2 * constants.G * simState.mass) / Math.pow(constants.C, 2);
+    simState.area = 4 * Math.PI * Math.pow(simState.radius, 2);
+    simState.entropy = simState.area / (4 * constants.PLANCK_AREA);
+
+    updateDataPanels();
+    simState.needsRender = true;
+}
+
+function updateBlackHoleByEntropy(entropy) {
+    simState.entropy = entropy;
+    simState.area = simState.entropy * 4 * constants.PLANCK_AREA;
+    simState.radius = Math.sqrt(simState.area / (4 * Math.PI));
+    simState.mass = (simState.radius * Math.pow(constants.C, 2)) / (2 * constants.G);
+
+    const solarMasses = simState.mass / constants.SOLAR_MASS;
+    // Cap the slider to avoid breaking it
+    dom.massSlider.value = Math.min(100, solarMasses);
+    dom.massValue.textContent = `${solarMasses.toExponential(2)} M☉`;
+
+    updateDataPanels();
+    simState.needsRender = true;
+}
+
+function updateDataPanels() {
+    dom.areaValue.textContent = simState.area.toExponential(2);
+    const planckAreas = simState.area / constants.PLANCK_AREA;
+    dom.planckAreaCount.textContent = planckAreas.toExponential(2);
+    dom.entropyValue.textContent = simState.entropy.toExponential(2);
+
+    // Bekenstein Bound calculation
+    const radius = simState.radius;
+    dom.volRadiusValue.textContent = radius.toExponential(2);
+    const energy = simState.mass * Math.pow(constants.C, 2);
+    // Bekenstein bound S <= (2 * pi * R * E) / (hbar * c)
+    const bekensteinBoundInNatrualUnits = (2 * Math.PI * radius * energy) / (constants.H_BAR * constants.C);
+    dom.bekensteinBound.textContent = bekensteinBoundInNatrualUnits.toExponential(2);
+}
+
+function animateObjectFall(objectName, bits) {
+    dom.commentaryText.textContent = `A ${objectName} is falling into the black hole...`;
+    const { width, height } = dom.mainCanvas;
+    simState.particles.push({
+        name: objectName,
+        bits: bits,
+        dist: Math.min(width, height) * 0.45,
+        angle: Math.random() * 2 * Math.PI,
+        speed: 1, // pixels per frame
+    });
+}
+
+
+function renderMainView() {
+    if (!dom.mainCanvas) return;
+    const ctx = dom.mainCanvas.getContext('2d');
+    const { width, height } = dom.mainCanvas;
+
+    // Background
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+
+    const centerX = width / 2;
+    const centerY = height / 2;
+    // Scale radius visually. Let's make it proportional to mass^(1/3) for better visual range
+    const visualScale = Math.pow(simState.mass / constants.SOLAR_MASS, 1/3);
+    const bhRadiusPixels = Math.max(5, Math.min(width * 0.2, 10 * visualScale));
+
+    // Simple starfield that gets distorted
+    ctx.fillStyle = 'white';
+    for (let i = 0; i < 100; i++) {
+        let x = Math.floor(Math.random() * width);
+        let y = Math.floor(Math.random() * height);
+        let dist = Math.sqrt(Math.pow(x - centerX, 2) + Math.pow(y - centerY, 2));
+        if (dist > bhRadiusPixels * 1.5) { // Don't draw stars behind the BH
+             ctx.beginPath();
+             ctx.arc(x, y, Math.random() * 1.2, 0, Math.PI * 2);
+             ctx.fill();
+        }
+    }
+
+    // Black hole event horizon
+    ctx.fillStyle = 'black';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, bhRadiusPixels, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Animate falling particles
+    simState.particles.forEach((p, index) => {
+        p.dist -= p.speed;
+        if (p.dist <= bhRadiusPixels) {
+            // Particle hit the horizon
+            const newEntropy = simState.entropy + p.bits;
+             if (!isFinite(newEntropy)) {
+                alert("The black hole has consumed too much information and its entropy has exceeded the limits of JavaScript numbers!");
+                simState.particles.splice(index, 1);
+                return;
+            }
+            updateBlackHoleByEntropy(newEntropy);
+            dom.commentaryText.textContent = `A ${p.name} (${p.bits.toExponential(0)} bits) was absorbed.`;
+            simState.particles.splice(index, 1);
+        } else {
+            const angle = p.angle;
+            const x = centerX + Math.cos(angle) * p.dist;
+            const y = centerY + Math.sin(angle) * p.dist;
+            ctx.fillStyle = '#00FFFF';
+            ctx.beginPath();
+            ctx.arc(x, y, 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    });
+}
+
+function renderHorizonView() {
+    if (!dom.horizonCanvas) return;
+    const ctx = dom.horizonCanvas.getContext('2d');
+    const { width, height } = dom.horizonCanvas;
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, width, height);
+
+    const gridSize = 50; // How many cells across for the base view
+    const effectiveGridSize = Math.floor(gridSize * simState.zoom);
+    const cellSize = width / effectiveGridSize;
+
+    const logEntropy = Math.log10(simState.entropy + 1);
+    const logRefEntropy = 100; // An arbitrary large number for scaling
+    const fillRatio = Math.min(1, logEntropy / logRefEntropy);
+
+    const totalVisibleCells = effectiveGridSize * effectiveGridSize;
+    const cellsToFill = Math.floor(totalVisibleCells * fillRatio);
+
+    ctx.fillStyle = 'rgba(255, 64, 129, 0.8)'; // accent color with some transparency
+
+    if (simState.scrambling) {
+        const blotchCount = Math.min(cellsToFill, 5000);
+        for (let i = 0; i < blotchCount; i++) {
+            const x = Math.random() * width;
+            const y = Math.random() * height;
+            const size = Math.random() * cellSize + 1;
+            ctx.fillRect(x, y, size, size);
+        }
+    } else {
+        let filledCount = 0;
+        for (let y = 0; y < effectiveGridSize; y++) {
+            for (let x = 0; x < effectiveGridSize; x++) {
+                if (filledCount < cellsToFill) {
+                    ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    filledCount++;
+                } else break;
+            }
+            if (filledCount >= cellsToFill) break;
+        }
+    }
+}
+
+function mainLoop(currentTime) {
+    const deltaTime = (simState.lastTime > 0) ? (currentTime - simState.lastTime) / 1000 : 0;
+    simState.lastTime = currentTime;
+
+    renderMainView();
+    renderHorizonView();
+
+    requestAnimationFrame(mainLoop);
+}
+
+// --- Entry Point ---
+document.addEventListener('DOMContentLoaded', init);
+
+</script>
+</body>
+</html>

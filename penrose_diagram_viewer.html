@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Penrose Cartographer - Mapping de Sitter Spacetime</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1d;
+            --primary-text: #c5c6c7;
+            --secondary-text: #9fa0a1;
+            --panel-bg: #2c2f33;
+            --border-color: #4b4f56;
+            --accent-color: #66fcf1;
+            --accent-hover: #45a29e;
+            --button-bg: #4b4f56;
+            --button-text: #c5c6c7;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--primary-text); margin: 0; padding: 1em; line-height: 1.6; }
+        h1, h2, h3 { color: var(--accent-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        h1 { font-size: 2.2em; text-align: center; }
+        h2 { font-size: 1.8em; margin-top: 1.5em; }
+        h3 { font-size: 1.4em; }
+        p, li, dt, dd { color: var(--secondary-text); }
+        strong { color: var(--primary-text); }
+        code { background-color: var(--bg-color); padding: 0.2em 0.4em; border-radius: 3px; font-family: monospace; }
+        .container { max-width: 1800px; margin: 0 auto; padding: 1em; }
+        .main-layout { display: grid; grid-template-columns: 1fr 400px; gap: 20px; }
+        .simulation-column { display: flex; flex-direction: column; gap: 20px; }
+        .controls-column { display: flex; flex-direction: column; gap: 20px; }
+        .panel { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.2em; }
+
+        .sim-area-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; width: 100%; }
+        .sim-canvas-wrapper { position: relative; width: 100%; aspect-ratio: 1; }
+        .sim-canvas-wrapper canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; border-radius: 8px; }
+        .canvas-label { text-align: center; font-weight: bold; color: var(--accent-color); margin-bottom: 5px; }
+
+        @media (max-width: 1200px) { .main-layout { grid-template-columns: 1fr; } .controls-column { order: -1; } }
+        @media (max-width: 700px) { .sim-area-container { grid-template-columns: 1fr; } }
+
+        .control-group { margin-bottom: 1.5em; }
+        .control-group label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        button { background-color: var(--button-bg); color: var(--button-text); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; font-weight: bold; }
+        button:hover, button:focus { background-color: var(--accent-hover); color: var(--bg-color); }
+        dt { font-weight: bold; color: var(--primary-text); margin-top: 1em;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>The Penrose Cartographer</h1>
+        <p style="text-align:center; font-style:italic;">Mapping de Sitter Spacetime</p>
+    </header>
+
+    <main>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>This simulation provides an interactive guide to Penrose diagrams, one of the most powerful tools in general relativity. By focusing on de Sitter spacetime—a model of an accelerating universe—you will see how an infinite spacetime can be "mapped" onto a finite diagram. You will launch particles and light rays, map their paths, and learn to interpret the causal structure of the universe at a glance.</p>
+        </section>
+
+        <div class="main-layout">
+            <div class="simulation-column">
+                <div class="sim-area-container">
+                    <div class="sim-canvas-container">
+                        <div class="canvas-label">Standard View: Expanding Grid</div>
+                        <div class="sim-canvas-wrapper"><canvas id="canvasStandard"></canvas></div>
+                    </div>
+                    <div class="sim-canvas-container">
+                        <div class="canvas-label">Penrose Diagram</div>
+                        <div class="sim-canvas-wrapper"><canvas id="canvasPenrose"></canvas></div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>Reading the Map</h3>
+                    <p id="map-commentary">[... Commentary on the mapped paths will appear here ...]</p>
+                </div>
+            </div>
+
+            <div class="controls-column">
+                <div class="panel">
+                    <h3>Controls</h3>
+                    <div class="control-group">
+                        <label>1. Launch Geodesic</label>
+                         <p class="small-text">Click and drag on the Standard View to launch a path.</p>
+                         <button id="clearPathsBtn">Clear Last Path</button>
+                    </div>
+                    <div class="control-group">
+                        <label>2. Map It!</label>
+                        <button id="mapBtn">Map Last Path</button>
+                    </div>
+                     <div class="control-group">
+                        <label>3. Diagram Features</label>
+                        <div class="button-group">
+                            <button class="toggle-btn" data-label="i+">Show i⁺</button>
+                            <button class="toggle-btn" data-label="i-">Show i⁻</button>
+                            <button class="toggle-btn" data-label="i0">Show i⁰</button>
+                            <button class="toggle-btn" data-label="scri+">Show ℐ⁺</button>
+                            <button class="toggle-btn" data-label="scri-">Show ℐ⁻</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>4. Causal Patch Highlighter</label>
+                        <p class="small-text">Click on a timelike path in the Penrose diagram to see its causal diamond.</p>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>Diagram Legend & Properties</h3>
+                    <div id="legend">
+                        <p><strong>Geodesic Key:</strong></p>
+                        <ul id="geodesic-list"></ul>
+                    </div>
+                    <hr>
+                    <p><strong>Causal Rules:</strong></p>
+                    <ul>
+                        <li>Light travels at 45 degrees.</li>
+                        <li>Massive particles travel "more vertically" than light.</li>
+                        <li>You can only be affected by events in your past light cone (below you).</li>
+                        <li>You can only affect events in your future light cone (above you).</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <section id="physics-explained">
+            <h2>The Physics of Conformal Mapping</h2>
+            <div class="panel">
+                <h3>Part A: The Problem of Infinity</h3>
+                <p>In General Relativity, a spacetime is not just a stage; it's a dynamic object whose geometry is determined by matter and energy. To truly understand a given solution to Einstein's equations, we need to understand its <strong>global and causal structure</strong>. This means answering questions like: Does it contain singularities (places where the theory breaks down)? Does it have event horizons? Can an observer starting at event A ever reach event B? A standard coordinate chart, like the (t, x) coordinates for de Sitter space, is often "local" and fails to capture the full picture, especially when infinities are involved. Penrose diagrams are a tool to visualize this global structure. By bringing points at infinity to a finite distance on the diagram, we can see the entire spacetime, from its infinite past (past timelike infinity, i⁻) to its infinite future (future timelike infinity, i⁺) and its infinitely distant regions (spacelike infinity, i⁰), all at a glance.</p>
+            </div>
+            <div class="panel">
+                <h3>Part B: Conformal Transformations - Preserving Angles, Not Distances</h3>
+                <p>The magic trick behind a Penrose diagram is the <strong>conformal transformation</strong>. This is a special kind of coordinate change that rescales all local distances by a position-dependent factor, `Ω²`, but it crucially <strong>preserves angles</strong>. In spacetime, the most important "angles" are defined by the light cone. The paths of light rays leaving a point form a "light cone" with an opening angle of 90 degrees (45 degrees in each direction on our diagrams). Because a Penrose diagram is conformally related to the original spacetime, the local light cones are always preserved as perfect 90-degree V-shapes everywhere on the diagram. This means that even though vast regions of spacetime have been compressed, you can still tell at a glance what is causally connected. A path is timelike if its tangent is within the light cone (< 45 degrees from the vertical), null if it's on the cone (at 45 degrees), and spacelike if it's outside the cone (> 45 degrees). This is the single most important feature of these diagrams.</p>
+            </div>
+            <div class="panel">
+                <h3>Part C: Anatomy of the de Sitter Square</h3>
+                <p>The Penrose diagram for de Sitter space is a square. Each boundary has a specific physical meaning:</p>
+                <ul>
+                    <li><strong>ℐ⁺ (Future Null Infinity):</strong> Pronounced "scri-plus," this is the future endpoint for all light rays (null geodesics). It's the top-right and top-left edges of the square.</li>
+                    <li><strong>ℐ⁻ (Past Null Infinity):</strong> Pronounced "scri-minus," this is the starting point in the infinite past for all light rays. It's the bottom-right and bottom-left edges.</li>
+                    <li><strong>i⁺ (Future Timelike Infinity):</strong> The top corner of the square. This is the future endpoint for all timelike observers who "ride along" with the expansion forever.</li>
+                    <li><strong>i⁻ (Past Timelike Infinity):</strong> The bottom corner. This is the ultimate origin point for all timelike observers in the infinite past.</li>
+                    <li><strong>i⁰ (Spacelike Infinity):</strong> The left and right corners. These points represent locations infinitely far away in space.</li>
+                </ul>
+                <p>The diagram reveals the causal structure of de Sitter space. For example, an observer starting at i⁻ can only ever see events inside the diamond formed by their future light cone. A huge portion of the spacetime is, and always will be, outside their horizon.</p>
+            </div>
+        </section>
+
+        <section id="advanced-notes">
+            <h2>Advanced Notes & Extensions</h2>
+            <div class="panel">
+                <h3>1. The Static Patch</h3>
+                <p>While the full Penrose diagram for de Sitter space is a square, any single timelike observer can only ever see a fraction of it. This causally accessible region is called the "static patch" and its Penrose diagram is a triangle inside the main square. The boundaries of this triangle are the observer's cosmological event horizons. Events outside this triangle are so far away that, due to the universe's acceleration, light from them can never reach the observer. Clicking on a timelike path in the diagram with the "Causal Patch Highlighter" tool shows this triangular region.</p>
+            </div>
+            <div class="panel">
+                <h3>2. A Comparative Zoo of Diagrams</h3>
+                <p>Comparing Penrose diagrams is a powerful way to understand different spacetimes.
+                <ul>
+                    <li><strong>Minkowski Space:</strong> A flat, non-expanding universe. Its diagram is an infinite diamond, showing that any observer can, given enough time, receive a signal from any point in their past.</li>
+                    <li><strong>Anti-de Sitter Space (AdS):</strong> A universe with negative curvature. Its Penrose diagram is an infinite vertical strip inside a square. Timelike geodesics can travel to infinity and back in finite time, as if AdS space acts like a "potential well." This is why it's so useful in the AdS/CFT correspondence.</li>
+                    <li><strong>Schwarzschild Black Hole:</strong> The diagram for an eternal black hole is the most complex, containing two Minkowski-like "exterior" regions connected by an Einstein-Rosen bridge (a wormhole), a future singularity (where everything ends), and a past "white hole" singularity (from which everything emerges).</li>
+                </ul>
+                A future version of this toolkit could allow generating these other diagrams for direct comparison.</p>
+            </div>
+            <div class="panel">
+                <h3>3. Hawking-Gibbons Radiation</h3>
+                <p>An observer in de Sitter space with a horizon, like an accelerating observer in the static patch, will perceive thermal radiation, much like Hawking radiation from a black hole. This is called the Hawking-Gibbons effect. On the Penrose diagram, this can be visualized as quantum fluctuations creating pairs of entangled virtual particles. If one particle forms inside the observer's horizon and one forms outside, they can be promoted to real particles. The observer sees the particle outside the horizon as thermal radiation, while its entangled partner is forever lost beyond the causal boundary. This leads to a thermal bath with a temperature proportional to the Hubble constant H.</p>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+const dom = {
+    canvasStandard: document.getElementById('canvasStandard'),
+    canvasPenrose: document.getElementById('canvasPenrose'),
+    commentary: document.getElementById('map-commentary'),
+    geodesicList: document.getElementById('geodesic-list'),
+    clearPathsBtn: document.getElementById('clearPathsBtn'),
+    mapBtn: document.getElementById('mapBtn'),
+    labelToggles: document.querySelectorAll('.toggle-btn'),
+};
+
+const simState = {
+    paths: [], // { points: [{t,x},...], type: 'null'|'timelike', mapped: false }
+    labels: new Set(),
+    needsRedraw: true,
+    H: 0.5, // Hubble constant for de Sitter
+};
+
+const penrose = {
+    transform: (t, x) => {
+        const tau = -Math.exp(-simState.H * t) / simState.H;
+        const u = tau - x;
+        const v = tau + x;
+        const U = Math.atan(u);
+        const V = Math.atan(v);
+        const T = V + U;
+        const X = V - U;
+        return { T, X };
+    }
+};
+
+function calculateGeodesic(start, end) {
+    const path = { points: [], type: 'spacelike', mapped: false };
+    const dt = end.t - start.t;
+    const dx = end.x - start.x;
+
+    // In flat-slicing coords, physical slope is e^(Ht) * dx/dt. We'll use coordinate slope for simplicity.
+    const slope = Math.abs(dt / dx);
+    path.type = slope > 1.05 ? 'timelike' : slope < 0.95 ? 'spacelike' : 'null';
+
+    const steps = 100;
+    let current_t = start.t;
+    let current_x = start.x;
+    path.points.push({ t: current_t, x: current_x });
+
+    const step_dt = dt / steps;
+    const step_dx = dx / steps;
+
+    for (let i = 0; i < steps; i++) {
+        if (path.type === 'null') {
+            // For null geodesics, dx/dt = +/- e^(-Ht). Integrate numerically.
+            const sign = Math.sign(dx);
+            const v = sign * Math.exp(-simState.H * current_t);
+            current_x += v * step_dt;
+            current_t += step_dt;
+        } else {
+            // Timelike and spacelike geodesics are curves in this chart, but we approximate them as straight lines
+            // for this visualization, which is a common simplification.
+            current_t += step_dt;
+            current_x += step_dx;
+        }
+        path.points.push({ t: current_t, x: current_x });
+    }
+    return path;
+}
+
+function setupEventListeners() {
+    let isDrawing = false;
+    let startCoords = {x:0, y:0};
+
+    // Use a function to convert screen to world for canvas A
+    const screenToWorld_A = (px, py) => {
+        const { width, height } = dom.canvasStandard;
+        const scale = 20;
+        const x = (px - width / 2) / scale;
+        const t = (height / 2 - py) / scale;
+        return { t, x };
+    };
+
+    dom.canvasStandard.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        const rect = dom.canvasStandard.getBoundingClientRect();
+        const worldCoords = screenToWorld_A(e.clientX - rect.left, e.clientY - rect.top);
+        startCoords = worldCoords;
+        // Create a temporary path for live drawing
+        simState.paths.push({ start: worldCoords, end: worldCoords, isTemp: true });
+    });
+
+    dom.canvasStandard.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        const rect = dom.canvasStandard.getBoundingClientRect();
+        const worldCoords = screenToWorld_A(e.clientX - rect.left, e.clientY - rect.top);
+        simState.paths[simState.paths.length - 1].end = worldCoords;
+        simState.needsRedraw = true;
+    });
+
+    dom.canvasStandard.addEventListener('mouseup', (e) => {
+        if (!isDrawing) return;
+        isDrawing = false;
+        const lastPath = simState.paths[simState.paths.length - 1];
+        lastPath.isTemp = false; // Finalize the path
+        updateLegend();
+        simState.needsRedraw = true;
+    });
+
+    dom.clearPathsBtn.addEventListener('click', () => {
+        simState.paths.pop();
+        updateLegend();
+        simState.needsRedraw = true;
+    });
+
+    dom.mapBtn.addEventListener('click', () => {
+        const lastPath = simState.paths[simState.paths.length - 1];
+        if (lastPath && !lastPath.mapped) {
+            lastPath.mapped = true;
+            dom.commentary.textContent = `Mapped a ${lastPath.type} geodesic. On the Penrose diagram, light rays are always straight 45-degree lines.`;
+            simState.needsRedraw = true;
+        }
+    });
+
+    dom.labelToggles.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const label = btn.dataset.label;
+            if (simState.labels.has(label)) {
+                simState.labels.delete(label);
+                btn.style.backgroundColor = '';
+            } else {
+                simState.labels.add(label);
+                btn.style.backgroundColor = 'var(--accent-hover)';
+            }
+            simState.needsRedraw = true;
+        });
+    });
+
+    dom.canvasPenrose.addEventListener('click', (e) => highlightCausalPatch(e));
+}
+
+function updateLegend() {
+    dom.geodesicList.innerHTML = '';
+    simState.paths.forEach((path, i) => {
+        const li = document.createElement('li');
+        li.textContent = `Path ${i+1}: ${path.type}`;
+        li.style.color = path.type === 'timelike' ? '#ff6b6b' : path.type === 'null' ? '#feca57' : '#48dbfb';
+        dom.geodesicList.appendChild(li);
+    });
+}
+
+function highlightCausalPatch(event) {
+    // Placeholder for this advanced feature
+    console.log("Causal patch highlighter clicked.");
+    alert("Causal Patch Highlighter feature is planned for a future update!");
+}
+
+function init() {
+    console.log("Penrose Cartographer Initialized");
+    setupEventListeners();
+    mainLoop();
+}
+
+function mainLoop() {
+    if (simState.needsRedraw) {
+        draw();
+        simState.needsRedraw = false;
+    }
+    requestAnimationFrame(mainLoop);
+}
+
+function draw() {
+    drawStandardCanvas();
+    drawPenroseCanvas();
+}
+
+function drawStandardCanvas() {
+    const canvas = dom.canvasStandard;
+    const ctx = canvas.getContext('2d');
+    const { width, height } = canvas;
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+
+    const worldToScreen = (t, x) => ({
+        px: width / 2 + x * 20,
+        py: height / 2 - t * 20,
+    });
+
+    // Draw expanding grid
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 1;
+    for (let t = -10; t <= 10; t++) {
+        ctx.beginPath();
+        for (let x = -10; x <= 10; x += 0.1) {
+            const scale = Math.exp(simState.H * t);
+            const {px, py} = worldToScreen(t, x * scale);
+            if(x === -10) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+    }
+
+    // Draw paths
+    simState.paths.forEach(path => {
+        // If the path is temporary (being drawn), calculate it on the fly
+        const pathData = path.isTemp ? calculateGeodesic(path.start, path.end) : path;
+
+        ctx.strokeStyle = pathData.type === 'timelike' ? '#ff6b6b' : pathData.type === 'null' ? '#feca57' : '#48dbfb';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        pathData.points.forEach((p, i) => {
+            const {px, py} = worldToScreen(p.t, p.x);
+            if(i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+    });
+}
+
+function drawPenroseCanvas() {
+    const canvas = dom.canvasPenrose;
+    const ctx = canvas.getContext('2d');
+    const { width, height } = canvas;
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+
+    const worldToScreen = (T, X) => ({
+        px: width / 2 + X * (width / Math.PI),
+        py: height / 2 - T * (width / Math.PI),
+    });
+
+    // Draw the boundary square for de Sitter
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    const pi_half = Math.PI / 2;
+    const p1 = worldToScreen(pi_half, -pi_half); // Top
+    const p2 = worldToScreen(-pi_half, -pi_half); // Right
+    const p3 = worldToScreen(-pi_half, pi_half); // Bottom
+    const p4 = worldToScreen(pi_half, pi_half); // Left
+
+    ctx.beginPath();
+    ctx.moveTo(p1.px, p1.py);
+    ctx.lineTo(p2.px, p2.py);
+    ctx.lineTo(p3.px, p3.py);
+    ctx.lineTo(p4.px, p4.py);
+    ctx.closePath();
+    ctx.stroke();
+
+
+    // Draw mapped paths
+    simState.paths.filter(p => p.mapped).forEach(path => {
+        // The path object itself contains the calculated points
+        const pathData = path.isTemp ? calculateGeodesic(path.start, path.end) : path;
+
+        ctx.strokeStyle = pathData.type === 'timelike' ? '#ff6b6b' : pathData.type === 'null' ? '#feca57' : '#48dbfb';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        pathData.points.forEach((p, i) => {
+            const {T, X} = penrose.transform(p.t, p.x);
+            const {px, py} = worldToScreen(T, X);
+            if(i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+    });
+
+    // Draw labels
+    ctx.fillStyle = "white";
+    ctx.font = "16px Arial";
+    const labelPoints = {
+        'i+': { T: Math.PI, X: 0 },
+        'i-': { T: -Math.PI, X: 0 },
+        'i0': { T: 0, X: 0 }, // Spacelike infinity is more complex, this is a simplification
+        'scri+': { T: Math.PI/2, X: Math.PI/2},
+        'scri-': { T: -Math.PI/2, X: -Math.PI/2},
+    };
+
+    for(const [label, point] of Object.entries(labelPoints)) {
+        if (simState.labels.has(label)) {
+            const {px, py} = worldToScreen(point.T, point.X);
+            ctx.fillText(label, px + 5, py - 5);
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

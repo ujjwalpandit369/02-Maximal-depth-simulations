@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Quantum Seed - Generating Cosmic Structure</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1d;
+            --primary-text: #c5c6c7;
+            --secondary-text: #9fa0a1;
+            --panel-bg: #2c2f33;
+            --border-color: #4b4f56;
+            --accent-color: #fca311; /* A warm orange/yellow for CMB feel */
+            --accent-hover: #e85d04;
+            --slider-track: #4b4f56;
+            --slider-thumb: #fca311;
+            --button-bg: #4b4f56;
+            --button-text: #c5c6c7;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--primary-text); margin: 0; padding: 1em; line-height: 1.6; }
+        h1, h2, h3 { color: var(--accent-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        h1 { font-size: 2.2em; text-align: center; }
+        h2 { font-size: 1.8em; margin-top: 1.5em; }
+        h3 { font-size: 1.2em; }
+        p, li, dt, dd { color: var(--secondary-text); }
+        strong { color: var(--primary-text); }
+        code { background-color: var(--bg-color); padding: 0.2em 0.4em; border-radius: 3px; font-family: monospace; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 1em; }
+        .main-layout { display: grid; grid-template-columns: 1fr 400px; gap: 20px; }
+        .simulation-column { display: flex; flex-direction: column; gap: 20px; }
+        .controls-column { display: flex; flex-direction: column; gap: 20px; }
+        .panel { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.2em; }
+
+        #main-sim-canvas { width: 100%; aspect-ratio: 1; background-color: #000; border-radius: 8px; }
+        .side-plots-container { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .side-plots-container canvas { width: 100%; aspect-ratio: 1; background-color: #111; border-radius: 8px; }
+        .plot-label { text-align: center; font-weight: bold; margin-bottom: 5px; }
+
+        @media (max-width: 1200px) { .main-layout { grid-template-columns: 1fr; } .controls-column { order: -1; } }
+
+        .control-group { margin-bottom: 1.5em; }
+        .control-group label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        .control-group input[type="range"] { width: 100%; }
+        .button-group { display: flex; flex-wrap: wrap; gap: 10px; }
+        button { background-color: var(--button-bg); color: var(--button-text); border: 1px solid var(--border-color); padding: 10px 15px; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; font-weight: bold; }
+        button:hover, button:focus { background-color: var(--accent-hover); color: var(--bg-color); }
+        dt { font-weight: bold; color: var(--primary-text); margin-top: 1em;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>The Quantum Seed</h1>
+        <p style="text-align:center; font-style:italic;">Generating Cosmic Structure from de Sitter Fluctuations</p>
+    </header>
+
+    <main>
+        <section id="overview">
+            <h2>Overview</h2>
+            <p>Where did all the structure in the universe—galaxies, clusters, and voids—come from? The leading theory, cosmic inflation, proposes that it all began as microscopic quantum fluctuations in the vacuum of space. During an explosive, near-de Sitter expansion, these tiny jitters were stretched to astronomical sizes, becoming the "seeds" of all cosmic structure. This simulation visualizes this incredible process, showing how quantum randomness in the early universe gets frozen into the sky, eventually becoming the patterns we see in the Cosmic Microwave Background (CMB).</p>
+        </section>
+
+        <div class="main-layout">
+            <div class="simulation-column">
+                <div class="panel">
+                    <canvas id="main-sim-canvas"></canvas>
+                </div>
+                <div class="panel" id="live-commentary">
+                    <h3>From Quantum to Cosmos</h3>
+                    <p id="commentaryText">Simulation ready. Press Play to begin inflation.</p>
+                </div>
+            </div>
+
+            <div class="controls-column">
+                <div class="panel">
+                    <h3>Controls</h3>
+                     <div class="button-group">
+                        <button id="playPauseBtn">Play</button>
+                        <button id="resetBtn">Reset</button>
+                    </div>
+                    <div class="control-group">
+                        <label for="slopeSlider">Inflaton Potential Slope (V'): <span id="slopeValue">0.01</span></label>
+                        <input type="range" id="slopeSlider" min="0" max="0.1" value="0.01" step="0.001">
+                    </div>
+                    <div class="control-group">
+                        <label for="wavelengthSlider">Focus Wavelength (k): <span id="wavelengthValue">--</span></label>
+                        <input type="range" id="wavelengthSlider" min="1" max="32" value="8" step="1">
+                    </div>
+                    <div class="control-group">
+                        <label for="freezeoutToggle">"Freeze-out" Visualizer</label>
+                        <input type="checkbox" id="freezeoutToggle" checked>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>Perturbation Analysis</h3>
+                    <div class="side-plots-container">
+                        <div>
+                            <div class="plot-label">Power Spectrum P(k)</div>
+                            <canvas id="powerSpectrumCanvas"></canvas>
+                        </div>
+                        <div>
+                            <div class="plot-label">CMB Preview</div>
+                            <canvas id="cmbCanvas"></canvas>
+                        </div>
+                    </div>
+                    <p><strong>Tensor-to-Scalar Ratio (r):</strong> <span id="tensorScalarRatio">--</span></p>
+                </div>
+            </div>
+        </div>
+
+        <section id="physics-explained">
+            <h2>The Physics of Primordial Perturbations</h2>
+            <div class="panel">
+                <h3>Part A: The Quantum Vacuum</h3>
+                <p>Contrary to its name, the "vacuum" of space is not empty. According to quantum field theory, it is a boiling sea of "virtual particles" and field fluctuations that pop in and out of existence on incredibly short timescales. Every quantum field, including the "inflaton" field that drove cosmic inflation, is constantly jittering. These jitters are the <strong>quantum fluctuations</strong> visualized on the main canvas. They are an inherent, unavoidable feature of reality at the quantum level. Normally, these fluctuations are microscopic and average out to zero, having no large-scale effect.</p>
+            </div>
+            <div class="panel">
+                <h3>Part B: Horizon Exit and Freeze-out</h3>
+                <p>Cosmic inflation changes everything. During this period of exponential expansion, the fabric of space was stretched at a tremendous rate. The simulation illustrates this with two key features:</p>
+                <ol>
+                    <li><strong>Stretching Wavelengths:</strong> The yellow circle represents the physical wavelength of a particular fluctuation mode you select with the slider. As the simulation runs, the universe expands (the scale factor `a(t)` increases), and this wavelength is stretched along with it.</li>
+                    <li><strong>The Hubble Horizon:</strong> The red circle represents the "Hubble horizon" in comoving coordinates. This is the maximum distance that two points can be in causal contact. Because the expansion is so fast, this horizon appears to shrink from the perspective of the comoving grid.</li>
+                </ol>
+                <p>The crucial event, called <strong>"horizon exit"</strong> or <strong>"freeze-out"</strong>, occurs when the expanding physical wavelength of a fluctuation becomes larger than the Hubble horizon. At this moment, the two ends of the "wave" are no longer in causal contact. The fluctuation can no longer oscillate or dissipate; its amplitude is effectively "frozen" into the metric of spacetime itself. It has transformed from a transient quantum jitter into a real, classical perturbation in the energy density of the universe.</p>
+            </div>
+            <div class="panel">
+                <h3>Part C: The Power Spectrum</h3>
+                <p>The <strong>Power Spectrum, P(k)</strong>, is the single most important plot in modern cosmology. It answers the question: "How strong are the density perturbations on different physical scales?" The horizontal axis, `k`, is the wavenumber (inversely related to wavelength, so large `k` = small scales). The vertical axis, `P(k)`, is the variance (power) of the fluctuations at that scale.</p>
+                <p>Inflation makes a remarkable prediction: because the Hubble scale `H` is nearly constant during inflation, fluctuations of all different wavelengths exit the horizon with nearly the same amplitude. This results in a nearly <strong>scale-invariant</strong> power spectrum—a nearly flat line on this plot. The small deviation from perfectly flat is called the "spectral tilt," and its value is determined by the properties of the inflaton potential, such as the "slope" you can control with the slider. The precise measurement of this tilt by CMB experiments like Planck is one of the most powerful confirmations of the inflationary paradigm.</p>
+            </div>
+        </section>
+
+        <section id="advanced-notes">
+            <h2>Advanced Notes & Extensions</h2>
+            <div class="panel">
+                <h3>1. The Speed of Sound</h3>
+                <p>In this simulation, we've assumed the speed at which disturbances in the inflaton field can propagate (the sound speed, `c_s`) is equal to the speed of light. If `c_s` were less than 1, it would change the size of the "sound horizon," the effective causal boundary for the field. This would alter the relationship between when a mode freezes out and its amplitude, introducing new features into the power spectrum. Models with a variable speed of sound are an active area of research.</p>
+            </div>
+            <div class="panel">
+                <h3>2. Non-Gaussianities</h3>
+                <p>Our simple model assumes the quantum fluctuations are perfectly random and "Gaussian," meaning their statistical properties are simple. However, if the inflaton potential is more complex, or if multiple fields are involved, there can be interactions that lead to <strong>non-Gaussianities</strong>. These would appear as specific correlations between three or more points in the CMB, for example, a preference for certain triangular shapes in the hot and cold spots. Detecting a non-zero value for a parameter called `f_NL`, which quantifies these three-point correlations, would be a monumental discovery and would rule out many of the simplest models of inflation.</p>
+            </div>
+            <div class="panel">
+                <h3>3. After Inflation: Re-entry and Acoustic Oscillations</h3>
+                <p>The "freeze-out" is not the end of the story. After inflation ends, the standard, slower expansion of the universe begins. The Hubble horizon starts to grow faster than the wavelengths of the perturbations, and the modes begin to "re-enter" the horizon. Once back inside the horizon, these density perturbations are no longer frozen. They begin to oscillate as acoustic sound waves in the hot, dense plasma of the early universe. The gravitational pull of dense regions is counteracted by the radiation pressure of the plasma, causing them to expand and contract. The characteristic sizes of the hot and cold spots we see in the CMB today are a direct result of how much these different modes could oscillate from the time they re-entered the horizon until the moment the CMB was released (the epoch of recombination).</p>
+            </div>
+        </section>
+    </main>
+</div>
+
+<script>
+const dom = {
+    mainCanvas: document.getElementById('main-sim-canvas'),
+    powerSpectrumCanvas: document.getElementById('powerSpectrumCanvas'),
+    cmbCanvas: document.getElementById('cmbCanvas'),
+    commentaryText: document.getElementById('commentaryText'),
+    playPauseBtn: document.getElementById('playPauseBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    slopeSlider: document.getElementById('slopeSlider'),
+    slopeValue: document.getElementById('slopeValue'),
+    wavelengthSlider: document.getElementById('wavelengthSlider'),
+    wavelengthValue: document.getElementById('wavelengthValue'),
+    freezeoutToggle: document.getElementById('freezeoutToggle'),
+    tensorScalarRatio: document.getElementById('tensorScalarRatio'),
+};
+
+const simState = {
+    isRunning: false,
+    time: 0,
+    H: 1, // Hubble parameter
+    scaleFactor: 1,
+    gridSize: 128,
+    field: null, // 2D array for the inflaton field
+    frozenModes: {}, // Store amplitude of modes that have exited the horizon
+    potentialSlope: 0.01,
+    needsRedraw: true,
+};
+
+function init() {
+    console.log("Quantum Seed Simulator Initialized");
+    setupEventListeners();
+    reset();
+    mainLoop();
+}
+
+function reset() {
+    simState.isRunning = false;
+    simState.time = 0;
+    simState.scaleFactor = 1;
+    simState.frozenModes = {};
+    simState.potentialSlope = parseFloat(dom.slopeSlider.value);
+
+    // Initialize field to zero
+    simState.field = new Array(simState.gridSize);
+    for (let i = 0; i < simState.gridSize; i++) {
+        simState.field[i] = new Array(simState.gridSize).fill(0);
+    }
+
+    dom.playPauseBtn.textContent = 'Play';
+    dom.commentaryText.textContent = 'Simulation ready. Press Play to begin inflation.';
+    simState.needsRedraw = true;
+}
+
+function setupEventListeners() {
+    dom.playPauseBtn.addEventListener('click', () => {
+        simState.isRunning = !simState.isRunning;
+        dom.playPauseBtn.textContent = simState.isRunning ? 'Pause' : 'Play';
+    });
+    dom.resetBtn.addEventListener('click', reset);
+    dom.slopeSlider.addEventListener('input', (e) => {
+        simState.potentialSlope = parseFloat(e.target.value);
+        dom.slopeValue.textContent = simState.potentialSlope.toFixed(3);
+    });
+}
+
+function update(deltaTime) {
+    if (!simState.isRunning) return;
+
+    simState.time += deltaTime;
+    simState.scaleFactor = Math.exp(simState.H * simState.time);
+
+    // Add quantum fluctuations (white noise)
+    const noiseAmplitude = simState.H * (1 + simState.potentialSlope * 50);
+    for (let y = 0; y < simState.gridSize; y++) {
+        for (let x = 0; x < simState.gridSize; x++) {
+            simState.field[y][x] += (Math.random() - 0.5) * noiseAmplitude * deltaTime;
+        }
+    }
+
+    // Freeze-out logic
+    const comovingHorizon = 1 / (simState.scaleFactor * simState.H);
+    const field_k = fft2d(simState.field);
+
+    for (let ky = 0; ky < simState.gridSize; ky++) {
+        for (let kx = 0; kx < simState.gridSize; kx++) {
+            const k_mag = Math.sqrt(Math.pow(kx - simState.gridSize/2, 2) + Math.pow(ky - simState.gridSize/2, 2));
+            if (k_mag === 0) continue;
+
+            const comovingWavelength = simState.gridSize / k_mag;
+
+            if (comovingWavelength > comovingHorizon && !simState.frozenModes[k_mag]) {
+                const amplitude = Math.sqrt(Math.pow(field_k[ky][kx].re, 2) + Math.pow(field_k[ky][kx].im, 2));
+                simState.frozenModes[k_mag] = amplitude;
+            }
+        }
+    }
+
+    updateDataPanels();
+    simState.needsRedraw = true;
+}
+
+function updateDataPanels() {
+    // A simple model for the tensor-to-scalar ratio r is r ~ 16 * epsilon,
+    // where epsilon is the slow-roll parameter related to (V'/V)^2.
+    // We'll model epsilon as being proportional to our V' slider.
+    const epsilon = simState.potentialSlope * 0.1;
+    const r = 16 * epsilon;
+    dom.tensorScalarRatio.textContent = r.toFixed(4);
+}
+
+// --- FFT Implementation ---
+// Basic recursive Cooley-Tukey FFT
+function fft(x) {
+    const N = x.length;
+    if (N <= 1) return x;
+
+    // Radix-2 decimation-in-time FFT
+    const even = fft(x.filter((_, i) => i % 2 === 0));
+    const odd = fft(x.filter((_, i) => i % 2 !== 0));
+
+    const result = new Array(N);
+    for (let k = 0; k < N / 2; k++) {
+        const t = odd[k];
+        const angle = -2 * Math.PI * k / N;
+        const c = { re: Math.cos(angle), im: Math.sin(angle) };
+        const product = { re: t.re * c.re - t.im * c.im, im: t.re * c.im + t.im * c.re };
+
+        result[k] = { re: even[k].re + product.re, im: even[k].im + product.im };
+        result[k + N / 2] = { re: even[k].re - product.re, im: even[k].im - product.im };
+    }
+    return result;
+}
+
+function fft2d(matrix) {
+    const size = matrix.length;
+    // FFT on rows
+    const row_fft = matrix.map(row => fft(row.map(val => ({re: val, im: 0}))));
+
+    // Transpose
+    const transposed = row_fft[0].map((_, colIndex) => row_fft.map(row => row[colIndex]));
+
+    // FFT on columns
+    const col_fft = transposed.map(col => fft(col));
+
+    // Transpose back
+    return col_fft[0].map((_, colIndex) => col_fft.map(row => row[colIndex]));
+}
+
+function mainLoop() {
+    const now = performance.now();
+    const deltaTime = simState.lastTime ? (now - simState.lastTime) / 1000 : 0;
+    simState.lastTime = now;
+
+    update(deltaTime);
+
+    if (simState.needsRedraw) {
+        draw();
+        simState.needsRedraw = false;
+    }
+}
+
+function draw() {
+    drawMainCanvas();
+    drawPowerSpectrum();
+    drawCMB();
+}
+
+function drawMainCanvas() {
+    const ctx = dom.mainCanvas.getContext('2d');
+    const { width, height } = dom.mainCanvas;
+    const gridSize = simState.gridSize;
+    const cellSize = width / gridSize;
+
+    // Draw the inflaton field
+    for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+            const value = simState.field[y][x];
+            // Map value to a color (e.g., blue-black-red)
+            const intensity = Math.min(1, Math.abs(value) * 5);
+            const hue = value > 0 ? 0 : 240; // Red for positive, blue for negative
+            ctx.fillStyle = `hsl(${hue}, 100%, ${intensity * 50}%)`;
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+    }
+
+    // Draw the shrinking comoving Hubble horizon
+    const comovingHorizonRadius = (1 / (simState.scaleFactor * simState.H)) * (gridSize / 2);
+    if (comovingHorizonRadius < width / 2) {
+        ctx.strokeStyle = 'red';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(width/2, height/2, comovingHorizonRadius, 0, 2 * Math.PI);
+        ctx.stroke();
+    }
+
+    // Draw the focused wavelength circle
+    const k_focus = parseFloat(dom.wavelengthSlider.value);
+    const comovingWavelength = simState.gridSize / k_focus;
+    ctx.strokeStyle = 'yellow';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(width/2, height/2, comovingWavelength, 0, 2 * Math.PI);
+    ctx.stroke();
+    dom.wavelengthValue.textContent = comovingWavelength.toFixed(1);
+
+    // Highlight if frozen
+    if (dom.freezeoutToggle.checked && comovingWavelength > comovingHorizonRadius) {
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.2)';
+        ctx.fill();
+        dom.commentaryText.textContent = `Mode k=${k_focus} has frozen out! Its physical wavelength is now larger than the Hubble horizon.`;
+    }
+}
+
+function drawPowerSpectrum() {
+    const ctx = dom.powerSpectrumCanvas.getContext('2d');
+    const { width, height } = ctx.canvas;
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, width, height);
+
+    ctx.strokeStyle = 'yellow';
+    ctx.fillStyle = 'yellow';
+    ctx.font = '10px Arial';
+
+    const k_values = Object.keys(simState.frozenModes).map(Number);
+    if (k_values.length < 2) return;
+
+    const max_k = simState.gridSize / 2;
+    const max_amp = Math.max(...Object.values(simState.frozenModes));
+
+    ctx.beginPath();
+    k_values.sort((a,b) => a-b).forEach((k, i) => {
+        const x = (Math.log(k) / Math.log(max_k)) * width;
+        const y = height - (simState.frozenModes[k] / max_amp) * height * 0.8;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Draw axis labels
+    ctx.fillText("log(k)", width - 30, height - 5);
+    ctx.fillText("P(k)", 5, 15);
+}
+
+function drawCMB() {
+    const ctx = dom.cmbCanvas.getContext('2d');
+    const { width, height } = ctx.canvas;
+    ctx.fillStyle = '#111';
+    ctx.fillRect(0, 0, width, height);
+
+    if (Object.keys(simState.frozenModes).length < 10) return; // Wait for enough modes
+
+    // This is a simplified generation, not a full inverse FFT for performance
+    const cmbGridSize = 64;
+    const cmbData = new Array(cmbGridSize).fill(0).map(() => new Array(cmbGridSize).fill(0));
+    const k_values = Object.keys(simState.frozenModes).map(Number);
+    const min_k = Math.min(...k_values);
+    const max_k = Math.max(...k_values);
+
+    for (let i = 0; i < 200; i++) { // Add a few dominant modes
+        const k = min_k + Math.random() * (max_k - min_k);
+        const amp = simState.frozenModes[Object.keys(simState.frozenModes).reduce((a,b) => Math.abs(b-k) < Math.abs(a-k) ? b : a)];
+        const angle = Math.random() * 2 * Math.PI;
+
+        for(let y=0; y<cmbGridSize; y++) {
+            for(let x=0; x<cmbGridSize; x++) {
+                cmbData[y][x] += amp * Math.sin( (x * Math.cos(angle) + y * Math.sin(angle)) * k * 2 * Math.PI / cmbGridSize);
+            }
+        }
+    }
+
+    // Normalize and draw
+    let maxVal = 0;
+    for(let y=0; y<cmbGridSize; y++) for(let x=0; x<cmbGridSize; x++) maxVal = Math.max(maxVal, Math.abs(cmbData[y][x]));
+
+    const cellSize = width / cmbGridSize;
+    for(let y=0; y<cmbGridSize; y++) {
+        for(let x=0; x<cmbGridSize; x++) {
+            const val = cmbData[y][x] / maxVal; // -1 to 1
+            const hue = val > 0 ? 0 : 240; // red to blue
+            const lightness = 10 + Math.abs(val) * 40;
+            ctx.fillStyle = `hsl(${hue}, 80%, ${lightness}%)`;
+            ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+        }
+    }
+}
+
+    requestAnimationFrame(mainLoop);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

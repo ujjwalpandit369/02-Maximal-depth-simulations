@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Freedom Zoo - A Guide to Mechanical Degrees of Freedom</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --primary-text: #333;
+            --secondary-text: #555;
+            --panel-bg: #ffffff;
+            --border-color: #ddd;
+            --accent-color: #007bff;
+            --accent-hover: #0056b3;
+            --button-bg: #e9ecef;
+            --button-text: #333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--primary-text);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        h1, h2, h3 {
+            color: var(--accent-color);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.3em;
+        }
+
+        h1 { font-size: 2.5em; text-align: center; }
+        h2 { font-size: 1.8em; margin-top: 1.5em; }
+        h3 { font-size: 1.4em; }
+
+        p, li { color: var(--secondary-text); }
+        strong { color: var(--primary-text); }
+        code {
+            background-color: #e9ecef;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 1em;
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+        }
+
+        .controls-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .simulation-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        @media (max-width: 1000px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .control-group { margin-bottom: 1.5em; }
+        .control-group h3 {
+            font-size: 1.2em;
+            margin-top: 0;
+            margin-bottom: 0.5em;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button {
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: 1px solid var(--border-color);
+            padding: 10px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+            text-align: left;
+        }
+        button:hover, button.active {
+            background-color: var(--accent-color);
+            color: white;
+            border-color: var(--accent-hover);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        #simCanvas {
+            width: 100%;
+            height: 600px;
+            background-color: #eef;
+            border-radius: 8px;
+            cursor: grab;
+        }
+        #simCanvas:active { cursor: grabbing; }
+
+        #configSpaceCanvas {
+            width: 100%;
+            height: 300px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        #dofCalculation {
+            background-color: #e9f7ef;
+            border-left: 5px solid #28a745;
+            padding: 1em;
+            border-radius: 4px;
+        }
+        #dofCalculation p { margin: 0.5em 0; }
+        #dofFinalCount { text-align: center; font-size: 2.5em; font-weight: bold; color: #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Freedom Zoo</h1>
+            <p style="text-align:center; font-style:italic;">A Foundational Guide to Mechanical Degrees of Freedom</p>
+        </header>
+
+        <main class="main-layout">
+            <div class="controls-column">
+                <div class="panel">
+                    <div class="control-group">
+                        <h3>1. Spawn Object</h3>
+                        <div class="button-group" id="spawn-buttons">
+                            <button data-type="PointMass">Point Mass</button>
+                            <button data-type="RigidRod">Rigid Rod</button>
+                            <button data-type="RigidDisc">Rigid Disc</button>
+                            <button data-type="RigidCube">Rigid Cube</button>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <h3>2. Apply Constraint</h3>
+                        <div class="button-group" id="constraint-buttons">
+                            <button data-type="FixToPoint">Fix to Point</button>
+                            <button data-type="ConstrainToRail">Constrain to Rail (Line)</button>
+                            <button data-type="ConstrainToPlane">Constrain to Surface (Plane)</button>
+                        </div>
+                    </div>
+                     <div class="control-group">
+                        <h3>3. Tools</h3>
+                        <div class="button-group" id="tool-buttons">
+                            <button data-type="Wiggle" class="active">Wiggle Tool</button>
+                            <button id="resetSceneBtn">Reset Scene</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel">
+                     <h3>Coordinate System</h3>
+                     <select id="coordSystemSelect">
+                         <option value="cartesian">Cartesian (x, y, z, α, β, γ)</option>
+                         <option value="polar">Polar/Cylindrical</option>
+                     </select>
+                     <div id="coordDisplay" style="margin-top:1em; font-family:monospace; white-space:pre;"></div>
+                </div>
+            </div>
+
+            <div class="simulation-column">
+                <div class="panel">
+                    <div id="simCanvas"></div>
+                </div>
+                <div class="panel">
+                    <h2>The DoF Counter - A Live Tally</h2>
+                    <div id="dofCalculation">
+                        <p><strong>Step 1: Base Object</strong><br><span id="dof-step1">Select an object to begin. A free point mass in 3D space has 3 translational degrees of freedom (x, y, z).</span></p>
+                        <p><strong>Step 2: Constraints</strong><br><span id="dof-step2">No constraints applied.</span></p>
+                        <hr>
+                        <p style="text-align:center; font-weight:bold;">Final Count:</p>
+                        <div id="dofFinalCount">3</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <section id="physics-explained">
+            <h2>The Physics Explained - From Newton to Lagrange</h2>
+            <div class="panel">
+                <h3>Part A: What is a Degree of Freedom?</h3>
+                <p>[... Detailed explanation of DoF with real-world analogies ...]</p>
+            </div>
+            <div class="panel">
+                <h3>Part B: Translational and Rotational Freedom</h3>
+                <p>[... Detailed breakdown of these two categories ...]</p>
+            </div>
+            <div class="panel">
+                <h3>Part C: Constraints and Generalized Coordinates</h3>
+                <p>[... Introduction to the Lagrangian perspective ...]</p>
+            </div>
+        </section>
+
+        <section id="config-space">
+            <h2>Configuration Space Explorer</h2>
+            <div class="panel">
+                 <canvas id="configSpaceCanvas"></canvas>
+                 <p>This panel shows a 2D projection of the "configuration space" of the object - the space of all its possible states. The dimensionality of this space is equal to the number of degrees of freedom.</p>
+            </div>
+        </section>
+
+        <section id="advanced-notes">
+            <h2>Advanced Notes & Extensions</h2>
+            <p>[... Discussion of non-holonomic constraints, potential energy, and complex systems like the double pendulum ...]</p>
+        </section>
+    </div>
+
+<script>
+// --- EMBEDDED THREE.JS LIBRARY ---
+// In a real scenario, the full minified three.js code (~650KB) would be pasted here.
+// For this simulation, I will use a placeholder and then add it in a subsequent step
+// to keep this initial file creation manageable.
+const THREE = { REVISION: '158' /* Placeholder */ };
+</script>
+<script>
+// --- SIMULATION CODE ---
+
+class FreedomZoo {
+    constructor() {
+        this.scene = null;
+        this.camera = null;
+        this.renderer = null;
+        this.controls = null;
+        this.raycaster = new THREE.Raycaster();
+        this.pointer = new THREE.Vector2();
+
+        this.objects = [];
+        this.activeObject = null;
+        this.activeTool = 'Wiggle';
+        this.activeConstraint = null;
+
+        this.dom = {
+            simCanvas: document.getElementById('simCanvas'),
+            spawnButtons: document.getElementById('spawn-buttons'),
+            constraintButtons: document.getElementById('constraint-buttons'),
+            toolButtons: document.getElementById('tool-buttons'),
+            resetSceneBtn: document.getElementById('resetSceneBtn'),
+            coordDisplay: document.getElementById('coordDisplay'),
+            dofStep1: document.getElementById('dof-step1'),
+            dofStep2: document.getElementById('dof-step2'),
+            dofFinalCount: document.getElementById('dofFinalCount'),
+        };
+
+        this.init();
+    }
+
+    init() {
+        if (typeof THREE.Scene === 'undefined') {
+            this.dom.simCanvas.innerHTML = '<p style="padding: 2em; color: red;"><strong>Error:</strong> THREE.js library failed to load. The 3D view cannot be initialized.</p>';
+            return;
+        }
+
+        // Scene setup
+        this.scene = new THREE.Scene();
+        this.scene.background = new THREE.Color(0xeef);
+
+        // Camera
+        this.camera = new THREE.PerspectiveCamera(75, this.dom.simCanvas.clientWidth / this.dom.simCanvas.clientHeight, 0.1, 1000);
+        this.camera.position.set(5, 5, 5);
+        this.camera.lookAt(0, 0, 0);
+
+        // Renderer
+        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer.setSize(this.dom.simCanvas.clientWidth, this.dom.simCanvas.clientHeight);
+        this.renderer.setPixelRatio(window.devicePixelRatio);
+        this.dom.simCanvas.appendChild(this.renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        this.scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7.5);
+        this.scene.add(directionalLight);
+
+        // Helpers
+        const gridHelper = new THREE.GridHelper(20, 20);
+        this.scene.add(gridHelper);
+        const axesHelper = new THREE.AxesHelper(5);
+        this.scene.add(axesHelper);
+
+        // Placeholder for OrbitControls
+        // this.controls = new THREE.OrbitControls(this.camera, this.renderer.domElement);
+
+        this.addEventListeners();
+        this.animate();
+
+        console.log("Freedom Zoo Initialized");
+    }
+
+    addEventListeners() {
+        // Placeholder for event listeners
+        this.dom.resetSceneBtn.addEventListener('click', () => this.resetScene());
+    }
+
+    resetScene() {
+        console.log("Resetting scene...");
+        this.objects.forEach(obj => this.scene.remove(obj.mesh));
+        this.objects = [];
+        this.activeObject = null;
+        this.updateDoFPanel();
+    }
+
+    spawnObject(type) {
+        // Placeholder for spawning logic
+        console.log(`Spawning ${type}`);
+    }
+
+    applyConstraint(type) {
+        // Placeholder for constraint logic
+        console.log(`Applying constraint ${type}`);
+    }
+
+    updateDoFPanel() {
+        // Placeholder for DoF calculation display
+        let baseDof = 0;
+        let baseText = 'No object in scene.';
+        let constraintText = 'N/A';
+        let finalDof = 0;
+
+        if (this.activeObject) {
+            // ... logic to calculate DoF will go here ...
+        }
+
+        this.dom.dofStep1.textContent = baseText;
+        this.dom.dofStep2.textContent = constraintText;
+        this.dom.dofFinalCount.textContent = finalDof;
+    }
+
+    animate() {
+        requestAnimationFrame(() => this.animate());
+        // this.controls.update();
+        this.renderer.render(this.scene, this.camera);
+    }
+}
+
+// --- Library Loading and Instantiation ---
+
+// A function to load a script dynamically and embed it
+function loadScript(url, callback) {
+    const script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = url;
+    script.onload = callback;
+    script.onerror = () => {
+        console.error(`Failed to load script: ${url}`);
+        callback(new Error(`Failed to load script: ${url}`));
+    };
+    document.head.appendChild(script);
+}
+
+// Load Three.js from a reliable CDN, then initialize the simulation
+loadScript('https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js', (error) => {
+    if (error) {
+        document.getElementById('simCanvas').innerHTML = '<p style="padding: 2em; color: red;"><strong>Error:</strong> Could not load THREE.js from CDN. Please check your internet connection and try again.</p>';
+    } else {
+        // Also load OrbitControls
+        loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js', () => {
+            document.addEventListener('DOMContentLoaded', () => {
+                window.zoo = new FreedomZoo();
+            });
+        });
+    }
+});
+
+</script>
+</body>
+</html>

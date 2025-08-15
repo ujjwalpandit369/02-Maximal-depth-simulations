@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Conformal Cartographer's Toolkit</title>
+    <style>
+        :root {
+            --bg-color: #1f2833;
+            --primary-text: #c5c6c7;
+            --secondary-text: #9fa0a1;
+            --panel-bg: #2c3e50;
+            --border-color: #45a29e;
+            --accent-color: #66fcf1;
+            --accent-hover: #4f9a94;
+            --button-bg: #45a29e;
+            --button-text: #1f2833;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: var(--bg-color); color: var(--primary-text); margin: 0; padding: 1em; line-height: 1.6; }
+        h1, h2, h3 { color: var(--accent-color); border-bottom: 1px solid var(--border-color); padding-bottom: 0.3em; }
+        h1 { font-size: 2.2em; text-align: center; }
+        h2 { font-size: 1.8em; margin-top: 1.5em; }
+        h3 { font-size: 1.4em; }
+        p, li, dt, dd { color: var(--secondary-text); }
+        strong { color: var(--primary-text); }
+        code { background-color: var(--bg-color); padding: 0.2em 0.4em; border-radius: 3px; font-family: monospace; }
+        .container { max-width: 1800px; margin: 0 auto; padding: 1em; }
+        .main-layout { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
+        .simulation-column { display: flex; flex-direction: column; gap: 20px; }
+        .controls-column { display: flex; flex-direction: column; gap: 20px; }
+        .panel { background-color: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.2em; }
+
+        .sim-area-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            width: 100%;
+        }
+        .sim-canvas-wrapper { position: relative; width: 100%; aspect-ratio: 1; }
+        .sim-canvas-wrapper canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; border-radius: 8px; }
+        .canvas-label { text-align: center; font-weight: bold; color: var(--accent-color); margin-bottom: 5px; }
+
+        @media (max-width: 1200px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .controls-column { order: -1; }
+        }
+        @media (max-width: 700px) {
+            .sim-area-container { grid-template-columns: 1fr; }
+        }
+
+        .control-group { margin-bottom: 1.5em; }
+        .control-group label { display: block; margin-bottom: 0.5em; font-weight: bold; }
+        .control-group select { width: 100%; padding: 0.5em; background-color: var(--bg-color); color: var(--primary-text); border: 1px solid var(--border-color); border-radius: 4px; }
+        .button-group { display: flex; flex-direction: column; gap: 10px; }
+        button { background-color: var(--button-bg); color: var(--button-text); border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; font-weight: bold; }
+        button:hover, button:focus { background-color: var(--accent-hover); }
+        button:disabled { background-color: #3a4c5a; cursor: not-allowed; }
+
+        #coordInspector table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+        #coordInspector th, #coordInspector td { border: 1px solid var(--border-color); padding: 0.5em; text-align: center; }
+        #coordInspector th { background-color: #1f2833; }
+        dt { font-weight: bold; color: var(--primary-text); margin-top: 1em;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>The Conformal Cartographer's Toolkit</h1>
+        <p style="text-align:center; font-style:italic;">A Step-by-Step Construction of Penrose Diagrams</p>
+    </header>
+
+    <main>
+        <section id="overview">
+            <p>Penrose diagrams are essential tools in general relativity, allowing physicists to visualize the complex causal structure of an entire, infinite spacetime on a single finite diagram. This simulation demystifies their construction by breaking it down into a sequence of understandable steps. You will actively apply the coordinate transformations that "tame infinity," see how paths and grid lines are warped and straightened, and build an intuition for how these powerful maps work from the ground up.</p>
+        </section>
+
+        <div class="main-layout">
+            <div class="simulation-column">
+                <div class="sim-area-container">
+                    <div class="sim-canvas-container">
+                        <div class="canvas-label">Panel A: Standard Spacetime</div>
+                        <div class="sim-canvas-wrapper"><canvas id="canvasA"></canvas></div>
+                    </div>
+                    <div class="sim-canvas-container">
+                        <div class="canvas-label">Panel B: Intermediate Coords</div>
+                        <div class="sim-canvas-wrapper"><canvas id="canvasB"></canvas></div>
+                    </div>
+                    <div class="sim-canvas-container">
+                        <div class="canvas-label">Panel C: Penrose Diagram</div>
+                        <div class="sim-canvas-wrapper"><canvas id="canvasC"></canvas></div>
+                    </div>
+                </div>
+                <div class="panel" id="live-journal">
+                    <h3>The Cartographer's Live Journal</h3>
+                    <p id="journalText">Select a spacetime and begin the transformation process.</p>
+                </div>
+            </div>
+
+            <div class="controls-column">
+                <div class="panel">
+                    <h3>Controls</h3>
+                    <div class="control-group">
+                        <label for="spacetimeSelect">1. Choose Your Spacetime</label>
+                        <select id="spacetimeSelect">
+                            <option value="minkowski" selected>2D Minkowski Space</option>
+                            <option value="rindler">2D Rindler Wedge</option>
+                            <option value="desitter">2D de Sitter Space</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>2. The Transformation Engine</label>
+                        <div class="button-group">
+                            <button id="step1Btn">Convert to Null Coords</button>
+                            <button id="step2Btn" disabled>Apply Range Compression</button>
+                            <button id="step3Btn" disabled>Perform Conformal Rescaling</button>
+                        </div>
+                    </div>
+                     <div class="control-group">
+                        <label>3. Geodesic Tracer</label>
+                         <p class="small-text">Click and drag on Panel A to draw a path. Red=Timelike, Yellow=Null (Light), Blue=Spacelike.</p>
+                         <button id="clearPathsBtn">Clear Paths</button>
+                    </div>
+                    <button id="resetBtn">Reset All</button>
+                </div>
+                <div class="panel" id="coordInspector">
+                    <h3>Coordinate Inspector</h3>
+                    <p class="small-text">Click on any panel to inspect a spacetime point.</p>
+                    <table>
+                        <thead><tr><th>System</th><th>Coord 1</th><th>Coord 2</th></tr></thead>
+                        <tbody>
+                            <tr><td>(t, x)</td><td id="coord-tx-1">--</td><td id="coord-tx-2">--</td></tr>
+                            <tr><td>(u, v)</td><td id="coord-uv-1">--</td><td id="coord-uv-2">--</td></tr>
+                            <tr><td>(T, X)</td><td id="coord-TX-1">--</td><td id="coord-TX-2">--</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <section id="beginners-guide">
+            <h2>Beginner's Guide</h2>
+            <p>Have you ever seen a flat map of the world, like the Mercator projection? You probably noticed that Greenland looks enormous, bigger than Africa, even though it's much smaller. The map is distorted. To fit the curved, spherical Earth onto a flat piece of paper, we have to stretch and squeeze different parts of it. A Penrose diagram does the same thing, but for something even trickier to map: an entire, infinite universe (or "spacetime").</p>
+            <p><strong>Step 1: The Problem of Infinity</strong><br/>
+            Spacetime, as described by Einstein's theories, is big. Really big. It can be infinite in extent and last for an infinite amount of time. How can you possibly draw a picture of that? You can't just draw a normal graph, because you'd need an infinitely large piece of paper. This is a problem if we want to understand the "big picture" of a spacetime—where did it begin? Where does it end? What parts can send signals to what other parts? To see the whole story, we need a map of infinity.</p>
+            <p><strong>Step 2: The Cartographer's Recipe</strong><br/>
+            This simulation shows you the three-step "recipe" for making one of these maps. You are the cartographer!
+            <ol>
+                <li><strong>Convert to Null Coordinates:</strong> Press the first button. Instead of a grid of time and space (t, x), we switch to a grid based on the paths of light rays (u, v). This is like turning the map 45 degrees. It's a convenient first step for the math that comes next. Notice how the grid in Panel B is now made of diamonds.</li>
+                <li><strong>Apply Range Compression:</strong> Press the second button. This is the magic trick for taming infinity. We apply a mathematical function (specifically `arctan`) to our coordinates. This function takes any number, no matter how large (positive or negative infinity), and "squishes" its output into a small, finite range. This forces our entire infinite grid into the finite diamond shape you see in Panel B. The points that used to be "at infinity" are now the very edges of this diamond!</li>
+                <li><strong>Perform Conformal Rescaling:</strong> Press the third button. There's one problem with the compressed map in Panel B: it's very distorted. If you draw a light ray (a yellow line), you'll see its path is curved in Panel B. The final step is a clever rescaling that "un-bends" the light rays, making them straight 45-degree lines again. This is the most important feature of a Penrose diagram. It preserves <strong>causal structure</strong>, meaning you can easily see where light can and can't travel.</li>
+            </ol>
+            </p>
+            <p>Use the <strong>Geodesic Tracer</strong> to draw lines on the normal spacetime in Panel A. A yellow line is a light ray. Notice how it's a straight 45-degree line in Panel A and also a straight 45-degree line in the final Penrose Diagram in Panel C. This is the power of these maps: they show the entire infinite spacetime while making the paths of light rays simple and clear.</p>
+        </section>
+
+        <section id="math-explained">
+            <h2>The Physics and Mathematics of Conformal Mapping</h2>
+            <div class="panel">
+                <h3>Part A: Why Map Spacetime? The Problem of Infinity</h3>
+                <p>In General Relativity, a spacetime is not just a stage; it's a dynamic object whose geometry is determined by matter and energy. To truly understand a given solution to Einstein's equations, we need to understand its <strong>global and causal structure</strong>. This means answering questions like: Does it contain singularities (places where the theory breaks down)? Does it have event horizons? Can an observer starting at event A ever reach event B? A standard coordinate chart, like the (t, x) coordinates for Minkowski space, is often "local" and fails to capture the full picture, especially when infinities are involved. Penrose diagrams are a tool to visualize this global structure. By bringing points at infinity to a finite distance on the diagram, we can see the entire spacetime, from its infinite past (past timelike infinity, i⁻) to its infinite future (future timelike infinity, i⁺) and its infinitely distant regions (spacelike infinity, i⁰), all at a glance.</p>
+            </div>
+            <div class="panel">
+                <h3>Part B: A Step-by-Step Mathematical Guide</h3>
+                <p>The construction of a Penrose diagram for 2D Minkowski space (metric: <code>ds² = -dt² + dx²</code>) is a sequence of coordinate transformations.</p>
+                <ol>
+                    <li><strong>Null Coordinates (u, v):</strong> We define two new coordinates based on light rays moving left and right.
+                    <br/><code>u = t - x</code><br/><code>v = t + x</code>
+                    <br/>In these coordinates, the metric becomes <code>ds² = -du dv</code>. Lines of constant `u` and `v` are null geodesics (paths of light). The entire spacetime is covered by `u` and `v` ranging from -∞ to +∞.</li>
+                    <li><strong>Range Compression (U, V):</strong> To map the infinite range of u and v to a finite interval, we use the arctangent function.
+                    <br/><code>U = arctan(u)</code><br/><code>V = arctan(v)</code>
+                    <br/>Now, U and V are confined to the range (-π/2, π/2). The entire infinite spacetime is now contained within a finite diamond shape on the (U, V) plane.</li>
+                    <li><strong>Penrose Coordinates (T, X):</strong> Finally, we rotate the compressed diamond back by 45 degrees for convention and clarity.
+                    <br/><code>T = U + V</code><br/><code>X = V - U</code>
+                    <br/>The metric in these final coordinates can be shown to be <code>ds² = Ω²(-dT² + dX²)</code>, where Ω is the conformal factor.</li>
+                </ol>
+            </div>
+            <div class="panel">
+                <h3>Part C: The Magic of Conformal Invariance</h3>
+                <p>The final transformation is a <strong>conformal transformation</strong>. This means it rescales all local distances by a position-dependent factor, Ω², but it crucially <strong>preserves angles</strong>. In spacetime, the most important "angles" are defined by the light cone. The paths of light rays leaving a point form a "light cone" with an opening angle of 90 degrees (45 degrees in each direction on our diagrams). Because a Penrose diagram is conformally related to the original spacetime, the local light cones are always preserved as perfect 90-degree V-shapes everywhere on the diagram. This means that even though vast regions of spacetime have been compressed, you can still tell at a glance what is causally connected. A path is timelike if its tangent is within the light cone (< 45 degrees from the vertical), null if it's on the cone (at 45 degrees), and spacelike if it's outside the cone (> 45 degrees).</p>
+            </div>
+        </section>
+
+        <section id="advanced-notes">
+            <h2>Advanced Notes & Extensions</h2>
+            <div class="panel">
+                <h3>1. Generalizing to 4D Spacetimes</h3>
+                <p>This simulation uses 2D spacetimes (1 time + 1 space dimension) for simplicity. To create a Penrose diagram for a realistic 4D spacetime (like our universe, or a 4D black hole), we typically assume spherical symmetry. This allows us to suppress the two angular dimensions (θ, φ) and draw a 2D diagram where every point on the diagram implicitly represents a 2-sphere (the surface of a sphere). For example, the central vertical line (r=0) in a black hole diagram represents the origin, while the singularity is a line in the diagram representing a point in space evolving over time. The event horizon, which is a 3D surface in spacetime (a 2-sphere evolving in time), is represented as a 2D surface on the diagram.</p>
+            </div>
+            <div class="panel">
+                <h3>2. The Conformal Factor Ω</h3>
+                <p>The conformal factor Ω relates the physical metric `g` to the unphysical metric `g_unphys` of the Penrose diagram: `g = Ω² * g_unphys`. It essentially tells you how much the local scale has been stretched or shrunk at each point to fit the spacetime onto the page. The boundaries of the Penrose diagram are where Ω becomes zero. For example, in the Minkowski diagram, future timelike infinity (i⁺) is the point where all future-directed timelike lines converge. This is a point where Ω=0. A singularity, like the one inside a Schwarzschild black hole, is a boundary where physical curvature blows up, and this also corresponds to a boundary on the Penrose diagram.</p>
+            </div>
+            <div class="panel">
+                <h3>3. Alternative Compression Functions</h3>
+                <p>While `arctan(x)` is the standard choice for compressing an infinite range, other functions can be used, leading to diagrams with different visual appearances. For example, a function like `tanh(x)` (hyperbolic tangent) also maps (-∞, ∞) to a finite range (-1, 1). Using `tanh` instead of `arctan` would result in a diagram with differently curved grid lines, but the same overall topology and boundary structure. The choice of function is a matter of mathematical convenience and aesthetic preference for the final appearance of the diagram.</p>
+            </div>
+        </section>
+
+        <section id="faq">
+            <h2>FAQ & Troubleshooting</h2>
+            <dl>
+                <dt><strong>What do the different line colors mean when I draw a path?</strong></dt>
+                <dd>The color indicates the causal nature of the path you drew in Panel A. Red lines are "timelike" (slower than light, a path a massive object could take). Yellow lines are "null" (the path of a light ray). Blue lines are "spacelike" (faster than light, not a physically traversable path).</dd>
+                <dt><strong>Why is the Rindler diagram just a triangle?</strong></dt>
+                <dd>The Rindler coordinate system only covers a "wedge" of the full Minkowski spacetime. Specifically, it describes the spacetime as seen by a uniformly accelerating observer who can never receive signals from or send signals to certain parts of the universe. The boundaries of the triangle are the "Rindler horizons."</dd>
+            </dl>
+        </section>
+    </main>
+</div>
+
+<script>
+const dom = {
+    canvasA: document.getElementById('canvasA'),
+    canvasB: document.getElementById('canvasB'),
+    canvasC: document.getElementById('canvasC'),
+    journalText: document.getElementById('journalText'),
+    spacetimeSelect: document.getElementById('spacetimeSelect'),
+    step1Btn: document.getElementById('step1Btn'),
+    step2Btn: document.getElementById('step2Btn'),
+    step3Btn: document.getElementById('step3Btn'),
+    clearPathsBtn: document.getElementById('clearPathsBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    coord_tx_1: document.getElementById('coord-tx-1'),
+    coord_tx_2: document.getElementById('coord-tx-2'),
+    coord_uv_1: document.getElementById('coord-uv-1'),
+    coord_uv_2: document.getElementById('coord-uv-2'),
+    coord_TX_1: document.getElementById('coord-TX-1'),
+    coord_TX_2: document.getElementById('coord-TX-2'),
+};
+
+const simState = {
+    spacetime: 'minkowski',
+    transformStep: 0,
+    paths: [],
+    gridSize: 20,
+    needsRedraw: true,
+};
+
+const spacetimes = {
+    minkowski: {
+        transform: (t, x, targetStep) => {
+            if (targetStep === 0) return {t, x};
+            const u = t - x, v = t + x;
+            if (targetStep === 1) return {u, v};
+            const U = Math.atan(u), V = Math.atan(v);
+            if (targetStep === 2) return {U, V};
+            const T = V + U, X = V - U;
+            return {T, X};
+        },
+        inverse: (p, fromStep) => {
+            if (fromStep === 0) return {t: p.y, x: p.x};
+            let t, x, u, v, U, V, T, X;
+            if (fromStep === 3) { T = p.y; X = p.x; U = (T - X) / 2; V = (T + X) / 2; }
+            if (fromStep === 2) { U = p.x; V = p.y; }
+            u = Math.tan(U); v = Math.tan(V);
+            if (fromStep === 1) { u = p.x; v = p.y; }
+            t = (v + u) / 2; x = (v - u) / 2;
+            return {t, x};
+        }
+    },
+    rindler: {
+        transform: (t, x, targetStep) => {
+            if (x <= Math.abs(t)) return null;
+            return spacetimes.minkowski.transform(t, x, targetStep);
+        },
+        inverse: (p, fromStep) => spacetimes.minkowski.inverse(p, fromStep),
+    },
+    desitter: {
+        transform: (t, x, targetStep) => {
+            const H = 0.5;
+            if (targetStep === 0) return {t, x};
+            const tau = -Math.exp(-H * t) / H;
+            const u = tau - x, v = tau + x;
+            if (targetStep === 1) return {u, v};
+            const U = Math.atan(u), V = Math.atan(v);
+            if (targetStep === 2) return {U, V};
+            const T = V + U, X = V - U;
+            return {T, X};
+        },
+        inverse: (p, fromStep) => {
+             // This is more complex, so we'll use the inspector cheat later
+            return {t:0, x:0};
+        }
+    }
+};
+
+function calculateGeodesic(start, end) {
+    const path = { points: [], type: 'spacelike', start, end };
+    const dt = end.t - start.t;
+    const dx = end.x - start.x;
+
+    const slope = (dx === 0) ? Infinity : Math.abs(dt / dx);
+    path.type = slope > 1.05 ? 'timelike' : slope < 0.95 ? 'spacelike' : 'null';
+
+    const steps = 100;
+    for (let i = 0; i <= steps; i++) {
+        const p = i / steps;
+        path.points.push({
+            t: start.t + p * dt,
+            x: start.x + p * dx,
+        });
+    }
+    return path;
+}
+
+function init() {
+    console.log("Conformal Cartographer Initialized");
+    setupEventListeners();
+    mainLoop();
+}
+
+function mainLoop() {
+    if(simState.needsRedraw) {
+        draw();
+        simState.needsRedraw = false;
+    }
+    requestAnimationFrame(mainLoop);
+}
+
+function setupEventListeners() {
+    dom.spacetimeSelect.addEventListener('change', reset);
+    dom.step1Btn.addEventListener('click', () => advanceTransform(1));
+    dom.step2Btn.addEventListener('click', () => advanceTransform(2));
+    dom.step3Btn.addEventListener('click', () => advanceTransform(3));
+    dom.clearPathsBtn.addEventListener('click', clearPaths);
+    dom.resetBtn.addEventListener('click', reset);
+
+    let isDrawing = false;
+    let startCoords = {x:0, y:0};
+
+    const screenToWorld_A = (px, py) => {
+        const { width, height } = dom.canvasA;
+        const scale = width / (simState.gridSize * 1.1);
+        const x = (px - width / 2) / scale;
+        const t = (height / 2 - py) / scale;
+        return { t, x };
+    };
+
+    dom.canvasA.addEventListener('mousedown', (e) => {
+        isDrawing = true;
+        const rect = dom.canvasA.getBoundingClientRect();
+        const worldCoords = screenToWorld_A(e.clientX - rect.left, e.clientY - rect.top);
+        startCoords = worldCoords;
+        simState.paths.push({ start: worldCoords, end: worldCoords, isTemp: true, type: 'spacelike' });
+        simState.needsRedraw = true;
+    });
+
+    dom.canvasA.addEventListener('mousemove', (e) => {
+        if (!isDrawing) return;
+        const rect = dom.canvasA.getBoundingClientRect();
+        const worldCoords = screenToWorld_A(e.clientX - rect.left, e.clientY - rect.top);
+        simState.paths[simState.paths.length - 1].end = worldCoords;
+        simState.needsRedraw = true;
+    });
+
+    dom.canvasA.addEventListener('mouseup', () => {
+        if (!isDrawing) return;
+        isDrawing = false;
+        const lastPath = simState.paths[simState.paths.length - 1];
+        lastPath.isTemp = false;
+        simState.needsRedraw = true;
+    });
+
+    [dom.canvasA, dom.canvasB, dom.canvasC].forEach((canvas, i) => {
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            inspectCoords(e.clientX - rect.left, e.clientY - rect.top, i);
+        });
+    });
+}
+
+function reset() {
+    simState.spacetime = dom.spacetimeSelect.value;
+    simState.transformStep = 0;
+    simState.paths = [];
+    updateButtons();
+    simState.needsRedraw = true;
+}
+
+function clearPaths() {
+    simState.paths = [];
+    simState.needsRedraw = true;
+}
+
+function advanceTransform(step) {
+    simState.transformStep = step;
+    updateButtons();
+    simState.needsRedraw = true;
+}
+
+function updateButtons() {
+    dom.step1Btn.disabled = simState.transformStep >= 1;
+    dom.step2Btn.disabled = simState.transformStep >= 2 || simState.transformStep < 1;
+    dom.step3Btn.disabled = simState.transformStep >= 3 || simState.transformStep < 2;
+    dom.journalText.textContent = getJournalText(simState.transformStep);
+}
+
+function getJournalText(step) {
+    switch (step) {
+        case 1: return "Converted to Null Coordinates (u, v). The grid is rotated 45 degrees.";
+        case 2: return "Applied atan() range compression. The infinite null grid is now a finite diamond.";
+        case 3: return "Performed final rotation to Penrose coordinates (T, X). Light rays are now 45-degree lines.";
+        default: return "Select a spacetime and begin the transformation process.";
+    }
+}
+
+function draw() {
+    const panelSteps = [
+        0,
+        simState.transformStep === 0 ? 0 : (simState.transformStep === 1 ? 1 : 2),
+        simState.transformStep
+    ];
+
+    drawCanvas(dom.canvasA, panelSteps[0]);
+    drawCanvas(dom.canvasB, panelSteps[1]);
+    drawCanvas(dom.canvasC, panelSteps[2]);
+}
+
+function drawCanvas(canvas, targetStep) {
+    const ctx = canvas.getContext('2d');
+    const { width, height } = canvas;
+    ctx.clearRect(0, 0, width, height);
+    ctx.fillStyle = 'black';
+    ctx.fillRect(0, 0, width, height);
+
+    const transformFunc = spacetimes[simState.spacetime].transform;
+    const range = simState.gridSize / 2;
+
+    const screenToWorld_A = (px, py) => {
+        const scaleA = width / (simState.gridSize * 1.1);
+        const x = (px - width / 2) / scaleA;
+        const t = (height / 2 - py) / scaleA;
+        return { t, x };
+    };
+
+    const worldToScreen = (p) => {
+        let scale, h_coord, v_coord; // horizontal and vertical coordinates on the plot
+        if (targetStep === 0) { // (t,x) plane
+            scale = width / (simState.gridSize * 1.1);
+            h_coord = p.x; v_coord = p.t;
+        } else if (targetStep === 1) { // (u,v) null plane
+            scale = width / (simState.gridSize * 1.1);
+            h_coord = p.u; v_coord = p.v;
+        } else if (targetStep === 2) { // (U,V) compressed null plane
+            scale = width / Math.PI;
+            h_coord = p.U; v_coord = p.V;
+        } else { // (T,X) Penrose plane
+            scale = width / (Math.PI * 1.5);
+            h_coord = p.X; v_coord = p.T;
+        }
+        return { px: width / 2 + h_coord * scale, py: height / 2 - v_coord * scale };
+    };
+
+    // Draw Grid
+    ctx.strokeStyle = '#2c3e50';
+    ctx.lineWidth = 1;
+    for (let i = -range; i <= range; i++) {
+        ctx.beginPath();
+        for (let t = -range*2; t <= range*2; t += 0.5) {
+            const p = transformFunc(t, i, targetStep);
+            if (p === null) continue;
+            const {px, py} = worldToScreen(p);
+            if (t === -range*2) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+        ctx.beginPath();
+        for (let x = -range*2; x <= range*2; x += 0.5) {
+            const p = transformFunc(i, x, targetStep);
+            if (p === null) continue;
+            const {px, py} = worldToScreen(p);
+            if (x === -range*2) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.stroke();
+    }
+
+    // Draw Paths
+    simState.paths.forEach(path => {
+        const pathData = (path.isTemp || !path.points) ? calculateGeodesic(path.start, path.end) : path;
+        if (!path.isTemp && !path.points) {
+            const index = simState.paths.indexOf(path);
+            simState.paths[index] = pathData;
+        }
+
+        ctx.strokeStyle = pathData.type === 'timelike' ? '#ff6b6b' : pathData.type === 'null' ? '#feca57' : '#48dbfb';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+
+        pathData.points.forEach((p_world, i) => {
+            const p_transformed = transformFunc(p_world.t, p_world.x, targetStep);
+            if (!p_transformed) return;
+            const {px, py} = worldToScreen(p_transformed);
+            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+    });
+}
+
+function inspectCoords(px, py, panelIndex) {
+    const { width, height } = dom.canvasA;
+    const range = simState.gridSize / 2;
+    const spacetime = spacetimes[simState.spacetime];
+
+    let bestMatch = { dist: Infinity, t: 0, x: 0 };
+
+    for (let t_grid = -range*2; t_grid <= range*2; t_grid += 0.2) {
+        for (let x_grid = -range*2; x_grid <= range*2; x_grid += 0.2) {
+            const p = spacetime.transform(t_grid, x_grid, panelIndex);
+            if (p === null) continue;
+
+            let scale, sx, sy;
+            if (panelIndex === 0) { scale = width / (range * 2.2); sx = p.x; sy = p.t; }
+            else if (panelIndex === 1) { scale = width / (range * 2.2); sx = p.u; sy = p.v; }
+            else if (panelIndex === 2) { scale = width / Math.PI; sx = p.U; sy = p.V; }
+            else { scale = width / (Math.PI * 1.5); sx = p.X; sy = p.T; }
+
+            const screen_x = width / 2 + sx * scale;
+            const screen_y = height / 2 - sy * scale;
+            const dist = Math.hypot(px - screen_x, py - screen_y);
+
+            if (dist < bestMatch.dist) {
+                bestMatch = { dist, t: t_grid, x: x_grid };
+            }
+        }
+    }
+
+    const {t, x} = bestMatch;
+    const nullCoords = spacetime.transform(t, x, 1);
+    const penroseCoords = spacetime.transform(t, x, 3);
+
+    dom.coord_tx_1.textContent = t.toFixed(2);
+    dom.coord_tx_2.textContent = x.toFixed(2);
+    dom.coord_uv_1.textContent = nullCoords && nullCoords.u ? nullCoords.u.toFixed(2) : '--';
+    dom.coord_uv_2.textContent = nullCoords && nullCoords.v ? nullCoords.v.toFixed(2) : '--';
+    dom.coord_TX_1.textContent = penroseCoords && penroseCoords.T ? penroseCoords.T.toFixed(2) : '--';
+    dom.coord_TX_2.textContent = penroseCoords && penroseCoords.X ? penroseCoords.X.toFixed(2) : '--';
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
