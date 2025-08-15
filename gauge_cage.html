@@ -92,6 +92,7 @@
             background-color: var(--canvas-bg);
             border: 1px solid var(--control-border);
             display: block;
+            cursor: crosshair;
         }
 
         .panel {
@@ -104,6 +105,7 @@
 
         .control-group { margin-bottom: 1.5rem; }
         .control-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; }
+        button, select { width: 100%; padding: 0.5rem; margin-top: 0.5rem; }
     </style>
 </head>
 <body>
@@ -129,7 +131,7 @@
             <div class="info-panels-container">
                 <div id="physics-detective-panel" class="panel">
                     <h2>The Physics Detective: What's Real?</h2>
-                    <p>This panel will report on the physical consequences of your actions.</p>
+                    <p>Welcome! Try painting some potentials in the gauge view or applying a gauge transformation.</p>
                 </div>
                 <div id="field-toolkit-panel" class="panel">
                     <h2>Field Analysis Toolkit</h2>
@@ -144,7 +146,7 @@
                     <div id="field-inspector">
                         <h4>Field Inspector</h4>
                         <p>Click on a view to inspect field values.</p>
-                        <pre id="inspector-readout"></pre>
+                        <pre id="inspector-readout">{...}</pre>
                     </div>
                 </div>
             </div>
@@ -224,272 +226,276 @@
                     <input type="range" id="paintbrush-strength" min="-5" max="5" step="0.1" value="1">
                 </div>
             </div>
-            <div id="viability-report-panel" class="panel">
-                <h2>Cosmological Viability Report Card</h2>
-                <p>This panel is for the Universe Designer sim, but we'll put other analysis here.</p>
-            </div>
-             <div id="chronicle-panel" class="panel">
-                <h2>Cosmic Chronicle</h2>
-                <p>Event log will appear here.</p>
-            </div>
         </aside>
 
         <footer>
-            <div id="quality-check-panel"></div>
             <p>The Gauge Cage Simulation &copy; 2025</p>
         </footer>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // --- RENDERER SETUP (re-used from previous sim) ---
-        // (Vec3 class, camera object, projection logic, mouse controls, etc.)
-        // Note: We need two separate renderers for two canvases.
-
-        function setupRenderer(canvasId) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) {
-                console.error(`Canvas with id ${canvasId} not found.`);
-                return null;
-            }
-            const ctx = canvas.getContext('2d');
-
-            let camera = {
-                position: new Vec3(0, 5, -15),
-                target: new Vec3(0, 0, 0),
-                up: new Vec3(0, 1, 0),
-                fov: 45,
-                theta: -Math.PI / 2,
-                phi: Math.PI / 2,
-                radius: 15,
-                zoomSpeed: 0.5
-            };
-
-            // Mouse controls for this specific canvas
-            // ... (Event listeners for mousedown, mousemove, mouseup, wheel attached to this canvas)
-
-            return { canvas, ctx, camera, objects: [] };
-        }
-
-        // --- 3D MATH UTILITIES (assuming Vec3 is defined here) ---
+        // --- 3D MATH LIBRARIES ---
         class Vec3 {
-            constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
+            constructor(x=0, y=0, z=0) { this.x = x; this.y = y; this.z = z; }
             clone() { return new Vec3(this.x, this.y, this.z); }
             add(v) { return new Vec3(this.x + v.x, this.y + v.y, this.z + v.z); }
             sub(v) { return new Vec3(this.x - v.x, this.y - v.y, this.z - v.z); }
             scale(s) { return new Vec3(this.x * s, this.y * s, this.z * s); }
             dot(v) { return this.x * v.x + this.y * v.y + this.z * v.z; }
             cross(v) { return new Vec3(this.y * v.z - this.z * v.y, this.z * v.x - this.x * v.z, this.x * v.y - this.y * v.x); }
-            magnitude() { return Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z); }
+            magnitude() { return Math.sqrt(this.dot(this)); }
+            normalize() { const mag = this.magnitude(); return mag > 0 ? this.scale(1 / mag) : new Vec3(); }
         }
 
-        // --- GRID & FIELD ENGINE ---
-        class FieldGrid {
-            constructor(size = 10, resolution = 10) {
-                this.size = size;
-                this.res = resolution;
-                this.grid = Array(this.res).fill(0).map(() => Array(this.res).fill(0).map(() => Array(this.res).fill(0).map(() => ({
-                    phi: 0,
-                    A: new Vec3(0, 0, 0)
-                }))));
+        // --- RENDERER IMPLEMENTATION ---
+        const sharedCamera = {
+            theta: -Math.PI / 2,
+            phi: Math.PI / 1.5,
+            radius: 15,
+            target: new Vec3(0, 0, 0),
+            up: new Vec3(0, 1, 0),
+            position: new Vec3(0, 5, -15),
+            updatePosition: function() {
+                this.position.x = this.target.x + this.radius * Math.sin(this.phi) * Math.cos(this.theta);
+                this.position.y = this.target.y + this.radius * Math.cos(this.phi);
+                this.position.z = this.target.z + this.radius * Math.sin(this.phi) * Math.sin(this.theta);
             }
+        };
+        sharedCamera.updatePosition();
 
-            get(i, j, k) {
-                i = Math.max(0, Math.min(this.res - 1, i));
-                j = Math.max(0, Math.min(this.res - 1, j));
-                k = Math.max(0, Math.min(this.res - 1, k));
-                return this.grid[i][j][k];
-            }
-
-            calculateB(i, j, k) { // B = curl(A)
-                const dx = this.size / this.res;
-                const Bx = (this.get(i,j+1,k).A.z - this.get(i,j-1,k).A.z) / (2*dx) - (this.get(i,j,k+1).A.y - this.get(i,j,k-1).A.y) / (2*dx);
-                const By = (this.get(i,j,k+1).A.x - this.get(i,j,k-1).A.x) / (2*dx) - (this.get(i+1,j,k).A.z - this.get(i-1,j,k).A.z) / (2*dx);
-                const Bz = (this.get(i+1,j,k).A.y - this.get(i-1,j,k).A.y) / (2*dx) - (this.get(i,j+1,k).A.x - this.get(i,j-1,k).A.x) / (2*dx);
-                return new Vec3(Bx, By, Bz);
-            }
-
-            calculateE(i, j, k) { // E = -grad(phi)
-                const dx = this.size / this.res;
-                const Ex = -(this.get(i+1,j,k).phi - this.get(i-1,j,k).phi) / (2*dx);
-                const Ey = -(this.get(i,j+1,k).phi - this.get(i,j-1,k).phi) / (2*dx);
-                const Ez = -(this.get(i,j,k+1).phi - this.get(i,j,k-1).phi) / (2*dx);
-                // Ignoring dA/dt for now
-                return new Vec3(Ex, Ey, Ez);
-            }
-
-            worldToGrid(pos) {
-                const s = this.size / 2;
-                const i = Math.round(((pos.x + s) / this.size) * (this.res - 1));
-                const j = Math.round(((pos.y + s) / this.size) * (this.res - 1));
-                const k = Math.round(((pos.z + s) / this.size) * (this.res - 1));
-                return {i,j,k};
-            }
-
-            gridToWorld(i,j,k) {
-                const s = this.size / 2;
-                const x = (i / (this.res-1)) * this.size - s;
-                const y = (j / (this.res-1)) * this.size - s;
-                const z = (k / (this.res-1)) * this.size - s;
-                return new Vec3(x,y,z);
-            }
-        }
-
-        const fieldGrid = new FieldGrid(10, 12); // Use a slightly higher res
-
-        // --- FULL RENDERER CLASS ---
         class Renderer {
-            // ... (Full implementation of the renderer as in the previous simulation)
-            // constructor, project3D, drawLine, drawVector, mouse controls, etc.
-            // This is a simplified placeholder for brevity. The actual implementation
-            // would be the robust renderer from the Cosmic Tango sim.
-            constructor(canvasId, sharedCamera) {
+            constructor(canvasId, camera) {
                 this.canvas = document.getElementById(canvasId);
                 this.ctx = this.canvas.getContext('2d');
-                this.camera = sharedCamera; // Both renderers share one camera
+                this.camera = camera;
                 this.needsRedraw = true;
+
+                this.viewMatrix = new Float32Array(16);
+                this.projectionMatrix = new Float32Array(16);
+                this.setProjection(45, this.canvas.width / this.canvas.height, 0.1, 100);
+
+                this.addEventListeners();
             }
 
-            // A real implementation would be much more detailed.
-            render(fieldGrid, viewType) {
-                 if (!this.needsRedraw) return;
-                 // ... clear canvas, handle responsive size ...
-                 // ... update camera matrix ...
+            setProjection(fov, aspect, near, far) {
+                const f = 1.0 / Math.tan((fov * Math.PI / 180) / 2);
+                const rangeInv = 1 / (near - far);
+                this.projectionMatrix.set([
+                    f / aspect, 0, 0, 0,
+                    0, f, 0, 0,
+                    0, 0, (near + far) * rangeInv, -1,
+                    0, 0, near * far * rangeInv * 2, 0
+                ]);
+            }
 
-                 // This drawing logic is simplified for the patch
-                 this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
-                 this.ctx.fillStyle = 'black';
-                 this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height);
-                 this.ctx.font = "12px Arial";
-                 this.ctx.fillStyle = "white";
-                 this.ctx.textAlign = "center";
-                 this.ctx.fillText(`(Rendering for ${viewType} view)`, this.canvas.width/2, this.canvas.height/2);
+            updateViewMatrix() {
+                const zAxis = this.camera.position.sub(this.camera.target).normalize();
+                const xAxis = this.camera.up.cross(zAxis).normalize();
+                const yAxis = zAxis.cross(xAxis).normalize();
+                this.viewMatrix.set([
+                    xAxis.x, yAxis.x, zAxis.x, 0,
+                    xAxis.y, yAxis.y, zAxis.y, 0,
+                    xAxis.z, yAxis.z, zAxis.z, 0,
+                    -xAxis.dot(this.camera.position), -yAxis.dot(this.camera.position), -zAxis.dot(this.camera.position), 1
+                ]);
+            }
 
-                 this.needsRedraw = false;
+            project(p) {
+                const vx = p.x * this.viewMatrix[0] + p.y * this.viewMatrix[4] + p.z * this.viewMatrix[8] + this.viewMatrix[12];
+                const vy = p.x * this.viewMatrix[1] + p.y * this.viewMatrix[5] + p.z * this.viewMatrix[9] + this.viewMatrix[13];
+                const vz = p.x * this.viewMatrix[2] + p.y * this.viewMatrix[6] + p.z * this.viewMatrix[10] + this.viewMatrix[14];
+                const vw = p.x * this.viewMatrix[3] + p.y * this.viewMatrix[7] + p.z * this.viewMatrix[11] + this.viewMatrix[15];
+                const px = vx * this.projectionMatrix[0];
+                const py = vy * this.projectionMatrix[5];
+                const pz = vz * this.projectionMatrix[10] + vw * this.projectionMatrix[14];
+                const pw = -vz;
+                if (pw < 0) return null;
+                return { x: (px / pw + 1) * 0.5 * this.canvas.width, y: (1 - py / pw) * 0.5 * this.canvas.height };
+            }
+
+            drawLine(p1, p2, color) {
+                const p1_2d = this.project(p1);
+                const p2_2d = this.project(p2);
+                if (!p1_2d || !p2_2d) return;
+                this.ctx.strokeStyle = color;
+                this.ctx.beginPath();
+                this.ctx.moveTo(p1_2d.x, p1_2d.y);
+                this.ctx.lineTo(p2_2d.x, p2_2d.y);
+                this.ctx.stroke();
+            }
+
+            drawVector(start, vec, color, scale = 1) {
+                if (vec.magnitude() < 1e-4) return;
+                const end = start.add(vec.normalize().scale(scale));
+                this.drawLine(start, end, color);
+            }
+
+            addEventListeners() {
+                let isDragging = false, lastMouseX, lastMouseY;
+                this.canvas.addEventListener('mousedown', e => { isDragging = true; lastMouseX = e.offsetX; lastMouseY = e.offsetY; });
+                this.canvas.addEventListener('mouseup', () => isDragging = false);
+                this.canvas.addEventListener('mouseleave', () => isDragging = false);
+                this.canvas.addEventListener('mousemove', e => {
+                    if (!isDragging) return;
+                    this.camera.theta -= (e.offsetX - lastMouseX) * 0.01;
+                    this.camera.phi -= (e.offsetY - lastMouseY) * 0.01;
+                    this.camera.phi = Math.max(0.1, Math.min(Math.PI - 0.1, this.camera.phi));
+                    lastMouseX = e.offsetX; lastMouseY = e.offsetY;
+                    this.needsRedraw = true;
+                });
+                this.canvas.addEventListener('wheel', e => {
+                    e.preventDefault();
+                    this.camera.radius += e.deltaY * 0.1;
+                    this.camera.radius = Math.max(5, Math.min(50, this.camera.radius));
+                    this.needsRedraw = true;
+                });
+            }
+
+            render(drawCallback) {
+                if (!this.needsRedraw) return;
+                this.camera.updatePosition();
+                this.updateViewMatrix();
+
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.fillStyle = getComputedStyle(this.canvas).getPropertyValue('background-color');
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                if (drawCallback) drawCallback(this);
+
+                this.needsRedraw = false;
             }
         }
 
-        let sharedCamera = { /* ... camera object ... */ };
+        // --- SIMULATION SETUP ---
+        const fieldGrid = new FieldGrid(10, 10);
+        let chiField = null;
+        let baseAField = null; // To store the original state before transformation
+
         const primaryRenderer = new Renderer('primary-view-canvas', sharedCamera);
         const gaugeRenderer = new Renderer('gauge-view-canvas', sharedCamera);
 
-        // --- INTERACTIVE TOOLS LOGIC ---
-        let chiField = null; // To store the gauge function
-
-        function generateChiField() {
-            chiField = Array(fieldGrid.res).fill(0).map(() => Array(fieldGrid.res).fill(0).map(() => Array(fieldGrid.res).fill(0)));
-            for(let i=0; i<fieldGrid.res; i++) {
-                for(let j=0; j<fieldGrid.res; j++) {
-                    for(let k=0; k<fieldGrid.res; k++) {
+        function drawPrimaryView(renderer) {
+            for(let i=0; i<fieldGrid.res; i+=2) {
+                for(let j=0; j<fieldGrid.res; j+=2) {
+                    for(let k=0; k<fieldGrid.res; k+=2) {
                         const pos = fieldGrid.gridToWorld(i,j,k);
-                        // A simple sine wave chi field
-                        chiField[i][j][k] = Math.sin(pos.x * Math.PI / fieldGrid.size) * Math.sin(pos.y * Math.PI / fieldGrid.size);
+                        const E = fieldGrid.calculateE(i,j,k);
+                        const B = fieldGrid.calculateB(i,j,k);
+                        renderer.drawVector(pos, E, 'var(--e-field-color)', 0.5);
+                        renderer.drawVector(pos, B, 'var(--b-field-color)', 0.5);
                     }
                 }
             }
         }
 
-        function applyGaugeTransformation(sliderValue) {
-            // First, reset to the base state before applying new transform
-            // (This requires saving the original state, simplified for now)
+        function drawGaugeView(renderer) {
+            for(let i=0; i<fieldGrid.res; i+=2) {
+                for(let j=0; j<fieldGrid.res; j+=2) {
+                    for(let k=0; k<fieldGrid.res; k+=2) {
+                        const pos = fieldGrid.gridToWorld(i,j,k);
+                        const A = fieldGrid.get(i,j,k).A;
+                        renderer.drawVector(pos, A, 'var(--a-field-color)', 0.5);
+                    }
+                }
+            }
+        }
 
+        function renderLoop() {
+            primaryRenderer.render(drawPrimaryView);
+            gaugeRenderer.render(drawGaugeView);
+            requestAnimationFrame(renderLoop);
+        }
+
+        // --- INTERACTIVE LOGIC ---
+        function generateChiField() {
+            chiField = fieldGrid.grid.map((plane, i) => plane.map((row, j) => row.map((cell, k) => {
+                const pos = fieldGrid.gridToWorld(i,j,k);
+                return Math.sin(pos.x * 2 * Math.PI / fieldGrid.size) * Math.cos(pos.y * 2 * Math.PI / fieldGrid.size);
+            })));
+        }
+
+        function applyGaugeTransformation(sliderValue) {
+            if (!baseAField) return; // Only apply if there's a base field
             const dx = fieldGrid.size / fieldGrid.res;
             for(let i=0; i<fieldGrid.res; i++) {
                 for(let j=0; j<fieldGrid.res; j++) {
                     for(let k=0; k<fieldGrid.res; k++) {
-                        // grad(chi)
-                        const gradChi_x = (chiField[i+1]?.[j][k] - chiField[i-1]?.[j][k]) / (2*dx) || 0;
-                        const gradChi_y = (chiField[i][j+1]?.[k] - chiField[i][j-1]?.[k]) / (2*dx) || 0;
-                        const gradChi_z = (chiField[i][j][k+1] - chiField[i][j][k-1]) / (2*dx) || 0;
+                        const chi_val = chiField[i][j][k];
+                        const gradChi_x = ((chiField[i+1]?.[j][k] ?? chi_val) - (chiField[i-1]?.[j][k] ?? chi_val)) / (2*dx);
+                        const gradChi_y = ((chiField[i][j+1]?.[k] ?? chi_val) - (chiField[i][j-1]?.[k] ?? chi_val)) / (2*dx);
+                        const gradChi_z = ((chiField[i][j][k+1] ?? chi_val) - (chiField[i][j][k-1] ?? chi_val)) / (2*dx);
 
                         const gradChi = new Vec3(gradChi_x, gradChi_y, gradChi_z);
-
-                        // A' = A + grad(chi)
-                        fieldGrid.get(i,j,k).A = fieldGrid.get(i,j,k).A.add(gradChi.scale(sliderValue));
+                        fieldGrid.grid[i][j][k].A = baseAField[i][j][k].A.add(gradChi.scale(sliderValue));
                     }
                 }
             }
-            document.querySelector('#physics-detective-panel p').textContent = `Gauge transformation applied! A has changed, but E and B are invariant.`;
+            document.querySelector('#physics-detective-panel p').textContent = `Gauge transformation applied! The A-field has changed, but the physical B-field (its curl) is invariant.`;
             primaryRenderer.needsRedraw = true;
             gaugeRenderer.needsRedraw = true;
         }
 
         function generateLightWave() {
             fieldGrid.grid.forEach(plane => plane.forEach(row => row.forEach(cell => {
-                cell.phi = 0;
-                cell.A = new Vec3();
+                cell.phi = 0; cell.A = new Vec3();
             })));
 
-            const k_vec = new Vec3(0,0,1); // wave travels in z direction
-            const w = 1; // frequency
+            const k_vec = new Vec3(0,0,2*Math.PI/fieldGrid.size * 3);
             for(let i=0; i<fieldGrid.res; i++) {
                 for(let j=0; j<fieldGrid.res; j++) {
                     for(let k=0; k<fieldGrid.res; k++) {
                         const pos = fieldGrid.gridToWorld(i,j,k);
-                        // A_x = cos(kz - wt)
-                        fieldGrid.get(i,j,k).A.x = Math.cos(k_vec.z * pos.z - w * 0);
+                        fieldGrid.grid[i][j][k].A.x = Math.cos(k_vec.z * pos.z);
                     }
                 }
             }
-            document.querySelector('#physics-detective-panel p').textContent = `Generated a plane wave. Note the perpendicular E and B fields, representing the two physical polarizations.`;
+            baseAField = JSON.parse(JSON.stringify(fieldGrid.grid)); // Deep copy for resetting gauge
+            document.querySelector('#physics-detective-panel p').textContent = `Generated a plane wave. Note the perpendicular E and B fields.`;
             primaryRenderer.needsRedraw = true;
             gaugeRenderer.needsRedraw = true;
         }
-
-        function renderLoop() {
-            primaryRenderer.render(fieldGrid, 'Physical (E,B)');
-            gaugeRenderer.render(fieldGrid, 'Gauge (φ,A)');
-            requestAnimationFrame(renderLoop);
-        }
-
-        function fixCoulombGauge() {
-            const iterations = 30;
-            const dx = fieldGrid.size / fieldGrid.res;
-
-            document.querySelector('#physics-detective-panel p').textContent = `Applying Coulomb gauge condition...`;
-
-            for(let iter = 0; iter < iterations; iter++) {
-                for(let i=1; i<fieldGrid.res-1; i++) {
-                    for(let j=1; j<fieldGrid.res-1; j++) {
-                        for(let k=1; k<fieldGrid.res-1; k++) {
-                            const divA = (fieldGrid.get(i+1,j,k).A.x - fieldGrid.get(i-1,j,k).A.x) / (2*dx) +
-                                         (fieldGrid.get(i,j+1,k).A.y - field.get(i,j-1,k).A.y) / (2*dx) +
-                                         (field.get(i,j,k+1).A.z - field.get(i,j,k-1).A.z) / (2*dx);
-
-                            // A -> A - grad(divA), simplified relaxation step
-                            const gradDivA_x = ((fieldGrid.get(i+1,j,k).A.x - fieldGrid.get(i-1,j,k).A.x)/(2*dx)) - ((fieldGrid.get(i-1,j,k).A.x - fieldGrid.get(i-2,j,k).A.x)/(2*dx));
-                            // ... similar for y and z
-
-                            // This is a highly simplified stub. A real implementation is much more complex.
-                            // For this simulation, we'll just demonstrate the effect conceptually.
-                            fieldGrid.get(i,j,k).A.x -= divA * 0.1;
-                        }
-                    }
-                }
-            }
-            document.querySelector('#physics-detective-panel p').textContent = `Coulomb gauge applied. The A field was modified to make its divergence zero.`;
-            primaryRenderer.needsRedraw = true;
-            gaugeRenderer.needsRedraw = true;
-        }
-
 
         function init() {
-             console.log("Gauge Cage Initialized");
-             generateChiField();
+            console.log("Gauge Cage Initialized with Robust Renderer");
+            generateChiField();
+            generateLightWave(); // Start with a wave
 
-             // Event Listeners
-             document.getElementById('gauge-slider').addEventListener('input', (e) => {
+            // --- EVENT LISTENERS ---
+            document.getElementById('wave-emitter-btn').addEventListener('click', generateLightWave);
+
+            document.getElementById('gauge-slider').addEventListener('input', (e) => {
                 applyGaugeTransformation(parseFloat(e.target.value));
-             });
-             document.getElementById('wave-emitter-btn').addEventListener('click', generateLightWave);
-             document.getElementById('gauge-fix-btn').addEventListener('click', () => {
-                const selection = document.getElementById('gauge-fix-select').value;
-                if (selection === 'coulomb') {
-                    fixCoulombGauge();
-                }
-             });
+            });
 
-             renderLoop();
+            document.getElementById('gauge-fix-btn').addEventListener('click', () => {
+                document.querySelector('#physics-detective-panel p').textContent = `Applying Coulomb gauge... (This is a stub in this version).`;
+            });
+
+            const inspectorReadout = document.getElementById('inspector-readout');
+            function setupInspector(renderer) {
+                renderer.canvas.addEventListener('click', (e) => {
+                    // Simplified inspector: just show center point for now
+                    const i = Math.floor(fieldGrid.res / 2);
+                    const pos = fieldGrid.gridToWorld(i,i,i);
+                    const A = fieldGrid.get(i,i,i).A;
+                    const phi = fieldGrid.get(i,i,i).phi;
+                    const E = fieldGrid.calculateE(i,i,i);
+                    const B = fieldGrid.calculateB(i,i,i);
+
+                    inspectorReadout.textContent = `
+Pos: (${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)})
+φ:   ${phi.toFixed(3)}
+A:   (${A.x.toFixed(3)}, ${A.y.toFixed(3)}, ${A.z.toFixed(3)})
+E:   (${E.x.toFixed(3)}, ${E.y.toFixed(3)}, ${E.z.toFixed(3)})
+B:   (${B.x.toFixed(3)}, ${B.y.toFixed(3)}, ${B.z.toFixed(3)})
+                    `;
+                });
+            }
+            setupInspector(primaryRenderer);
+            setupInspector(gaugeRenderer);
+
+            renderLoop();
         }
 
         init();
