@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Quantum Ladder: Quantized Energy & Zero-Point Energy</title>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --text-color: #c9d1d9;
+            --header-color: #ffffff;
+            --accent-color: #58a6ff; /* A vibrant, quantum blue */
+            --control-bg: #161b22;
+            --control-border: #30363d;
+            --slider-thumb: #58a6ff;
+            --slider-track: #30363d;
+            --button-bg: #21262d;
+            --button-hover: #58a6ff;
+            --button-text-hover: #ffffff;
+            --panel-bg: #161b22;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --code-bg: #010409;
+            --wave-func-color: #1f6feb;
+            --prob-dens-color: #8b949e;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 380px 1fr;
+            grid-template-areas:
+                "header header"
+                "overview overview"
+                "controls sim"
+                "analysis analysis"
+                "theory theory"
+                "advanced advanced"
+                "footer footer";
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "overview"
+                    "sim"
+                    "controls"
+                    "analysis"
+                    "theory"
+                    "advanced"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 10px; }
+        .simulation-area { grid-area: sim; }
+        .controls-area { grid-area: controls; }
+        .analysis-area { grid-area: analysis; }
+        .overview-section { grid-area: overview; }
+        .theory-section { grid-area: theory; }
+        .advanced-section { grid-area: advanced; }
+        footer { grid-area: footer; text-align: center; font-size: 0.9em; padding-top: 20px; border-top: 1px solid var(--control-border); }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 300; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        #simulation-canvas {
+            width: 100%;
+            height: 500px;
+            background-color: var(--code-bg);
+            border-radius: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+        .control-group h4 {
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid var(--control-border);
+            padding-bottom: 5px;
+            color: var(--header-color);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .button-grid button, .control-group button {
+            padding: 10px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9em;
+        }
+        .button-grid button:hover, .control-group button:hover {
+            background-color: var(--button-hover);
+            color: var(--button-text-hover);
+            border-color: var(--button-hover);
+        }
+         .button-grid button.active, .control-group button.active {
+            background-color: var(--accent-color);
+            color: var(--button-text-hover);
+            border-color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .slider-group label {
+            display: block;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .slider-group input { width: 100%; }
+        .slider-group .value-display {
+            font-family: monospace;
+            color: var(--accent-color);
+            float: right;
+            font-size: 0.9em;
+        }
+
+        #analysis-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        #wavefunction-explorer {
+            background-color: var(--code-bg);
+            font-family: monospace;
+            padding: 15px;
+            border-radius: 5px;
+            height: 250px;
+            overflow-y: auto;
+        }
+        #energy-spectrum-analyzer canvas {
+            width: 100%;
+            height: 300px;
+            background-color: var(--code-bg);
+            border-radius: 5px;
+        }
+        #zpe-readout {
+            text-align: center;
+            margin-top: 10px;
+        }
+        #zpe-readout .label { font-size: 1em; }
+        #zpe-readout .value { font-size: 1.8em; font-weight: bold; color: var(--accent-color); font-family: monospace; }
+
+        .info-panel {
+            background-color: #0d1117;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid var(--accent-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Quantum Ladder</h1>
+            <p>Quantized Degrees of Freedom & Zero-Point Energy</p>
+        </header>
+
+        <div class="overview-section">
+            <h2>Overview</h2>
+            <p>Enter the strange and wonderful world of quantum mechanics. This simulation explores how particles behave when confined to tiny spaces. You will discover that unlike a classical ball which can have any energy, a quantum particle is only allowed to exist in specific, discrete energy levels, like the rungs of a ladder. We will visualize the particle's "wavefunction," which encodes the probability of finding it at any location. As you change the shape and size of the particle's confinement, you will see how these allowed "degrees of freedom" change. Most profoundly, you will discover <strong>Zero-Point Energy</strong>—the bizarre fact that a quantum particle can never be perfectly still, possessing a minimum energy even at absolute zero temperature.</p>
+        </div>
+
+        <div class="controls-area panel">
+            <div class="control-group">
+                <h4>1. Potential Well Shape</h4>
+                <div id="potential-buttons" class="button-grid">
+                    <button data-potential="square" class="active">Square Well</button>
+                    <button data-potential="parabolic">Parabolic</button>
+                    <button data-potential="triangular">Triangular</button>
+                    <button data-potential="double">Double Well</button>
+                </div>
+            </div>
+            <div class="control-group slider-group">
+                <label>Confinement Size (L)<span id="l-value" class="value-display">10</span></label>
+                <input type="range" id="l-slider" min="2" max="20" value="10" step="0.1">
+            </div>
+            <div class="control-group slider-group">
+                <label>Quantum State (n)<span id="n-value" class="value-display">1</span></label>
+                <input type="range" id="n-slider" min="1" max="10" value="1" step="1">
+            </div>
+            <div class="control-group slider-group">
+                <label>Particle Mass (m)<span id="m-value" class="value-display">1.0</span></label>
+                <input type="range" id="m-slider" min="0.1" max="5.0" value="1.0" step="0.1">
+            </div>
+        </div>
+
+        <div class="simulation-area panel">
+            <canvas id="simulation-canvas"></canvas>
+        </div>
+
+        <div class="analysis-area">
+            <div class="panel">
+                <h3>Wavefunction Explorer</h3>
+                <div id="wavefunction-explorer">
+                    <p>Initializing...</p>
+                </div>
+            </div>
+            <div class="panel">
+                <h3>Energy Spectrum Analyzer</h3>
+                <div id="energy-spectrum-analyzer">
+                    <canvas id="energy-ladder-canvas"></canvas>
+                </div>
+                <div id="zpe-readout">
+                    <div class="label">Zero-Point Energy (E₁)</div>
+                    <div class="value" id="zpe-value">0.00</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>The Physics of Quantum Confinement</h2>
+            <h3>Part A: The Wave Nature of Matter</h3>
+            <p>In the early 20th century, physics was turned on its head by a radical idea from Louis de Broglie: all matter, not just light, has wave-like properties. An electron, a proton, a cat, you—everything has a wavelength associated with it, given by λ = h/p, where h is Planck's constant and p is momentum. For large objects, this wavelength is astronomically small, so we don't notice it. But for a tiny particle like an electron, the wave nature is dominant.</p>
+            <p><strong>The Guitar String Analogy:</strong> This wave nature is the key to quantization. Think of a guitar string. It is fixed at both ends. Because of this confinement, it can't just vibrate at any frequency. It can only support vibrations where a whole number of half-wavelengths fit perfectly along its length. These are its fundamental tone and its harmonics. All other vibrations quickly cancel themselves out.
+            <br>A quantum particle trapped in a "box" or "potential well" is exactly like that guitar string. Its wavefunction, Ψ(x), must be zero at the walls of the box. This strict boundary condition means that only certain wavefunctions—those that "fit" perfectly inside the box—are allowed. Each of these allowed wave shapes corresponds to a specific, discrete energy level. This is the origin of quantization: <strong>confinement + wave nature = quantized states</strong>.</p>
+
+            <h3>Part B: The Schrödinger Equation</h3>
+            <p>The behavior of a quantum particle is governed by the <strong>Schrödinger Equation</strong>. For our purposes, we can use the time-independent version, which is a master equation for finding the allowed energy states of a system. Conceptually, you can think of it as a machine:
+            <br><code>(-ħ²/2m * d²/dx² + V(x))Ψ(x) = E * Ψ(x)</code>
+            <ul>
+                <li><strong>Input:</strong> You feed the machine the shape of the potential well, V(x), which describes the forces acting on the particle.</li>
+                <li><strong>The Machine's Job:</strong> The equation is a rule that relates the curvature of the wavefunction (its second derivative) to its energy. The machine "tries" different values of energy E.</li>
+                <li><strong>Output:</strong> Only for a special, discrete set of energies E₁, E₂, E₃,... will the machine produce a wavefunction Ψ(x) that is physically sensible (i.e., it doesn't blow up to infinity and it meets the boundary conditions). These allowed energies are the "energy eigenvalues," and the corresponding wavefunctions are the "energy eigenstates." They are the rungs on the quantum ladder.</li>
+            </ul>
+            In this simulation, the computer is numerically solving the Schrödinger equation every time you change a parameter, finding the allowed energy ladder and the shape of the wavefunction for each rung.</p>
+
+            <h3>Part C: The Heisenberg Uncertainty Principle and Zero-Point Energy</h3>
+            <p>One of the most profound results you can see in the simulation is that the lowest possible energy (the "ground state" energy, E₁) is never zero. This is the <strong>Zero-Point Energy (ZPE)</strong>. A quantum particle can never be perfectly at rest. This is a direct consequence of the <strong>Heisenberg Uncertainty Principle (HUP)</strong>.
+            <br>The HUP states that you cannot simultaneously know a particle's position and momentum with perfect accuracy. The more precisely you know its position (small Δx), the less precisely you know its momentum (large Δp), and vice versa. Their uncertainties are linked: ΔxΔp ≥ ħ/2.
+            <br>Now consider a particle at the bottom of a well. If its energy were zero, it would be perfectly still (Δp = 0) at the very bottom of the well (Δx = 0). This would violate the HUP! To satisfy the principle, the particle must always have some residual uncertainty. It must have a non-zero Δp (a bit of jiggle) and a non-zero Δx (its wavefunction is spread out, not a single point). This minimum required "jiggle" is the Zero-Point Energy. It is the fundamental energy of the vacuum, the cost of existence in a quantum universe.</p>
+
+            <h3>Part D: The Quantum Harmonic Oscillator</h3>
+            <p>When you select the "Parabolic Well," you are simulating one of the most important systems in all of physics: the quantum harmonic oscillator. Its potential is V(x) = ½kx². Why is it so important? Because almost *any* potential well, no matter how complex, looks like a parabola right near its minimum point. Therefore, the harmonic oscillator is an excellent approximation for the low-energy behavior of countless systems, from the vibration of molecules to the oscillations of fields in QFT.
+            <br>It has a unique and important property: its energy levels are perfectly, equally spaced. The energy of the n-th state is given by E_n = ħω(n + ½), where ω is the classical oscillation frequency. Notice the "+ ½" term. This is the Zero-Point Energy! The ground state (n=0) has energy E₀ = ½ħω, not zero. This equally spaced ladder of freedom is fundamental to the quantum theory of light, where photons are treated as excitations of harmonic oscillators.</p>
+        </div>
+
+        <div class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+
+            <h3>1. Degeneracy in a 3D Box</h3>
+            <p>In a 3D box, the particle's state must be described by a wavefunction Ψ(x,y,z). The Schrödinger equation becomes separable, meaning the total energy is simply the sum of the energies for each independent dimension: E = E_x + E_y + E_z. Each dimension has its own quantum number (n_x, n_y, n_z). The total energy is given by E = (ħ²π²/2mL²)(n_x² + n_y² + n_z²).
+            <br>This leads to a new phenomenon called <strong>degeneracy</strong>. It's possible for different quantum states (different sets of quantum numbers) to have the exact same energy. For example, in a cubic box, the state (n_x=1, n_y=1, n_z=2) has the same energy as (1,2,1) and (2,1,1), since 1²+1²+2² = 1²+2²+1² = 2²+1²+1² = 6. This energy level is said to be "three-fold degenerate." This concept is crucial in atomic physics, where external magnetic fields can break these degeneracies and split spectral lines (the Zeeman effect).</p>
+
+            <h3>2. Two-Particle Systems and the Pauli Exclusion Principle</h3>
+            <p>What if we put two particles in the box? The answer depends critically on whether they are <strong>bosons</strong> (like photons) or <strong>fermions</strong> (like electrons).
+            <br>For fermions, the <strong>Pauli Exclusion Principle</strong> applies: no two identical fermions can occupy the same quantum state. If you put one electron in the ground state (n=1), the second electron is forbidden from joining it. It is forced to occupy the next available energy level (n=2). This "social distancing" for fermions is the foundation of chemistry and the structure of the periodic table. It's why atoms have shells of electrons, and it's what prevents matter from collapsing on itself. Without the Pauli principle, all electrons would fall into the ground state, and the universe would be a very different, very boring place.</p>
+
+            <h3>3. Quantum Tunneling</h3>
+            <p>When you select the "Double Well" potential, you can observe one of the most non-intuitive quantum effects: <strong>tunneling</strong>. Imagine a particle in the left well with an energy E that is *less* than the height of the central potential barrier. Classically, the particle is trapped forever.
+            <br>Quantum mechanically, however, the particle's wavefunction does not drop to zero inside the barrier. It becomes an exponentially decaying "evanescent wave." If the barrier is thin enough, this decaying wave can have a non-zero amplitude on the other side, meaning there is a finite probability of finding the particle in the right well! The particle has "tunneled" through a classically forbidden region.
+            <br>This tunneling has a profound effect on the energy levels. If the two wells were infinitely far apart, they would each have a set of degenerate (identical) energy levels. But because the particle can tunnel between them, the wavefunctions of the combined system must be either symmetric or anti-symmetric across both wells. This breaks the degeneracy, splitting each original energy level into a pair of very closely spaced new levels. This energy splitting is the basis for the ammonia maser and is critical in many areas of chemistry and solid-state physics.</p>
+        </div>
+
+        <footer>
+            <p>Quantum Ladder Simulator. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+    <script>
+    // --- Global State & Setup ---
+    let canvas, ctx, ladderCanvas, ladderCtx;
+    const ui = {};
+    const state = {
+        potentialType: 'square',
+        L: 10.0,
+        n: 1,
+        m: 1.0,
+        energies: [],
+        wavefunctions: [],
+        isCalculating: false,
+    };
+
+    window.onload = init;
+
+    function init() {
+        // Cache DOM elements
+        canvas = document.getElementById('simulation-canvas');
+        ctx = canvas.getContext('2d');
+        ladderCanvas = document.getElementById('energy-ladder-canvas');
+        ladderCtx = ladderCanvas.getContext('2d');
+
+        const ids = [
+            'potential-buttons', 'l-slider', 'l-value', 'n-slider', 'n-value',
+            'm-slider', 'm-value', 'wavefunction-explorer', 'zpe-value'
+        ];
+        ids.forEach(id => {
+            const key = id.replace(/-(\w)/g, (m, g) => g.toUpperCase());
+            ui[key] = document.getElementById(id);
+        });
+
+        setupEventListeners();
+        recalculate();
+    }
+
+    function setupEventListeners() {
+        ui.potentialButtons.addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                state.potentialType = e.target.dataset.potential;
+                ui.potentialButtons.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                recalculate();
+            }
+        });
+
+        ui.lSlider.addEventListener('input', e => {
+            state.L = parseFloat(e.target.value);
+            ui.lValue.textContent = state.L.toFixed(1);
+            recalculate();
+        });
+
+        ui.nSlider.addEventListener('input', e => {
+            state.n = parseInt(e.target.value);
+            ui.nValue.textContent = state.n;
+            draw(); // No need to recalc, just redraw with new state
+        });
+
+        ui.mSlider.addEventListener('input', e => {
+            state.m = parseFloat(e.target.value);
+            ui.mValue.textContent = state.m.toFixed(1);
+            recalculate();
+        });
+    }
+
+    function addCommentary(text) {
+        const p = document.createElement('p');
+        p.textContent = text;
+        ui.wavefunctionExplorer.prepend(p);
+        if(ui.wavefunctionExplorer.children.length > 10) {
+            ui.wavefunctionExplorer.removeChild(ui.wavefunctionExplorer.lastChild);
+        }
+    }
+
+    // --- Quantum Solver (Shooting Method) ---
+
+    // Define Potentials V(x)
+    const potentials = {
+        square: (x, L) => 0, // Infinite square well handled by boundary conditions
+        parabolic: (x, L) => {
+            const x_norm = (x - L / 2);
+            return 50 * (x_norm / L) * (x_norm / L);
+        },
+        triangular: (x, L) => 10 * (x / L),
+        double: (x, L) => {
+            const x1 = (x - L/4);
+            const x2 = (x - 3*L/4);
+            const barrier = 5 * Math.exp(-((x-L/2)**2) * 50 / (L*L));
+            return 100 * (x1/L)**2 * (x2/L)**2 + barrier;
+        }
+    };
+
+    function getPotential(x, L) {
+        if (x <= 0 || x >= L) return 1e9; // Infinite walls
+        return potentials[state.potentialType](x, L);
+    }
+
+    // ODE: d(psi)/dx = phi, d(phi)/dx = m*(V-E)*psi
+    // Using units where 2m/hbar^2 = m
+    function schrodingerODE(x, y, E, L) {
+        const psi = y[0];
+        const phi = y[1];
+        const V = getPotential(x, L);
+        const dpsi_dx = phi;
+        const dphi_dx = state.m * (V - E) * psi;
+        return [dpsi_dx, dphi_dx];
+    }
+
+    // RK4 Integrator
+    function rk4(x, y, dx, E, L) {
+        const k1 = schrodingerODE(x, y, E, L);
+        const k2 = schrodingerODE(x + dx/2, [y[0] + dx/2*k1[0], y[1] + dx/2*k1[1]], E, L);
+        const k3 = schrodingerODE(x + dx/2, [y[0] + dx/2*k2[0], y[1] + dx/2*k2[1]], E, L);
+        const k4 = schrodingerODE(x + dx,   [y[0] + dx*k3[0], y[1] + dx*k3[1]], E, L);
+
+        const next_psi = y[0] + (dx/6) * (k1[0] + 2*k2[0] + 2*k3[0] + k4[0]);
+        const next_phi = y[1] + (dx/6) * (k1[1] + 2*k2[1] + 2*k3[1] + k4[1]);
+
+        return [next_psi, next_phi];
+    }
+
+    // Calculate wavefunction for a given energy
+    function calculateWavefunction(E, L) {
+        const N_steps = 500;
+        const dx = L / N_steps;
+        let y = [0.0, 1.0]; // Initial conditions: psi(0)=0, psi'(0)=1
+        const wavefunction = [y[0]];
+
+        for(let i=0; i<N_steps; i++) {
+            y = rk4(i*dx, y, dx, E, L);
+            wavefunction.push(y[0]);
+        }
+        return { final_psi: y[0], data: wavefunction };
+    }
+
+    // Main solver function
+    async function solveSpectrum() {
+        if (state.isCalculating) return;
+        state.isCalculating = true;
+
+        const L = state.L;
+        const max_n = 10;
+        const newEnergies = [];
+        const newWavefunctions = [];
+
+        let E_low = 0;
+        let E_high = 0.1;
+
+        for (let i = 1; i <= max_n; i++) {
+            // Find energy bracket
+            let psi_low = calculateWavefunction(E_low, L).final_psi;
+            let psi_high;
+            while(true) {
+                psi_high = calculateWavefunction(E_high, L).final_psi;
+                if (psi_low * psi_high < 0) break; // Found a sign change, root is in [E_low, E_high]
+                psi_low = psi_high;
+                E_low = E_high;
+                E_high *= 1.5;
+                if (E_high > 500) { // Safety break
+                    console.error("Failed to find energy bracket");
+                    state.isCalculating = false;
+                    return;
+                }
+            }
+
+            // Bisection method to find the root (energy eigenvalue)
+            let E_mid;
+            for(let j=0; j<20; j++) {
+                E_mid = (E_low + E_high) / 2;
+                const psi_mid = calculateWavefunction(E_mid, L).final_psi;
+                if (psi_low * psi_mid < 0) {
+                    E_high = E_mid;
+                } else {
+                    E_low = E_mid;
+                    psi_low = psi_mid;
+                }
+            }
+
+            const result = calculateWavefunction(E_mid, L);
+
+            // Normalize wavefunction
+            const norm_sq = result.data.reduce((acc, val) => acc + val*val, 0);
+            const norm = Math.sqrt(norm_sq);
+            const normalized_wf = result.data.map(v => v / norm);
+
+            newEnergies.push(E_mid);
+            newWavefunctions.push(normalized_wf);
+
+            E_low = E_mid + 0.01; // Start search for next level
+            E_high = E_low * 1.1;
+        }
+
+        state.energies = newEnergies;
+        state.wavefunctions = newWavefunctions;
+        state.isCalculating = false;
+        draw();
+    }
+
+    // Debounced recalculation
+    let recalcTimeout;
+    function recalculate() {
+        clearTimeout(recalcTimeout);
+        recalcTimeout = setTimeout(solveSpectrum, 100);
+    }
+
+    // --- Drawing ---
+    function draw() {
+        if (state.isCalculating) return;
+        drawMain();
+        drawLadder();
+        updateExplorer();
+    }
+
+    function drawMain() {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = 'var(--code-bg)';
+        ctx.fillRect(0, 0, w, h);
+
+        if (!state.energies.length) return;
+
+        const maxEnergy = Math.max(state.energies[state.energies.length - 1], 10) * 1.2;
+        const x_scale = w / state.L;
+        const y_scale = h / maxEnergy;
+
+        // --- Draw Potential ---
+        ctx.strokeStyle = 'var(--accent-color)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let i = 0; i < w; i++) {
+            const x = i / x_scale;
+            const v = getPotential(x, state.L);
+            const y = h - v * y_scale;
+            if (i === 0) ctx.moveTo(i, y);
+            else ctx.lineTo(i, y);
+        }
+        ctx.stroke();
+
+        // --- Draw Energy Levels & Wavefunctions ---
+        for (let i = 0; i < state.energies.length; i++) {
+            const E = state.energies[i];
+            const energyY = h - E * y_scale;
+
+            // Energy level line
+            ctx.strokeStyle = 'rgba(88, 166, 255, 0.3)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.moveTo(0, energyY);
+            ctx.lineTo(w, energyY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            if (i + 1 === state.n) { // Only for selected state
+                const wf = state.wavefunctions[i];
+                const wf_scale = 50;
+
+                // Probability density |Psi|^2
+                ctx.fillStyle = 'rgba(139, 148, 158, 0.5)';
+                ctx.beginPath();
+                ctx.moveTo(0, energyY);
+                for (let j = 0; j < wf.length; j++) {
+                    const x = j * (w / wf.length);
+                    const y = energyY - Math.pow(wf[j], 2) * wf_scale * 5;
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(w, energyY);
+                ctx.closePath();
+                ctx.fill();
+
+                // Wavefunction Psi
+                ctx.strokeStyle = 'var(--wave-func-color)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                for (let j = 0; j < wf.length; j++) {
+                    const x = j * (w / wf.length);
+                    const y = energyY - wf[j] * wf_scale;
+                    if (j === 0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+        }
+    }
+
+    function drawLadder() {
+        const w = ladderCanvas.width;
+        const h = ladderCanvas.height;
+        ladderCtx.clearRect(0, 0, w, h);
+        ladderCtx.fillStyle = 'var(--code-bg)';
+        ladderCtx.fillRect(0, 0, w, h);
+
+        if (!state.energies.length) return;
+
+        const maxEnergy = Math.max(state.energies[state.energies.length - 1], 10) * 1.2;
+        const y_scale = h / maxEnergy;
+
+        ladderCtx.strokeStyle = '#8b949e';
+        ladderCtx.lineWidth = 2;
+        ladderCtx.beginPath();
+        ladderCtx.moveTo(w / 2, 0);
+        ladderCtx.lineTo(w / 2, h);
+        ladderCtx.stroke();
+
+        for (let i = 0; i < state.energies.length; i++) {
+            const E = state.energies[i];
+            const energyY = h - E * y_scale;
+
+            const isSelected = (i + 1 === state.n);
+            ladderCtx.strokeStyle = isSelected ? 'var(--accent-color)' : '#8b949e';
+            ladderCtx.lineWidth = isSelected ? 3 : 1;
+
+            ladderCtx.beginPath();
+            ladderCtx.moveTo(w/2 - 30, energyY);
+            ladderCtx.lineTo(w/2 + 30, energyY);
+            ladderCtx.stroke();
+
+            ladderCtx.fillStyle = isSelected ? 'var(--accent-color)' : '#8b949e';
+            ladderCtx.font = '12px monospace';
+            ladderCtx.textAlign = 'left';
+            ladderCtx.fillText(`n=${i+1}`, w/2 + 40, energyY + 4);
+            ladderCtx.textAlign = 'right';
+            ladderCtx.fillText(E.toFixed(3), w/2 - 40, energyY + 4);
+        }
+    }
+
+    function updateExplorer() {
+        if (!state.energies.length) return;
+        ui.wavefunctionExplorer.innerHTML = '';
+
+        const E = state.energies[state.n - 1];
+        const wf = state.wavefunctions[state.n - 1];
+
+        // Count nodes
+        let nodes = 0;
+        for(let i=1; i<wf.length; i++) {
+            if (Math.sign(wf[i]) !== Math.sign(wf[i-1])) {
+                nodes++;
+            }
+        }
+
+        addCommentary(`Displaying state n=${state.n}`);
+        addCommentary(`Energy E_${state.n} = ${E.toFixed(4)}`);
+        addCommentary(`Wavefunction has ${nodes} nodes.`);
+
+        if (state.n === 1) {
+            addCommentary("This is the ground state.");
+            addCommentary("Its energy is the Zero-Point Energy (ZPE), the minimum possible energy for this system.");
+        }
+
+        ui.zpeValue.textContent = state.energies[0].toFixed(4);
+    }
+
+    </script>
+</body>
+</html>
