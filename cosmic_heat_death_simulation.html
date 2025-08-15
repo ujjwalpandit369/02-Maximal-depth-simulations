@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Lonely Future: Heat Death and the Return to de Sitter</title>
+    <style>
+        :root {
+            --bg-color: #030613;
+            --text-color: #94a3b8;
+            --header-color: #e2e8f0;
+            --accent-color: #be123c; /* A dying, red-giant star color */
+            --control-bg: #0f172a;
+            --control-border: #1e293b;
+            --button-bg: #1e293b;
+            --button-hover: #be123c;
+            --button-text-hover: #ffffff;
+            --panel-bg: #0f172a;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-areas:
+                "header header"
+                "overview overview"
+                "sim controls"
+                "timeline timeline"
+                "analysis analysis"
+                "theory theory"
+                "advanced advanced"
+                "footer footer";
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "overview"
+                    "sim"
+                    "timeline"
+                    "controls"
+                    "analysis"
+                    "theory"
+                    "advanced"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 10px; }
+        .simulation-area { grid-area: sim; }
+        .timeline-area { grid-area: timeline; }
+        .controls-area { grid-area: controls; }
+        .analysis-area { grid-area: analysis; }
+        .overview-section { grid-area: overview; }
+        .theory-section { grid-area: theory; }
+        .advanced-section { grid-area: advanced; }
+        footer { grid-area: footer; text-align: center; font-size: 0.9em; padding-top: 20px; border-top: 1px solid var(--control-border); }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 300; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        #simulation-canvas {
+            width: 100%;
+            height: 100%;
+            min-height: 500px;
+            background-color: #000;
+            border-radius: 8px;
+        }
+
+        .timeline-area .slider-group { padding: 10px; }
+        .control-group { margin-bottom: 20px; }
+        .control-group h4 {
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid var(--control-border);
+            padding-bottom: 5px;
+            color: var(--header-color);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .button-grid button {
+            padding: 8px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 0.9em;
+        }
+        .button-grid button:hover {
+            background-color: var(--button-hover);
+            color: var(--button-text-hover);
+        }
+        .button-grid button.active {
+            box-shadow: 0 0 10px var(--accent-color);
+        }
+
+        .slider-group label {
+            display: block;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .slider-group input[type="range"] { width: 100%; }
+        .slider-group .value-display {
+            color: var(--accent-color);
+            float: right;
+            font-family: monospace;
+        }
+
+        #chronicle-panel {
+            font-family: monospace;
+            font-size: 1.1em;
+            height: 150px;
+            overflow-y: auto;
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid var(--control-border);
+            color: #f1f5f9;
+        }
+
+        #analysis-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        #inventory-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #inventory-table th, #inventory-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--control-border);
+        }
+        #inventory-table th { color: #94a3b8; }
+        #inventory-table td { font-family: monospace; font-size: 1.2em; color: var(--header-color); }
+
+        #temp-plot-canvas {
+            width: 100%;
+            height: 150px;
+            background-color: #000;
+            border-radius: 4px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Lonely Future</h1>
+            <p>Heat Death and the Return to de Sitter</p>
+        </header>
+
+        <div class="overview-section">
+            <h2>Overview</h2>
+            <p>Our universe is accelerating its expansion, driven by a mysterious "dark energy." This simulation is a journey into the ultimate consequences of this expansion, exploring the far, far future of our cosmos. By dragging a timeline spanning trillions of years, you will witness the great cosmic narrative unfold: galaxies merging and then receding forever beyond our horizon, stars flickering out one by one, and even black holes eventually evaporating into nothing. This journey leads to the "Heat Death" of the universe—a final state of maximum entropy, where the cosmos becomes a cold, empty, and eternally expanding de Sitter space.</p>
+        </div>
+
+        <div class="controls-area panel">
+            <div class="control-group">
+                <h4>Dark Energy Model</h4>
+                <div class="slider-group">
+                    <label>Equation of State (w)<span id="w-value" class="value-display">-1.00</span></label>
+                    <input type="range" id="w-slider" min="-1.5" max="-0.5" value="-1.0" step="0.01">
+                </div>
+            </div>
+            <div class="control-group">
+                <h4>Zoom Level</h4>
+                <div class="slider-group">
+                    <label>View Scale<span id="zoom-value" class="value-display">Cluster</span></label>
+                    <input type="range" id="zoom-slider" min="1" max="4" value="1" step="1">
+                </div>
+            </div>
+            <div class="control-group">
+                <h4>Event Log Toggles</h4>
+                <div id="event-toggles" class="button-grid">
+                    <button data-event="mergers">Galaxy Mergers</button>
+                    <button data-event="star_death">Star Death</button>
+                    <button data-event="degenerate">Degenerate Era</button>
+                    <button data-event="bh_evap">BH Evaporation</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="simulation-area panel">
+            <canvas id="simulation-canvas"></canvas>
+        </div>
+
+        <div class="timeline-area panel">
+            <div class="slider-group">
+                <label>Logarithmic Timescale (Years)<span id="time-value" class="value-display">10^9</span></label>
+                <input type="range" id="time-slider" min="9" max="100" value="9" step="0.1">
+            </div>
+        </div>
+
+        <div class="analysis-area">
+            <div id="chronicle-container" class="panel">
+                 <h3>A Chronicle of the End Times</h3>
+                 <div id="chronicle-panel"></div>
+            </div>
+            <div class="panel">
+                <h3>Future Object Inventory</h3>
+                <table id="inventory-table">
+                    <thead>
+                        <tr><th>Object</th><th>Count in Horizon</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><th>Galaxies</th><td id="inv-galaxies">~50</td></tr>
+                        <tr><th>Stars</th><td id="inv-stars">10¹²</td></tr>
+                        <tr><th>White Dwarfs</th><td id="inv-dwarfs">0</td></tr>
+                        <tr><th>Black Holes</th><td id="inv-bhs">1</td></tr>
+                    </tbody>
+                </table>
+                <div style="margin-top: 15px;">
+                    <h4>Universe Temperature</h4>
+                    <canvas id="temp-plot-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>The Physics of Cosmic Death</h2>
+            <h3>Part A: Dark Energy</h3>
+            <p>In the late 1990s, astronomers discovered that the expansion of the universe is not slowing down, as expected due to gravity, but is instead accelerating. The cause of this cosmic acceleration is a profound mystery, attributed to an unknown component called "dark energy" which makes up nearly 70% of the universe's energy density. The simplest model for dark energy is a "cosmological constant" (an intrinsic energy of the vacuum itself), which has an equation of state parameter `w = -1`. This leads to a future of eternal, exponential expansion, turning our universe into what is known as a de Sitter space.</p>
+
+            <h3>Part B: The Unravelling of Structures</h3>
+            <p>The repulsive force of dark energy acts everywhere, but it is very weak on small scales. It is easily overcome by the gravity of dense objects. Therefore, dark energy will not rip apart you, the Earth, the Solar System, or even the Milky Way galaxy. These structures are gravitationally bound tightly enough to resist the expansion.
+            <br>However, on the largest scales, between galaxy clusters, gravity is too weak to hold things together. The "Local Group" of galaxies (including the Milky Way and Andromeda) will merge into one giant elliptical galaxy, which has been nicknamed "Milkomeda." But all other galaxy clusters are already receding from us, and the accelerated expansion means they will eventually be pushed beyond our cosmological horizon. As you advance the timeline in the simulation, you will see the sky outside our own local supercluster go completely dark, as every other galaxy in the universe becomes causally disconnected from us forever.</p>
+
+            <h3>Part C: The Heat Death</h3>
+            <p>The "Heat Death" of the universe is the ultimate consequence of the second law of thermodynamics in an eternally expanding cosmos. The second law states that the total entropy (a measure of disorder) of a closed system can only increase. This means that over immense timescales, all ordered structures will decay, and all energy gradients will smooth out until the universe reaches a state of maximum entropy.
+            <br>This happens in a series of eras:
+            <ol>
+                <li><strong>The Stelliferous Era (Current - 10¹⁴ years):</strong> Stars shine, creating heat and light. But eventually, all gas for star formation is used up.</li>
+                <li><strong>The Degenerate Era (10¹⁴ - 10⁴⁰ years):</strong> The universe is filled with the dead remnants of stars: white dwarfs, neutron stars, and black holes.</li>
+                <li><strong>The Black Hole Era (10⁴⁰ - 10¹⁰⁰ years):</strong> Over unimaginable timescales, even these remnants decay or are consumed by black holes. The only macroscopic objects left are black holes.</li>
+                <li><strong>The Dark Era (>10¹⁰⁰ years):</strong> Stephen Hawking showed that even black holes are not eternal. They slowly evaporate by emitting "Hawking radiation." After the last supermassive black hole has evaporated, the universe is left as a cold, dark, near-perfect vacuum, filled with only a sparse bath of low-energy photons and other fundamental particles. No more useful work can be done. This is the state of heat death.</li>
+            </ol>
+            The universe returns to an empty, eternally expanding de Sitter space, punctuated only by the tiny, constant Gibbons-Hawking temperature of the vacuum itself.</p>
+        </div>
+
+        <div class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+
+            <h3>1. The Big Rip (Phantom Energy)</h3>
+            <p>The standard model of dark energy assumes `w = -1`. But what if `w` is slightly less than -1? This is called "phantom energy," and it leads to a much more violent end. If `w < -1`, the density of dark energy *increases* as the universe expands. The expansion rate accelerates ever faster, leading to a runaway effect.
+            <br>Unlike a heat death, this scenario ends in a "Big Rip." The expansion becomes so powerful that it overcomes not just the gravity between galaxy clusters, but all forces. In the final moments of the universe, the simulation would show:
+            <ul>
+                <li>Galaxy clusters torn apart.</li>
+                <li>The Milky Way's gravitational binding overcome.</li>
+                <li>The Solar System unbound.</li>
+                <li>The Earth, and eventually atoms and nuclei themselves, ripped apart by the infinite force of the expansion.</li>
+            </ul>
+            This is a physically speculative but logically possible alternative to a heat death.</p>
+
+            <h3>2. Proton Decay</h3>
+            <p>The "Degenerate Era" assumes that the stellar remnants—white dwarfs and neutron stars—are stable. However, many Grand Unified Theories (GUTs) predict that protons are not truly stable, but will decay over an extremely long timescale (e.g., >10³⁴ years).
+            <br>If protons decay, the Degenerate Era would be very different. White dwarfs and neutron stars would slowly "evaporate" not through Hawking radiation, but by their constituent matter dissolving into lighter particles like photons and leptons. The universe would slowly become a sea of radiation, with black holes being the only remaining baryonic structures. This would significantly shorten the Degenerate Era and hasten the transition to the Black Hole Era.</p>
+
+            <h3>3. False Vacuum Decay</h3>
+            <p>The dark energy that drives our cosmic acceleration might be the energy of a "false vacuum." This means our universe's vacuum state is not the true, lowest-energy state possible. If a "true vacuum" with lower energy exists, then there is a small but non-zero probability that a quantum tunneling event could occur somewhere in the universe, creating a bubble of this true vacuum.
+            <br>This bubble would be catastrophic. Its walls would expand outward at the speed of light, destroying everything in their path. The laws of physics inside the bubble could be completely different from our own. Any region of our universe the bubble wall passed through would be instantly annihilated and replaced by the new vacuum. This is arguably the most sudden and complete "doomsday" scenario, as it is undetectable, unpredictable, and utterly final.</p>
+        </div>
+
+        <footer>
+            <p>Cosmic Future Simulator. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+    <script>
+    // --- Global State & Setup ---
+    let canvas, ctx, tempCanvas, tempCtx;
+    const ui = {};
+    const state = {
+        log_t: 9,
+        w: -1.0,
+        zoom: 1, // 1: Cluster, 2: Galaxy, 3: Star System, 4: Black Hole
+        eventToggles: { mergers: true, star_death: true, degenerate: true, bh_evap: true },
+    };
+
+    window.onload = init;
+
+    function init() {
+        canvas = document.getElementById('simulation-canvas');
+        ctx = canvas.getContext('2d');
+        tempCanvas = document.getElementById('temp-plot-canvas');
+        tempCtx = tempCanvas.getContext('2d');
+
+        const ids = [
+            'w-slider', 'w-value', 'zoom-slider', 'zoom-value', 'event-toggles',
+            'time-slider', 'time-value', 'chronicle-panel', 'inventory-table',
+            'temp-plot-canvas'
+        ];
+        ids.forEach(id => {
+            const key = id.replace(/-(\w)/g, (m, g) => g.toUpperCase());
+            ui[key] = document.getElementById(id);
+        });
+
+        setupEventListeners();
+        draw(); // Initial draw
+    }
+
+    function setupEventListeners() {
+        ui.wSlider.addEventListener('input', e => {
+            state.w = parseFloat(e.target.value);
+            ui.wValue.textContent = state.w.toFixed(2);
+            draw();
+        });
+
+        ui.zoomSlider.addEventListener('input', e => {
+            state.zoom = parseInt(e.target.value);
+            const zoomLabels = ['Cluster', 'Galaxy', 'Star System', 'Black Hole'];
+            ui.zoomValue.textContent = zoomLabels[state.zoom - 1];
+            draw();
+        });
+
+        ui.timeSlider.addEventListener('input', e => {
+            state.log_t = parseFloat(e.target.value);
+            const display_t = Math.pow(10, state.log_t);
+            ui.timeValue.textContent = `10^${state.log_t.toFixed(1)} (${display_t.toExponential(0)})`;
+            draw();
+        });
+
+        ui.eventToggles.addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                const eventKey = e.target.dataset.event;
+                state.eventToggles[eventKey] = !state.eventToggles[eventKey];
+                e.target.classList.toggle('active', state.eventToggles[eventKey]);
+                draw();
+            }
+        });
+    }
+
+    // --- Cosmological Storytelling Engine ---
+
+    const timelineEvents = [
+        { log_time: 9, title: "The Stelliferous Era (Present Day)",
+          description: "The universe is young and vibrant. Stars are actively forming in spiral galaxies. Galaxy clusters are still relatively close.",
+          inventory: { galaxies: "~50 (Local Group)", stars: "10¹²", dwarfs: "Billions", bhs: "Millions (Stellar)"},
+          drawFunc: drawStelliferousEra },
+        { log_time: 11, title: "The Stelliferous Era (Galaxy Merger)",
+          description: "The Milky Way and Andromeda have merged into 'Milkomeda'. All other galaxy clusters have receded beyond the cosmological horizon, leaving an empty intergalactic void.",
+          inventory: { galaxies: "1 (Milkomeda)", stars: "10¹²", dwarfs: "Trillions", bhs: "1 (Supermassive)"},
+          drawFunc: drawGalaxyMergerEra },
+        { log_time: 14, title: "The Degenerate Era",
+          description: "Star formation has ceased. The last red dwarf stars have flickered out. The universe is populated by degenerate remnants: white dwarfs, neutron stars, and black holes.",
+          inventory: { galaxies: "1 (Remnant)", stars: "0", dwarfs: "10¹²", bhs: "1 (Supermassive)"},
+          drawFunc: drawDegenerateEra },
+        { log_time: 40, title: "The Black Hole Era",
+          description: "Over unimaginable timescales, stellar remnants have been ejected or consumed. Only black holes remain, slowly orbiting each other in the dark.",
+          inventory: { galaxies: "0", stars: "0", dwarfs: "0", bhs: "Few"},
+          drawFunc: drawBlackHoleEra },
+        { log_time: 100, title: "The Dark Era (Heat Death)",
+          description: "The last supermassive black hole has evaporated via Hawking radiation. The universe is now a cold, dark, near-empty de Sitter space, approaching maximum entropy.",
+          inventory: { galaxies: "0", stars: "0", dwarfs: "0", bhs: "0"},
+          drawFunc: drawDarkEra },
+    ];
+
+    function update() {
+        // In this simulation, the state is driven by the UI, so the update loop is minimal.
+        // It's all handled by the draw() function based on the slider value.
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function draw() {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+
+        // Find the current event based on time
+        let currentEvent = timelineEvents[0];
+        for (const event of timelineEvents) {
+            if (state.log_t >= event.log_time) {
+                currentEvent = event;
+            } else {
+                break;
+            }
+        }
+
+        // Call the drawing function for the current era
+        currentEvent.drawFunc(ctx, w, h);
+
+        // Update the text panels
+        ui.chroniclePanel.textContent = `[Log(t) = ${state.log_t.toFixed(1)}] ${currentEvent.description}`;
+        const inventoryBody = ui.inventoryTable.querySelector('tbody');
+        inventoryBody.innerHTML = `
+            <tr><th>Galaxies</th><td>${currentEvent.inventory.galaxies}</td></tr>
+            <tr><th>Stars</th><td>${currentEvent.inventory.stars}</td></tr>
+            <tr><th>White Dwarfs</th><td>${currentEvent.inventory.dwarfs}</td></tr>
+            <tr><th>Black Holes</th><td>${currentEvent.inventory.bhs}</td></tr>
+        `;
+
+        // Draw other plots
+        drawTempPlot();
+    }
+
+    // --- Era-specific Drawing Functions ---
+
+    function drawStelliferousEra(ctx, w, h) {
+        // Draw a few spiral galaxies
+        drawGalaxy(ctx, w/2, h/2, 100, 0.5, 'Milky Way');
+        drawGalaxy(ctx, w*0.2, h*0.3, 80, 2.1, 'Andromeda');
+        drawGalaxy(ctx, w*0.8, h*0.7, 50, 1.0, 'Triangulum');
+    }
+
+    function drawGalaxyMergerEra(ctx, w, h) {
+        // Draw one big elliptical galaxy
+        drawGalaxy(ctx, w/2, h/2, 150, 0, 'Milkomeda', true);
+    }
+
+    function drawDegenerateEra(ctx, w, h) {
+        // Draw a dim remnant galaxy with white dwarfs
+        drawGalaxy(ctx, w/2, h/2, 150, 0, 'Milkomeda Remnant', true, 0.2);
+        for(let i=0; i<50; i++) {
+            const r = Math.random() * 150;
+            const a = Math.random() * 2 * Math.PI;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(w/2 + r*Math.cos(a), h/2 + r*Math.sin(a), 1, 0, 2*Math.PI);
+            ctx.fill();
+        }
+    }
+
+    function drawBlackHoleEra(ctx, w, h) {
+        // Draw one big black hole and a few small ones
+        drawBlackHole(ctx, w/2, h/2, 20);
+        drawBlackHole(ctx, w*0.3, h*0.6, 5);
+        drawBlackHole(ctx, w*0.7, h*0.4, 8);
+    }
+
+    function drawDarkEra(ctx, w, h) {
+        // Empty space
+        ctx.fillStyle = '#fff';
+        ctx.textAlign = 'center';
+        ctx.font = '16px monospace';
+        ctx.fillText("... a cold, empty void ...", w/2, h/2);
+    }
+
+    // --- Drawing Helpers ---
+    function drawGalaxy(ctx, x, y, radius, angle, name, isElliptical=false, brightness=1.0) {
+        const scale = Math.pow(2, state.zoom - 1);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(angle);
+
+        // Simple procedural galaxy
+        for(let i=0; i<300; i++) {
+            const r = Math.pow(Math.random(), 1.5) * radius * scale;
+            const a = Math.random() * 2 * Math.PI;
+            const arm = isElliptical ? 0 : Math.floor(Math.random() * 2 + 1);
+            const arm_a = a + r * 0.05 / scale;
+
+            const gx = r * Math.cos(arm_a);
+            const gy = r * Math.sin(arm_a) * 0.5; // Make it elliptical
+
+            ctx.fillStyle = `rgba(255, 255, 200, ${0.1 * brightness})`;
+            ctx.beginPath();
+            ctx.arc(gx, gy, Math.random() * 2 * scale, 0, 2 * Math.PI);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
+    function drawBlackHole(ctx, x, y, radius) {
+        const scale = Math.pow(2, state.zoom - 1) * 2;
+        radius *= scale;
+
+        // Accretion disk (only visible in early BH era)
+        const disk_brightness = Math.max(0, 1 - (state.log_t - 40)/20);
+        if (disk_brightness > 0) {
+            ctx.strokeStyle = `rgba(255, 100, 0, ${0.5 * disk_brightness})`;
+            for(let i=0; i<radius*0.5; i++) {
+                ctx.lineWidth = Math.random() * 2;
+                ctx.beginPath();
+                ctx.ellipse(x, y, radius + i*2, (radius + i*2)*0.3, Math.random()*2*Math.PI, 0, Math.PI * 1.5);
+                ctx.stroke();
+            }
+        }
+
+        // Black circle
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2*Math.PI);
+        ctx.fill();
+
+        // Hawking radiation (only visible in late BH era)
+        const hawking_brightness = Math.max(0, (state.log_t - 80)/20);
+        if (hawking_brightness > 0) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${hawking_brightness * 0.5})`;
+            for(let i=0; i<50; i++) {
+                const angle = Math.random() * 2 * Math.PI;
+                const dist = radius + Math.random() * 50;
+                ctx.beginPath();
+                ctx.moveTo(x + Math.cos(angle)*radius, y + Math.sin(angle)*radius*0.3);
+                ctx.lineTo(x + Math.cos(angle)*dist, y + Math.sin(angle)*dist*0.3);
+                ctx.stroke();
+            }
+        }
+    }
+
+    function drawTempPlot() {
+        const w = tempCanvas.width;
+        const h = tempCanvas.height;
+        tempCtx.clearRect(0,0,w,h);
+        tempCtx.fillStyle = '#000';
+        tempCtx.fillRect(0,0,w,h);
+
+        const min_log_t = 9;
+        const max_log_t = 100;
+
+        // Temp starts at ~3K (logT ~ 0.5) and drops to tiny value
+        const min_log_T = -30; // Gibbons-Hawking Temp for our universe ~10^-30 K
+        const max_log_T = 1;
+
+        tempCtx.strokeStyle = 'var(--accent-color)';
+        tempCtx.lineWidth = 2;
+        tempCtx.beginPath();
+
+        for(let i=0; i<w; i++) {
+            const log_t = min_log_t + (i/w) * (max_log_t - min_log_t);
+
+            // Simplified cooling curve
+            let temp_now;
+            if (log_t < 15) { // Drops with expansion
+                temp_now = max_log_T - (log_t - min_log_t) * 0.5;
+            } else { // Hits floor
+                temp_now = min_log_T;
+            }
+            temp_now = Math.max(min_log_T, temp_now);
+
+            const x = i;
+            const y = h - ((temp_now - min_log_T) / (max_log_T - min_log_T)) * h;
+
+            if(i===0) tempCtx.moveTo(x,y);
+            else tempCtx.lineTo(x,y);
+        }
+        tempCtx.stroke();
+
+        // Current time marker
+        const current_x = ((state.log_t - min_log_t) / (max_log_t - min_log_t)) * w;
+        tempCtx.fillStyle = '#fff';
+        tempCtx.beginPath();
+        tempCtx.arc(current_x, 10, 5, 0, 2*Math.PI);
+        tempCtx.fill();
+
+        // Axis labels
+        tempCtx.fillStyle = '#94a3b8';
+        tempCtx.font = '12px sans-serif';
+        tempCtx.fillText("Log(Time)", w/2 - 20, h - 5);
+        tempCtx.save();
+        tempCtx.rotate(-Math.PI/2);
+        tempCtx.textAlign = 'center';
+        tempCtx.fillText("Log(Temp)", -h/2, 12);
+        tempCtx.restore();
+    }
+    </script>
+</body>
+</html>
