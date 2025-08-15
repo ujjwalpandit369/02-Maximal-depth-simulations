@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Architecture: Hybrid Defects & Network Evolution</title>
+    <style>
+        :root {
+            --bg-color: #140c14;
+            --text-color: #e0e0e0;
+            --header-color: #ffffff;
+            --accent-color: #9444ff; /* A purple accent for this one */
+            --control-bg: #2a1a2a;
+            --control-border: #443344;
+            --slider-thumb: #9444ff;
+            --slider-track: #554455;
+            --button-bg: #443344;
+            --button-hover: #9444ff;
+            --panel-bg: #1f111f;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --code-bg: #332233;
+            --mono-color: #ff4444;
+            --string-color: #44aaff;
+            --wall-color: #44ffaa;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            grid-template-areas:
+                "header header"
+                "overview overview"
+                "sim controls"
+                "guide guide"
+                "theory theory"
+                "advanced advanced"
+                "faq faq"
+                "footer footer";
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "overview"
+                    "sim"
+                    "controls"
+                    "guide"
+                    "theory"
+                    "advanced"
+                    "faq"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 10px; }
+        .simulation-area { grid-area: sim; }
+        .controls-area { grid-area: controls; }
+        .overview-section { grid-area: overview; }
+        .guide-section { grid-area: guide; }
+        .theory-section { grid-area: theory; }
+        .advanced-section { grid-area: advanced; }
+        .faq-section { grid-area: faq; }
+        footer { grid-area: footer; text-align: center; font-size: 0.9em; padding-top: 20px; border-top: 1px solid var(--control-border); }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 300; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        #simulation-canvas {
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: #000;
+            border-radius: 8px;
+            cursor: grab;
+        }
+        #simulation-canvas:active { cursor: grabbing; }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        .control-group {
+            background-color: var(--control-bg);
+            border: 1px solid var(--control-border);
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .control-group input, .control-group select {
+            width: 100%;
+        }
+        .control-group .value-display {
+            font-family: monospace;
+            color: var(--accent-color);
+            float: right;
+            font-size: 0.9em;
+        }
+        .control-group .description {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        #timeline-interface .transition {
+            border: 1px solid var(--control-border);
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+
+        .main-controls button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--button-hover);
+            color: var(--bg-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .main-controls button:hover {
+            background-color: var(--header-color);
+        }
+
+        .info-panel {
+            background-color: var(--panel-bg);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 3px solid var(--accent-color);
+        }
+        .info-panel .legend {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            padding: 5px;
+            font-size: 0.9em;
+        }
+        .legend span { display: inline-flex; align-items: center; gap: 5px; }
+        .legend .color-box { width: 15px; height: 15px; border-radius: 3px; }
+
+        #dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        #dashboard .report-item {
+            background-color: var(--control-bg);
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .report-item .label { font-size: 0.8em; color: #ccc; }
+        .report-item .value { font-size: 1.2em; font-weight: bold; color: var(--accent-color); font-family: monospace; }
+        #energy-plot-canvas, #scaling-plot-canvas {
+            width: 100%;
+            height: 120px;
+            background: var(--code-bg);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cosmic Architecture</h1>
+            <p>Hybrid Topological Defects & Network Evolution</p>
+        </header>
+
+        <div class="overview-section">
+            <h2>Overview</h2>
+            <p>The universe's birth was marked by a series of phase transitions, each capable of creating "topological defects"—remnants of a more symmetric past, like cracks in ice. While we often study these defects (monopoles, strings, domain walls) in isolation, many theories predict they can form together in complex "hybrid" structures. This simulation allows you to become an architect of the early universe. You will design a sequence of symmetry breakings and watch as monopoles become beads on cosmic strings, or as domain walls form with strings as their boundaries. You will then witness the dynamic evolution of this cosmic network, a violent tug-of-war between tension and cosmic expansion that shaped the structure of our universe.</p>
+        </div>
+
+        <div class="simulation-area panel">
+            <canvas id="simulation-canvas"></canvas>
+            <div class="info-panel">
+                <div class="legend">
+                    <span title="Monopoles"><div class="color-box" style="background-color: var(--mono-color);"></div>Monopoles</span>
+                    <span title="Cosmic Strings"><div class="color-box" style="background-color: var(--string-color);"></div>Strings</span>
+                    <span title="Domain Walls"><div class="color-box" style="background-color: var(--wall-color);"></div>Walls</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-area">
+            <div class="panel main-controls">
+                <button id="generate-btn">1. Generate Defect Network</button>
+                <button id="evolve-btn" style="margin-top: 10px;">2. Evolve Network</button>
+            </div>
+
+            <div class="panel">
+                <h3>Symmetry Breaking Sequence</h3>
+                <div id="timeline-interface" class="control-group">
+                    <div class="transition">
+                        <label>Transition 1 (Highest Energy)</label>
+                        <select id="transition1-select">
+                            <option value="none">None</option>
+                            <option value="monopoles">G → H (Creates Monopoles)</option>
+                            <option value="strings">G → H (Creates Strings)</option>
+                            <option value="walls">G → H (Creates Walls)</option>
+                        </select>
+                    </div>
+                    <div class="transition">
+                        <label>Transition 2 (Lower Energy)</label>
+                        <select id="transition2-select">
+                            <option value="none">None</option>
+                            <option value="strings_on_monopoles">H → K (Beads on a String)</option>
+                            <option value="walls_on_strings">H → K (Walls on Strings)</option>
+                        </select>
+                    </div>
+                </div>
+                <p class="description" style="padding: 10px;">Design the history of phase transitions. The defects from T1 can be modified by T2, creating hybrid structures.</p>
+            </div>
+
+            <div class="panel">
+                <h3>Evolution Parameters</h3>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label>String Tension / Wall Tension<span id="tension-ratio-value" class="value-display">0.1</span></label>
+                        <input type="range" id="tension-ratio-slider" min="0.01" max="1" value="0.1" step="0.01">
+                        <p class="description">Relative "strength" of strings vs. walls. High values mean walls collapse easily.</p>
+                    </div>
+                    <div class="control-group">
+                        <label>Hubble Expansion (Friction)<span id="hubble-value" class="value-display">0.5</span></label>
+                        <input type="range" id="hubble-slider" min="0" max="2" value="0.5" step="0.1">
+                        <p class="description">Stretches the network and damps motion.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-section">
+            <h2>Network Analysis Dashboard</h2>
+            <div class="panel">
+                <div id="dashboard">
+                    <div class="report-item">
+                        <div class="label">Monopoles</div>
+                        <div id="mono-count" class="value">0</div>
+                    </div>
+                    <div class="report-item">
+                        <div class="label">String Segments</div>
+                        <div id="string-count" class="value">0</div>
+                    </div>
+                    <div class="report-item" style="grid-column: 1 / -1;">
+                        <div class="label">Total Wall Area</div>
+                        <div id="wall-area" class="value">0</div>
+                    </div>
+                    <div class="report-item" style="grid-column: 1 / -1;">
+                        <div class="label">Energy Density (Walls vs Strings)</div>
+                        <canvas id="energy-plot-canvas"></canvas>
+                    </div>
+                    <div class="report-item" style="grid-column: 1 / -1;">
+                        <div class="label">Scaling Tracker (L/t)</div>
+                        <canvas id="scaling-plot-canvas"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div id="field-guide" class="info-panel">
+                <h3>Field Guide to Hybrid Defects</h3>
+                <p>Select a symmetry breaking sequence and press "Generate" to see the analysis here.</p>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>The Physics of Nested Symmetries</h2>
+
+            <h3>Part A: Group Theory for Poets - A Field Guide to the Void</h3>
+            <p>To understand why defects form, we need to think about the "shape" of the vacuum. After a phase transition, the fields that fill the universe settle into a lowest-energy state, called the vacuum. But there isn't just one way to be in the vacuum; there's a whole space of equivalent low-energy states, called the <strong>Vacuum Manifold (V)</strong>. The specific geometry of this space, studied by a branch of math called <strong>homotopy theory</strong>, dictates what kinds of stable defects can exist.</p>
+
+            <p><strong>The Core Analogy: Mapping a Flaw.</strong> Imagine the vacuum manifold V is a strange landscape. A defect is formed when a region of real space gets "twisted" in a way that maps onto this landscape non-trivially. Think of it like trying to wrap a gift: if you wrap a sphere of paper around a bowling ball, you can always slide it off and shrink it to a point. But if you wrap a loop of string around a doughnut, you can't remove it without cutting it. The string is "stuck" by the hole in the doughnut. The defect is a "memory" of this topological entanglement.</p>
+
+            <ul>
+                <li>
+                    <strong>Domain Walls (π₀):</strong> This is the simplest case. It corresponds to V having disconnected pieces.
+                    <em>Analogy: A World of Islands.</em> Imagine your vacuum manifold V consists of two separate islands, "North" and "South". If, in the early universe, one region of space cooled down into the "North" vacuum and an adjacent region cooled into the "South" vacuum, there must be a boundary between them. This boundary is a domain wall. You can't smoothly transition from North to South without passing through a high-energy state. The wall is topologically stable.
+                </li>
+                <li>
+                    <strong>Cosmic Strings (π₁):</strong> This happens when V has "unshrinkable loops."
+                    <em>Analogy: The Doughnut.</em> Imagine V is the surface of a doughnut. Now, take a loop in real space (a circle) and map it onto the doughnut by wrapping it around the hole. This configuration is a cosmic string. You can't "un-wrap" it or shrink it to a point without breaking the string (passing through a high-energy state), because it's hooked on the hole of the vacuum manifold.
+                </li>
+                <li>
+                    <strong>Monopoles (π₂):</strong> This happens when V has "unshrinkable spheres."
+                    <em>Analogy: The Soccer Ball.</em> Imagine V is the surface of a sphere. Now, take a sphere in real space and "wrap" it completely around the vacuum manifold sphere. This configuration, a twist in the field over a 3D region, manifests as a point-like defect at the center: a monopole. You can't untangle this "wrapping" without tearing the field.
+                </li>
+            </ul>
+
+            <h3>Part B: Sequential Breaking - Hybrids from History</h3>
+            <p>The real magic happens when there's a sequence of phase transitions. A defect formed in the first transition can survive into the second, where it gets modified.
+            <strong>Example: Beads on a String.</strong> Consider a sequence G → H → K.
+            <ol>
+                <li><strong>Transition 1 (G → H):</strong> Let's say this transition creates monopoles. The vacuum manifold H is a sphere (like the soccer ball). We now have a universe filled with point-like monopoles.</li>
+                <li><strong>Transition 2 (H → K):</strong> Now, a second phase transition occurs. The vacuum manifold H (the sphere) itself changes into a new manifold K (say, a circle, like the doughnut's loop). This happens everywhere *except* inside the core of the monopoles from the first transition, where the field is stuck in a high-energy state.</li>
+            </ol>
+            The result? The new defects (strings, from the doughnut-shaped K) can now only exist terminating on the old defects (monopoles). The monopoles are points where the second transition couldn't complete, and strings are the boundaries of this failure. You have created a hybrid defect: monopoles connected by cosmic strings. The monopole has a string "tail."</p>
+
+            <h3>Part C: Cosmological Relevance - Solving the Domain Wall Problem</h3>
+            <p>Domain walls are a cosmological nightmare. A single, stable domain wall stretching across the observable universe would dominate its energy density and make it look very different from what we see. This "Domain Wall Problem" rules out many particle physics theories.</p>
+            <p>Hybrid defects provide a beautiful escape route. If a theory predicts domain walls, but a *later* phase transition creates strings that form the boundaries of these walls, the situation changes. The network is no longer a set of infinite sheets, but a collection of finite "bags" of wall, with strings acting as the drawstring. The immense tension of the wall pulls on the string loop, causing the entire structure to collapse and annihilate. This mechanism allows for theories with domain walls to be cosmologically safe, as the walls efficiently destroy themselves early in the universe's history. You can see this in the simulation by creating "Walls on Strings" and watching the wall area plummet.</p>
+        </div>
+
+        <div class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+
+            <h3>1. Quantum Tunneling of Monopole Pairs</h3>
+            <p>In the classical picture, a monopole and an anti-monopole trapped on a string can only annihilate if they physically meet. However, quantum mechanics allows for another possibility: they can "tunnel" through the energy barrier separating them. This is a non-perturbative effect, analogous to radioactive decay.
+            <strong>Modeling this:</strong> The probability of tunneling per unit time (Γ) can be modeled as an exponential function of their separation (d) and the string tension (μ): `Γ ~ exp(-k * d * sqrt(μ))`, where k is a constant. In the simulation, for each monopole-antimonopole pair on a string, you would calculate this probability in each time step. If a random number is less than this probability, the pair annihilates, even if they are far apart. This would introduce a new, faster channel for network decay, especially for low-tension strings where particles are separated by large distances.</p>
+
+            <h3>2. Gravitational Wave Signatures</h3>
+            <p>The evolution of cosmic defects is a violent process involving relativistic speeds and enormous energy concentrations, making them powerful sources of gravitational waves (GWs).
+            <strong>Signature of Hybrid Systems:</strong> A collapsing "bag" of domain wall bounded by a string would be a particularly interesting GW source. The signal would have distinct phases:
+            <ol>
+                <li><strong>Inspiral-like phase:</strong> As the wall collapses, it accelerates the boundary string to relativistic speeds. The motion of the string would produce a background of high-frequency GWs, similar to string cusps.</li>
+                <li><strong>Cataclysmic burst:</strong> The final annihilation of the wall-string structure would release its entire energy in a massive, short-lived burst of GWs. This burst would be non-axisymmetric and have a characteristic frequency spectrum related to the final size of the bag.</li>
+            </ol>
+            This composite signal—a stochastic background followed by a powerful, non-standard burst—would be very different from the clean "chirp" of a black hole merger, potentially allowing future GW observatories like LISA to distinguish between different cosmological histories.</p>
+
+            <h3>3. Baryogenesis from Defect Annihilation</h3>
+            <p>One of the great mysteries is why there is more matter than anti-matter in the universe. This requires processes that violate Baryon number conservation (B-violation), as well as C and CP symmetry, and occur out of thermal equilibrium. The annihilation of cosmic defects provides a perfect arena for this.
+            <strong>Modeling this:</strong> You could add a "Baryon Asymmetry" parameter to the simulation. When a defect annihilation event occurs (e.g., a monopole-antimonopole pair meet, or a wall-bag collapses), you would add a small amount of "net baryon number" to a global counter. This amount could be a slider parameter, `ε`, representing the efficiency of baryogenesis in these events. The simulation would then track the total baryon asymmetry generated by the entire network's evolution. This would visually demonstrate how the structural evolution of the universe could be directly responsible for the existence of the matter that makes up stars, planets, and ourselves.</p>
+        </div>
+
+        <footer>
+            <p>Hybrid Defect Simulator. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+
+    <script>
+    // Simplified 3D engine and simulation logic
+    window.onload = () => {
+        try {
+            init();
+        } catch (e) {
+            console.error("Initialization failed:", e);
+            document.body.innerHTML = "A critical error occurred during initialization. Please check the console.";
+        }
+    };
+
+    // --- GLOBAL STATE & PARAMETERS ---
+    const state = {
+        phase: 'SETUP', // SETUP, GENERATED, EVOLVING
+        network: { monopoles: [], strings: [], walls: [] },
+        animationFrameId: null,
+        time: 0,
+        view: { rotX: 0.5, rotY: 0.5, zoom: 150 },
+        mouse: { lastX: 0, lastY: 0, isDown: false },
+        params: {
+            t1: 'monopoles',
+            t2: 'strings_on_monopoles',
+            tensionRatio: 0.1,
+            hubble: 0.5
+        },
+        history: { energy: [], scaling: [] }
+    };
+
+    // --- DOM ELEMENTS ---
+    let canvas, ctx;
+    const ui = {};
+
+    function cacheDOMElements() {
+        canvas = document.getElementById('simulation-canvas');
+        ctx = canvas.getContext('2d');
+        const ids = [
+            'generate-btn', 'evolve-btn', 'transition1-select', 'transition2-select',
+            'tension-ratio-slider', 'tension-ratio-value', 'hubble-slider', 'hubble-value',
+            'field-guide', 'mono-count', 'string-count', 'wall-area',
+            'energy-plot-canvas', 'scaling-plot-canvas'
+        ];
+        ids.forEach(id => ui[id.replace(/-(\w)/g, (m, g) => g.toUpperCase())] = document.getElementById(id));
+    }
+
+    // --- INITIALIZATION ---
+    function init() {
+        cacheDOMElements();
+        setupEventListeners();
+        resizeCanvas();
+
+        ui.evolveBtn.disabled = true;
+
+        gameLoop();
+    }
+
+    function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+    }
+
+    function setupEventListeners() {
+        ui.generateBtn.addEventListener('click', generateNetwork);
+        ui.evolveBtn.addEventListener('click', () => {
+            state.phase = state.phase === 'EVOLVING' ? 'GENERATED' : 'EVOLVING';
+            ui.evolveBtn.textContent = state.phase === 'EVOLVING' ? 'Pause Evolution' : 'Resume Evolution';
+        });
+
+        ui.transition1Select.addEventListener('change', e => state.params.t1 = e.target.value);
+        ui.transition2Select.addEventListener('change', e => state.params.t2 = e.target.value);
+
+        ui.tensionRatioSlider.addEventListener('input', e => {
+            state.params.tensionRatio = parseFloat(e.target.value);
+            ui.tensionRatioValue.textContent = state.params.tensionRatio.toFixed(2);
+        });
+        ui.hubbleSlider.addEventListener('input', e => {
+            state.params.hubble = parseFloat(e.target.value);
+            ui.hubbleValue.textContent = state.params.hubble.toFixed(1);
+        });
+
+        // Mouse controls for rotation
+        canvas.addEventListener('mousedown', e => {
+            state.mouse.isDown = true;
+            state.mouse.lastX = e.clientX;
+            state.mouse.lastY = e.clientY;
+        });
+        canvas.addEventListener('mouseup', () => state.mouse.isDown = false);
+        canvas.addEventListener('mouseout', () => state.mouse.isDown = false);
+        canvas.addEventListener('mousemove', e => {
+            if (!state.mouse.isDown) return;
+            const dx = e.clientX - state.mouse.lastX;
+            const dy = e.clientY - state.mouse.lastY;
+            state.view.rotY += dx * 0.01;
+            state.view.rotX += dy * 0.01;
+            state.mouse.lastX = e.clientX;
+            state.mouse.lastY = e.clientY;
+        });
+        canvas.addEventListener('wheel', e => {
+            e.preventDefault();
+            state.view.zoom -= e.deltaY * 0.1;
+            state.view.zoom = Math.max(50, Math.min(500, state.view.zoom));
+        });
+    }
+
+    // --- SIMULATION ---
+    function generateNetwork() {
+        state.phase = 'GENERATED';
+        state.time = 0;
+        state.history = { energy: [], scaling: [] };
+        ui.evolveBtn.disabled = false;
+        ui.evolveBtn.textContent = '2. Evolve Network';
+
+        // This is a placeholder for a real Kibble mechanism simulation.
+        // We will generate a plausible-looking network based on the rules.
+        const network = { monopoles: [], strings: [], walls: [] };
+        const N = 5; // Grid size for generation
+
+        if (state.params.t1 === 'monopoles') {
+            for(let i=0; i<10; i++) network.monopoles.push({ id: i, pos: randomVec(50), vel: {x:0, y:0, z:0} });
+        }
+
+        if (state.params.t1 === 'strings') {
+             // Create a loop
+            const center = {x:0, y:0, z:0};
+            const radius = 30;
+            const points = 10;
+            let lastMono = null;
+            for(let i=0; i<=points; i++) {
+                const angle = (i/points) * 2 * Math.PI;
+                const pos = {x: center.x + radius * Math.cos(angle), y: center.y + radius * Math.sin(angle), z: center.z};
+                const mono = {id: i, pos: pos, vel: {x:0, y:0, z:0}};
+                network.monopoles.push(mono);
+                if (lastMono) {
+                    network.strings.push({ from: lastMono.id, to: mono.id });
+                }
+                lastMono = mono;
+            }
+        }
+
+        if (state.params.t2 === 'strings_on_monopoles' && network.monopoles.length > 1) {
+            for(let i=0; i < network.monopoles.length - 1; i+=2) {
+                network.strings.push({ from: network.monopoles[i].id, to: network.monopoles[i+1].id });
+            }
+        }
+
+        if (state.params.t2 === 'walls_on_strings' && network.strings.length > 2) {
+             network.walls.push({ boundary: network.strings.map(s => s.from) });
+        }
+
+        state.network = network;
+        updateFieldGuide();
+    }
+
+    function updateFieldGuide() {
+        let html = `<h3>Field Guide</h3>`;
+        if (state.params.t1 === 'none') {
+            html += `<p>No phase transitions. The universe is empty.</p>`;
+        } else {
+            html += `<p><strong>Transition 1 (${state.params.t1})</strong> created a base network.</p>`;
+        }
+        if (state.params.t2 !== 'none') {
+             html += `<p><strong>Transition 2 (${state.params.t2})</strong> modified the network, creating hybrids.</p>`;
+             if (state.params.t2 === 'walls_on_strings') {
+                 html += `<blockquote>This is a classic mechanism for solving the Domain Wall problem. The wall's tension will cause the structure to collapse and annihilate.</blockquote>`;
+             }
+             if (state.params.t2 === 'strings_on_monopoles') {
+                 html += `<blockquote>Monopoles now act as endpoints for strings. They are "beads on a string."</blockquote>`;
+             }
+        }
+        ui.fieldGuide.innerHTML = html;
+    }
+
+    function evolve() {
+        if (state.phase !== 'EVOLVING') return;
+        state.time += 1/60;
+
+        // Simplified physics:
+        // 1. Strings try to straighten (tension force)
+        // 2. Walls pull on their boundary strings
+        // 3. Everything is damped by Hubble friction
+
+        const { monopoles, strings, walls } = state.network;
+        if (monopoles.length === 0) return;
+
+        const forces = monopoles.map(() => ({x:0, y:0, z:0}));
+        const monoMap = new Map(monopoles.map(m => [m.id, m]));
+
+        // String tension forces
+        strings.forEach(s => {
+            const m1 = monoMap.get(s.from);
+            const m2 = monoMap.get(s.to);
+            if (!m1 || !m2) return;
+            const f1 = sub(m2.pos, m1.pos);
+            const f2 = sub(m1.pos, m2.pos);
+            forces[m1.id] = add(forces[m1.id], f1);
+            forces[m2.id] = add(forces[m2.id], f2);
+        });
+
+        // Wall tension forces
+        walls.forEach(w => {
+            const wallTension = state.params.tensionRatio; // Relative to string tension=1
+            // Wall pulls its boundary inwards
+            const boundaryMonos = w.boundary.map(id => monoMap.get(id)).filter(Boolean);
+            if (boundaryMonos.length < 3) return; // Not a real wall
+            const center = boundaryMonos.reduce((acc, m) => add(acc, m.pos), {x:0,y:0,z:0});
+            center.x /= boundaryMonos.length;
+            center.y /= boundaryMonos.length;
+            center.z /= boundaryMonos.length;
+
+            boundaryMonos.forEach(m => {
+                const forceDir = sub(center, m.pos);
+                forces[m.id] = add(forces[m.id], mul(forceDir, wallTension));
+            });
+        });
+
+        // Update positions (Euler integration)
+        monopoles.forEach((m, i) => {
+            const force = forces[i];
+            const damping = mul(m.vel, -state.params.hubble);
+            const totalForce = add(force, damping);
+
+            m.vel = add(m.vel, mul(totalForce, 0.01)); // a = F/m, dt=0.01
+            m.pos = add(m.pos, mul(m.vel, 0.1)); // v*dt
+        });
+
+        // Update history for plots
+        if (state.time % 1 < 0.02) { // Every second-ish
+            updateHistory();
+        }
+    }
+
+    function updateHistory() {
+        const { monopoles, strings, walls } = state.network;
+        const monoMap = new Map(monopoles.map(m => [m.id, m]));
+
+        let stringEnergy = 0;
+        strings.forEach(s => {
+            const m1 = monoMap.get(s.from);
+            const m2 = monoMap.get(s.to);
+            if(m1 && m2) stringEnergy += dist(m1.pos, m2.pos);
+        });
+
+        let wallEnergy = 0;
+        walls.forEach(w => {
+            const boundaryMonos = w.boundary.map(id => monoMap.get(id)).filter(Boolean);
+            if (boundaryMonos.length > 2) {
+                // Shoelace formula for area of polygon
+                let area = 0;
+                for(let i=0; i<boundaryMonos.length; i++) {
+                    const p1 = boundaryMonos[i].pos;
+                    const p2 = boundaryMonos[(i+1)%boundaryMonos.length].pos;
+                    area += (p1.x * p2.y - p2.x * p1.y); // simplified 2d area
+                }
+                wallEnergy += Math.abs(area/2) * state.params.tensionRatio;
+            }
+        });
+
+        state.history.energy.push({t: state.time, s: stringEnergy, w: wallEnergy});
+        if(state.history.energy.length > 100) state.history.energy.shift();
+
+        const L = stringEnergy > 0 ? 1000 / stringEnergy : 0; // Characteristic length proxy
+        const scaling = state.time > 1 ? L / state.time : 0;
+        state.history.scaling.push({t: state.time, val: scaling});
+        if(state.history.scaling.length > 100) state.history.scaling.shift();
+    }
+
+
+    // --- RENDERING & PLOTTING ---
+    function gameLoop() {
+        evolve();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function draw() {
+        const rect = canvas.getBoundingClientRect();
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, rect.width, rect.height);
+        ctx.save();
+        ctx.translate(rect.width / 2, rect.height / 2);
+
+        const { monopoles, strings, walls } = state.network;
+        const monoMap = new Map(monopoles.map(m => [m.id, m]));
+
+        // Projection and sorting
+        const projected = monopoles.map(m => project(m.pos));
+
+        // Draw walls first (painter's algorithm)
+        ctx.fillStyle = 'rgba(68, 255, 170, 0.3)';
+        ctx.strokeStyle = 'rgba(68, 255, 170, 0.7)';
+        ctx.lineWidth = 2;
+        walls.forEach(w => {
+            ctx.beginPath();
+            w.boundary.forEach((id, i) => {
+                const p = projected[id];
+                if(p) {
+                    if (i===0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                }
+            });
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        });
+
+        // Draw strings
+        ctx.strokeStyle = 'rgba(68, 170, 255, 0.8)';
+        ctx.lineWidth = 3;
+        strings.forEach(s => {
+            const p1 = projected[s.from];
+            const p2 = projected[s.to];
+            if (p1 && p2) {
+                ctx.beginPath();
+                ctx.moveTo(p1.x, p1.y);
+                ctx.lineTo(p2.x, p2.y);
+                ctx.stroke();
+            }
+        });
+
+        // Draw monopoles
+        ctx.fillStyle = 'rgba(255, 68, 68, 1.0)';
+        projected.forEach(p => {
+            if(p) {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.scale * 5, 0, 2 * Math.PI);
+                ctx.fill();
+            }
+        });
+
+        ctx.restore();
+
+        updateDashboard();
+        drawPlots();
+    }
+
+    function project(pos) {
+        let {x, y, z} = pos;
+        // 3D rotation
+        const cosX = Math.cos(state.view.rotX);
+        const sinX = Math.sin(state.view.rotX);
+        const cosY = Math.cos(state.view.rotY);
+        const sinY = Math.sin(state.view.rotY);
+
+        const tempY = y * cosX - z * sinX;
+        const tempZ = y * sinX + z * cosX;
+        y = tempY;
+        z = tempZ;
+
+        const tempX = x * cosY + z * sinY;
+        z = -x * sinY + z * cosY;
+        x = tempX;
+
+        const perspective = 1 - z / (state.view.zoom + z);
+        return {
+            x: x * perspective,
+            y: y * perspective,
+            scale: perspective
+        };
+    }
+
+    function updateDashboard() {
+        ui.monoCount.textContent = state.network.monopoles.length;
+        ui.stringCount.textContent = state.network.strings.length;
+        const lastEnergy = state.history.energy[state.history.energy.length - 1];
+        ui.wallArea.textContent = lastEnergy ? lastEnergy.w.toExponential(1) : '0';
+    }
+
+    function drawPlots() {
+        const energyCanvas = ui.energyPlotCanvas;
+        const eCtx = energyCanvas.getContext('2d');
+        const scalingCanvas = ui.scalingPlotCanvas;
+        const sCtx = scalingCanvas.getContext('2d');
+
+        eCtx.clearRect(0, 0, energyCanvas.width, energyCanvas.height);
+        sCtx.clearRect(0, 0, scalingCanvas.width, scalingCanvas.height);
+
+        if (state.history.energy.length < 2) return;
+
+        const maxEnergy = Math.max(...state.history.energy.map(p => Math.max(p.s, p.w)), 1);
+
+        // Draw energy plot
+        eCtx.strokeStyle = 'var(--string-color)';
+        eCtx.beginPath();
+        state.history.energy.forEach((p, i) => {
+            const x = (i / state.history.energy.length) * energyCanvas.width;
+            const y = energyCanvas.height - (p.s / maxEnergy) * energyCanvas.height;
+            if(i===0) eCtx.moveTo(x,y); else eCtx.lineTo(x,y);
+        });
+        eCtx.stroke();
+
+        eCtx.strokeStyle = 'var(--wall-color)';
+        eCtx.beginPath();
+        state.history.energy.forEach((p, i) => {
+            const x = (i / state.history.energy.length) * energyCanvas.width;
+            const y = energyCanvas.height - (p.w / maxEnergy) * energyCanvas.height;
+            if(i===0) eCtx.moveTo(x,y); else eCtx.lineTo(x,y);
+        });
+        eCtx.stroke();
+
+        // Draw scaling plot
+        const maxScaling = Math.max(...state.history.scaling.map(p => p.val), 1);
+        sCtx.strokeStyle = 'var(--accent-color)';
+        sCtx.beginPath();
+        state.history.scaling.forEach((p, i) => {
+            const x = (i / state.history.scaling.length) * scalingCanvas.width;
+            const y = scalingCanvas.height - (p.val / maxScaling) * scalingCanvas.height;
+             if(i===0) sCtx.moveTo(x,y); else sCtx.lineTo(x,y);
+        });
+        sCtx.stroke();
+    }
+
+    // --- Vector Math ---
+    const add = (v1, v2) => ({x: v1.x + v2.x, y: v1.y + v2.y, z: v1.z + v2.z});
+    const sub = (v1, v2) => ({x: v1.x - v2.x, y: v1.y - v2.y, z: v1.z - v2.z});
+    const mul = (v, s) => ({x: v.x * s, y: v.y * s, z: v.z * s});
+    const mag = v => Math.sqrt(v.x*v.x + v.y*v.y + v.z*v.z);
+    const dist = (v1, v2) => mag(sub(v1, v2));
+    const randomVec = (s) => ({x:(Math.random()-0.5)*s, y:(Math.random()-0.5)*s, z:(Math.random()-0.5)*s});
+
+    </script>
+</body>
+</html>

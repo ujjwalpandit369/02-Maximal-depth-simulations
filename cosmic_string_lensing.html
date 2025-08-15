@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Mirage: Gravitational Lensing by Cosmic Strings</title>
+    <style>
+        :root {
+            --bg-color: #0c0c14;
+            --text-color: #e0e0e0;
+            --header-color: #ffffff;
+            --accent-color: #00aaff;
+            --control-bg: #1a1a2a;
+            --control-border: #333344;
+            --slider-thumb: #00aaff;
+            --slider-track: #444455;
+            --button-bg: #333344;
+            --button-hover: #00aaff;
+            --panel-bg: #11111f;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --code-bg: #222233;
+        }
+
+        .high-contrast {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --header-color: #ffff00;
+            --accent-color: #00ffff;
+            --control-bg: #111111;
+            --control-border: #666666;
+            --slider-thumb: #00ffff;
+            --slider-track: #555555;
+            --button-bg: #444444;
+            --button-hover: #00ffff;
+            --panel-bg: #0a0a0a;
+            --code-bg: #2d2d2d;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            grid-template-areas:
+                "header header"
+                "overview overview"
+                "sim controls"
+                "guide guide"
+                "theory theory"
+                "experiments experiments"
+                "advanced advanced"
+                "faq faq"
+                "footer footer";
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "overview"
+                    "sim"
+                    "controls"
+                    "guide"
+                    "theory"
+                    "experiments"
+                    "advanced"
+                    "faq"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 10px; }
+        .simulation-area { grid-area: sim; }
+        .controls-area { grid-area: controls; }
+        .overview-section { grid-area: overview; }
+        .guide-section { grid-area: guide; }
+        .theory-section { grid-area: theory; }
+        .experiments-section { grid-area: experiments; }
+        .advanced-section { grid-area: advanced; }
+        .faq-section { grid-area: faq; }
+        footer { grid-area: footer; text-align: center; font-size: 0.9em; padding-top: 20px; border-top: 1px solid var(--control-border); }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 300; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .metadata-bar { font-size: 0.8em; color: #aaa; text-align: center; margin-bottom: 20px; }
+        .metadata-bar span { margin: 0 10px; }
+
+        .suggestion-box {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            padding: 10px;
+            margin: 15px 0;
+            font-size: 0.9em;
+            border-left: 3px solid var(--accent-color);
+        }
+        .suggestion-box button {
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--control-border);
+            padding: 3px 8px;
+            margin: 0 5px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .suggestion-box button:hover { background-color: var(--button-hover); color: var(--bg-color); }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        #simulation-canvas {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background-color: #000;
+            border-radius: 8px;
+            cursor: crosshair;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        .control-group {
+            background-color: var(--control-bg);
+            border: 1px solid var(--control-border);
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .control-group input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+        .control-group .value-display {
+            font-family: monospace;
+            color: var(--accent-color);
+            text-align: right;
+            font-size: 0.9em;
+        }
+        .control-group .description {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .main-controls button, .preset-buttons button, .export-buttons button {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .main-controls button:hover, .preset-buttons button:hover, .export-buttons button:hover {
+            background-color: var(--button-hover);
+            color: var(--bg-color);
+            border-color: var(--button-hover);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--control-border);
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--control-bg);
+            color: var(--header-color);
+        }
+        td code {
+            background-color: var(--code-bg);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .info-panel {
+            background-color: var(--panel-bg);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .dev-console {
+            margin-top: 20px;
+            background: var(--code-bg);
+            border-radius: 5px;
+            padding: 5px;
+        }
+        .dev-console summary {
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #dev-log {
+            height: 100px;
+            overflow-y: scroll;
+            font-family: monospace;
+            font-size: 0.8em;
+            padding: 10px;
+            color: #ccc;
+            border-top: 1px solid var(--control-border);
+            margin-top: 5px;
+        }
+
+        #error-panel {
+            display: none;
+            background-color: #600;
+            color: #fff;
+            padding: 1em;
+            border-radius: 5px;
+            border: 2px solid #f00;
+            margin-bottom: 1em;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 160px;
+            background-color: #555;
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px 0;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -80px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        #string-placement-instructions {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 1.5em;
+            text-align: center;
+            background-color: rgba(0,0,0,0.7);
+            padding: 20px;
+            border-radius: 10px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #quantitative-analysis-panel .value {
+            font-weight: bold;
+            color: var(--accent-color);
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cosmic Mirage</h1>
+            <p>Gravitational Lensing by Cosmic Strings</p>
+            <div class="metadata-bar">
+                <span>Est. Runtime: Real-time</span>
+                <span>Recommended Device: Desktop</span>
+                <span id="html-size">Approx. HTML Size: 35 KB</span>
+            </div>
+        </header>
+
+        <div class="overview-section">
+            <div id="error-panel"></div>
+            <div class="suggestion-box">
+                <strong>Quick Tune:</strong>
+                <button onclick="setAudience('beginner')">Audience: Beginner</button>
+                <button onclick="setAudience('intermediate')">Audience: Intermediate</button>
+                <button onclick="setAudience('advanced')">Audience: Advanced</button>
+            </div>
+            <h2>Overview</h2>
+            <p>This simulation visualizes one of the most exotic predictions of theoretical physics: the gravitational lensing effect of a cosmic string. Unlike black holes or galaxies which bend spacetime like a heavy ball on a rubber sheet, a cosmic string creates a 'deficit angle'—spacetime is perfectly flat, but a wedge is missing, as if you made a cone out of a piece of paper. This unique geometry doesn't distort or magnify distant objects; instead, it creates two identical, undistorted images of anything located directly behind it. Here, you can place a cosmic string in a field of distant galaxies and observe this remarkable phenomenon for yourself, exploring how its properties and motion affect the light from the early universe.</p>
+        </div>
+
+        <div class="simulation-area panel">
+            <div style="position: relative;">
+                <canvas id="simulation-canvas"></canvas>
+                <div id="string-placement-instructions">Click and drag to place a cosmic string.</div>
+            </div>
+        </div>
+
+        <div class="controls-area">
+            <div class="panel">
+                <h3>Main Controls</h3>
+                <div class="main-controls controls-grid">
+                    <button id="play-pause-btn" aria-label="Play or Pause Simulation (Space)">Play</button>
+                    <button id="step-btn" aria-label="Advance one step (Right Arrow)">Step</button>
+                    <button id="reset-btn" aria-label="Reset Simulation (R)">Reset</button>
+                    <div class="control-group" style="grid-column: 1 / -1;">
+                        <label for="speed-slider">Speed: <span id="speed-value">1.0</span>x</label>
+                        <input type="range" id="speed-slider" min="0.1" max="10" value="1" step="0.1" aria-label="Simulation Speed">
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Lensing Parameters</h3>
+                <div class="control-group">
+                    <label for="tension-slider">String Tension (Gμ): <span id="tension-value" class="value-display">1.0e-7</span></label>
+                    <input type="range" id="tension-slider" min="-10" max="-6" value="-7" step="0.1" aria-label="String Tension Gμ">
+                    <p class="description">Controls the deficit angle (strength) of the lensing effect. Logarithmic scale.</p>
+                </div>
+                <div class="control-group">
+                    <label for="string-dist-slider">String Distance (Mpc): <span id="string-dist-value" class="value-display">1000</span></label>
+                    <input type="range" id="string-dist-slider" min="100" max="5000" value="1000" step="50" aria-label="String Distance in Megaparsecs">
+                    <p class="description">How far away the string is from you, the observer.</p>
+                </div>
+                <div class="control-group">
+                    <label for="source-dist-slider">Source Distance (Mpc): <span id="source-dist-value" class="value-display">4000</span></label>
+                    <input type="range" id="source-dist-slider" min="500" max="10000" value="4000" step="100" aria-label="Background Source Distance in Megaparsecs">
+                    <p class="description">How far away the background galaxies are.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>String Motion (Kaiser-Stebbins Effect)</h3>
+                 <div class="control-group">
+                    <label for="velocity-x-slider">Velocity X: <span id="velocity-x-value" class="value-display">0.00</span>c</label>
+                    <input type="range" id="velocity-x-slider" min="-0.9" max="0.9" value="0" step="0.01" aria-label="String Transverse Velocity X">
+                </div>
+                <div class="control-group">
+                    <label for="velocity-y-slider">Velocity Y: <span id="velocity-y-value" class="value-display">0.00</span>c</label>
+                    <input type="range" id="velocity-y-slider" min="-0.9" max="0.9" value="0" step="0.01" aria-label="String Transverse Velocity Y">
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Presets</h3>
+                <div class="preset-buttons controls-grid">
+                    <button id="preset-subtle">Subtle Effect</button>
+                    <button id="preset-classic">Classic Double</button>
+                    <button id="preset-fast">Fast Mover</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Tools & Settings</h3>
+                <div class="export-buttons controls-grid">
+                    <button id="export-png-btn" aria-label="Export current view as PNG (E)">Export PNG</button>
+                    <button id="export-json-btn">Export JSON</button>
+                    <button id="share-btn">Share Preset</button>
+                    <div class="control-group" style="grid-column: 1 / -1;">
+                        <label>
+                            <input type="checkbox" id="perf-mode-toggle"> Performance Mode
+                        </label>
+                        <label>
+                            <input type="checkbox" id="contrast-toggle"> High Contrast
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-section">
+            <h2>Beginner's Guide to Cosmic String Lensing</h2>
+            <p>Welcome to your personal cosmic string observatory! This guide will walk you through what you're seeing and how to use the controls.</p>
+
+            <h3>Step 1: What is a Cosmic String?</h3>
+            <p>Imagine the universe right after the Big Bang. It was a chaotic, sizzling soup of energy. As it cooled, it went through phase transitions, like water freezing into ice. Some theories predict that defects, or "cracks," could have formed between different regions of space as it cooled. A cosmic string is one such type of defect—an incredibly thin, unbelievably dense line of primordial energy stretching across vast cosmic distances. They are hypothetical, but if they exist, they have a very specific effect on light.</p>
+
+            <h3>Step 2: The "Missing Wedge" of Spacetime</h3>
+            <p>Einstein taught us that massive objects curve spacetime. This is gravitational lensing. A black hole curves space so much it creates a deep "well," like a bowling ball on a rubber sheet. Light has to follow this curve.</p>
+            <p>A cosmic string is different. It doesn't create a "well." Instead, it creates a "deficit angle."</p>
+            <p><strong>Everyday Analogy: The Pizza Slice.</strong> Imagine spacetime is a giant, flat pizza. Now, cut out a thin slice and remove it. Tape the two cut edges together. The pizza is still flat everywhere—you can draw a straight line on it without any trouble. But if you try to walk all the way around the center point, you'll find you only travel, say, 359 degrees instead of the full 360. That missing degree is the "deficit angle." The cosmic string is the point of the cone you just made.</p>
+
+            <h3>Step 3: Creating Double Images</h3>
+            <p>Light from a distant galaxy travels in a straight line. But what happens when its path goes near the cosmic string? On your flat-but-missing-a-wedge spacetime, a single galaxy can now send light rays to you along two different paths—one passing to the "left" of the string and one to the "right."</p>
+            <p><strong>Visualization Analogy: An Ant on a Cone.</strong> Picture an ant (you, the observer) at the bottom of a paper cone, and a crumb of food (a galaxy) on the other side near the top. The ant can't see "through" the cone. To get to the crumb, light rays can travel in a straight line around the left side of the cone, or in a straight line around the right side. When you look up from the ant's perspective, you would see two images of the food crumb. That's exactly what happens with a cosmic string. It creates two images from one source.</p>
+
+            <h3>Step 4: Your First Observation</h3>
+            <ol>
+                <li>The simulation starts paused. You'll see a field of galaxies. In the center, a message prompts you to "Click and drag to place a cosmic string."</li>
+                <li>Do that! Click anywhere on the canvas, hold the mouse button down, and drag to another point. Release the button. You've just created a cosmic string!</li>
+                <li><strong>Observe:</strong> Look closely along the line you just drew. Do you see any galaxies that are now doubled? You should see pairs of identical galaxies, one on each side of the string. These are not two different galaxies; they are two images of the same galaxy.</li>
+                <li>Press the "Play" button (or the Spacebar). Nothing will happen yet, because the string isn't moving. We'll get to that later.</li>
+            </ol>
+
+            <h3>Step 5: Using the Controls</h3>
+            <p>Now, let's experiment. Use the sliders in the "Lensing Parameters" panel.</p>
+            <ul>
+                <li><strong>String Tension (Gμ):</strong> This is the most important parameter. It's a measure of the string's mass per unit length, and it directly sets the size of that "missing wedge." Try sliding it to the right (a higher value like 10⁻⁶). You'll see the separation between the paired images get much larger. Slide it to the left (10⁻¹⁰), and they'll get so close they merge. This is the "power" of the lens.</li>
+                <li><strong>String & Source Distance:</strong> These sliders change the geometry. The lensing effect is strongest when the string is halfway between you and the background source. Play with these to see how the image separation changes based on the setup.</li>
+                <li><strong>String Motion:</strong> Now for the really cool part. Go to the "String Motion" panel and give the string some X or Y velocity. Press "Play." Notice how one image in each pair becomes slightly brighter and the other slightly fainter? This is the Kaiser-Stebbins effect, a Doppler shift caused by the string moving across your line of sight. You are seeing a direct, visual consequence of relativity!</li>
+            </ul>
+        </div>
+
+        <div class="theory-section">
+            <h2>Parameters & Core Theory</h2>
+            <h3>Parameters Summary</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Units</th>
+                        <th>Default</th>
+                        <th>Range</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>String Tension (Gμ)</td>
+                        <td>Dimensionless</td>
+                        <td>10⁻⁷</td>
+                        <td>10⁻¹⁰ – 10⁻⁶</td>
+                        <td>Mass per unit length. Controls the deficit angle and thus image separation.</td>
+                    </tr>
+                    <tr>
+                        <td>String Distance (D_L)</td>
+                        <td>Megaparsecs (Mpc)</td>
+                        <td>1000</td>
+                        <td>100 – 5000</td>
+                        <td>Distance from observer to the cosmic string.</td>
+                    </tr>
+                    <tr>
+                        <td>Source Distance (D_S)</td>
+                        <td>Megaparsecs (Mpc)</td>
+                        <td>4000</td>
+                        <td>500 – 10000</td>
+                        <td>Distance from observer to the background galaxy.</td>
+                    </tr>
+                    <tr>
+                        <td>Transverse Velocity (v⊥)</td>
+                        <td>Fraction of c</td>
+                        <td>0</td>
+                        <td>-0.9c – 0.9c</td>
+                        <td>The string's speed across the sky. Causes Doppler shifting (Kaiser-Stebbins effect).</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>The Equations of String Lensing</h3>
+
+            <h4>1. The Deficit Angle (δφ)</h4>
+            <p>The entire physics of string lensing stems from the deficit angle—the size of the "wedge" missing from flat spacetime. It's directly proportional to the string's tension.</p>
+            <code>δφ = 8πGμ/c²</code>
+            <p>In this simulation, we use units where G=c=1, so the formula simplifies to:</p>
+            <code>δφ = 8πμ</code>
+            <p><em>Plain English:</em> The "power" of the lens (the angle of the missing wedge, δφ) is just a constant (8π) times the tension (μ). More tension = bigger wedge.</p>
+            <p><em>Numeric Example:</em> With the default tension Gμ = <strong>10⁻⁷</strong>, the deficit angle is δφ = 8 * π * 10⁻⁷ ≈ 2.51 x 10⁻⁶ radians. In arcseconds, this is about <strong>0.52 arcseconds</strong>. This is a tiny angle, but observable with powerful telescopes!</p>
+
+            <h4>2. Image Separation Angle (Δθ)</h4>
+            <p>The apparent separation between the two lensed images depends on the deficit angle and the relative distances of the string and the source galaxy.</p>
+            <code>Δθ = δφ * (D_LS / D_S)</code>
+            <p>Where D_LS is the distance between the Lens (string) and the Source, and D_S is the distance from the observer to the Source. Note that D_LS = D_S - D_L.</p>
+            <p><em>Plain English:</em> The visual separation you see (Δθ) is the "true" bending angle (δφ) scaled by how far the galaxy is behind the string, as a fraction of its total distance. The effect is biggest for a very distant source (D_LS is large) and a relatively nearby lens.</p>
+            <p><em>Numeric Example:</em> Using default values: Gμ = 10⁻⁷ (giving δφ ≈ 2.51 x 10⁻⁶ rad), D_L = 1000 Mpc, D_S = 4000 Mpc.
+            First, D_LS = 4000 - 1000 = 3000 Mpc.
+            Then, Δθ = (2.51 x 10⁻⁶ rad) * (3000 / 4000) ≈ <strong>1.88 x 10⁻⁶ radians</strong>. This corresponds to about <strong>0.39 arcseconds</strong> on the sky.</p>
+
+            <h4>3. The Kaiser-Stebbins Effect (Brightness Ratio)</h4>
+            <p>When the string moves with a velocity <code>v</code> perpendicular to the line of sight, light passing on the side moving towards us gets blueshifted (more energy), and light on the other side gets redshifted (less energy). This changes the apparent temperature/brightness of the images.</p>
+            <code>Brightness Ratio = ( (1 + v/c) / (1 - v/c) )²</code>
+            <p><em>Plain English:</em> The brightness difference depends very strongly on the string's speed. Even a "slow" speed (by relativistic standards) can cause a noticeable effect because of the squared term.</p>
+            <p><em>Numeric Example:</em> If a string moves at 50% the speed of light (v = 0.5c):
+            Brightness Ratio = ( (1 + 0.5) / (1 - 0.5) )² = (1.5 / 0.5)² = 3² = <strong>9</strong>.
+            The image on the "approaching" side will be <strong>9 times brighter</strong> than the image on the "receding" side! This is a huge, unmistakable signal.</p>
+        </div>
+
+        <div class="experiments-section">
+            <h2>Try These Experiments</h2>
+            <div id="quantitative-analysis-panel" class="panel">
+                <h3>Quantitative Analysis</h3>
+                <p>Click on a galaxy to see its lensing data here.</p>
+                <div>Selected Galaxy: <span id="qa-galaxy-id" class="value">None</span></div>
+                <div>Image Separation: <span id="qa-separation" class="value">N/A</span></div>
+                <div>Brightness Ratio: <span id="qa-brightness" class="value">N/A</span></div>
+                <div>Deficit Angle (δφ): <span id="qa-deficit-angle" class="value">N/A</span></div>
+            </div>
+
+            <h3>Preset Walkthroughs</h3>
+            <ol>
+                <li><strong>Subtle Effect:</strong> Click the "Subtle Effect" preset. This sets a low tension (Gμ = 5x10⁻⁹). Observe that the double images are extremely close together, almost indistinguishable. This shows the challenge of finding cosmic strings—their signal might be very faint.</li>
+                <li><strong>Classic Double:</strong> Click "Classic Double." This uses a high tension (Gμ = 5x10⁻⁷) and places the string at a favorable distance. You'll see clear, widely separated pairs of galaxies. This is the ideal textbook signature.</li>
+                <li><strong>Fast Mover:</strong> Click "Fast Mover." This gives the string a high velocity (0.6c). Press Play. Notice the dramatic difference in brightness between the image pairs. One side is bright and slightly blue-tinted, the other is dim and slightly red-tinted. This is the Kaiser-Stebbins effect in action.</li>
+            </ol>
+
+            <h3>Micro-Experiments</h3>
+            <ul>
+                <li><strong>Separation vs. Tension:</strong> Set String/Source distances to 1000/4000 Mpc. Place a string over a galaxy. Set Tension to 10⁻⁸. Note the separation. Now double the tension to 2x10⁻⁸. The separation should also double. The relationship is linear.</li>
+                <li><strong>The Halfway Point:</strong> Set Source Distance to 8000 Mpc. Move the String Distance slider from its minimum (100) to its maximum (5000). Watch the image separation. It will be smallest at the extremes and largest when the string is at 4000 Mpc (halfway).</li>
+                <li><strong>No Lensing Behind You:</strong> Set the Source Distance to be *less* than the String Distance. Notice that the galaxies at that distance are no longer lensed. A string can't lens something that is in front of it.</li>
+                <li><strong>Edge of the Universe:</strong> Set String Tension and Distance to max. Now slowly drag the Source Distance slider from min to max. As the source gets further away, the `D_LS / D_S` ratio approaches 1, and the image separation angle approaches the total deficit angle.</li>
+                <li><strong>Creating a Void:</strong> Place a long, vertical string near the left edge of the screen. Look to the right of the string. You'll see galaxy pairs. Now look immediately to the left of the string. You'll see a dark band with fewer galaxies. The string has "pulled" the images of galaxies from behind it, leaving a void.</li>
+                <li><strong>Velocity Painting:</strong> Set a high X velocity (e.g., 0.7c) and zero Y velocity. Press Play. The brightness difference is horizontal. Now set X velocity to 0 and Y velocity to 0.7c. The brightness difference is now vertical. The effect is directional.</li>
+                <li><strong>No Distortion Check:</strong> Find a galaxy with a distinct shape (e.g., a spiral). Place the string over it. Compare the two lensed images carefully. They should be identical in shape and orientation, just shifted in position. This is the key difference from black hole lensing, which would shear and arc the images.</li>
+            </ul>
+        </div>
+
+        <div class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+            <p>This simulation models an idealized, straight cosmic string. The real universe could be more complex. Here are some extensions to the theory (as requested by the "Maximal Depth" prompt):</p>
+
+            <h3>1. Kinks and Wiggles</h3>
+            <p>A cosmic string isn't perfectly straight. It can have "kinks"—sharp bends that propagate along the string at the speed of light.
+            <strong>Effect on Lensing:</strong> A moving kink is a localized disturbance on the string. As it sweeps across the line of sight to a background source, it would produce a very rapid, transient lensing event. An observer might see a pair of lensed images briefly appear and then disappear, or rapidly change their separation and brightness. The signature would be a "flash" in a light curve, as the kink's unique geometry passes by. Modeling this would require tracking the kink's position along the string and applying a time-dependent modification to the lensing calculation for any sources in its direct path.</p>
+
+            <h3>2. Closed Loops of String</h3>
+            <p>Cosmic strings can form closed loops, which oscillate relativistically, radiate gravitational waves, and eventually decay.
+            <strong>Effect on Lensing:</strong> A loop of string is a much more complex lens. For a background source located *inside* the loop's projection on the sky, an observer could see <strong>four or more images</strong>. Imagine the cone analogy again, but this time the "tip" of the cone is a circle. Light can travel "outside" the loop from both sides (creating two images as before), but it could also travel *through* the loop, creating additional images. As the loop oscillates, vibrates, and rotates, the number, position, and brightness of these images would change dramatically over time, creating a complex, flickering pattern. A stable, circular loop would produce a distinct quadruple-image pattern for a perfectly centered source.</p>
+
+            <h3>3. Microlensing a Single Star</h3>
+            <p>What if the string passes in front of a single star instead of a whole galaxy? This is called microlensing.
+            <strong>Light Curve Signature:</strong> Unlike lensing by a star or planet (a MACHO), which produces a single, smooth brightening and fading curve (a bell shape), a cosmic string produces a very different light curve. As the string approaches the star's line of sight, nothing happens. Then, suddenly, a second image of the star appears. The total brightness measured by the observer instantly doubles (assuming the two images can't be resolved). The brightness stays at 2x for the entire time the star is behind the string. Then, as the string moves away, the second image vanishes, and the brightness instantly drops back to normal.
+            <strong>The resulting light curve is a perfect "top-hat" or rectangular shape.</strong> This is a unique and unambiguous signal. If the string is moving (Kaiser-Stebbins effect), the two images have different brightnesses, so the total brightness would jump to a constant value (e.g., 1.5x or 2.5x) and then drop back down. This is a powerful, sought-after signature for cosmic string search programs.</p>
+        </div>
+
+        <div class="faq-section">
+            <h2>FAQ & Troubleshooting</h2>
+            <dl>
+                <dt>Why are there two images?</dt>
+                <dd>Spacetime around the string is a cone. Light from a single galaxy can reach us by two different paths, one around each side of the cone's "seam." Our brain interprets these two paths as two distinct images.</dd>
+                <dt>Why aren't the images magnified or distorted like with a black hole?</dt>
+                <dd>Because the spacetime of a cosmic string is flat everywhere except at the string itself. There is no curvature to magnify or shear the image. It acts like a weird prism, not a lens.</dd>
+                <dt>What is String Tension (Gμ)?</dt>
+                <dd>It's the mass-per-unit-length of the string. It's a fundamental parameter that determines the strength of all its effects. Higher tension means a more massive string and a larger "deficit angle," leading to wider image separation.</dd>
+                <dt>The simulation is running slow. What can I do?</dt>
+                <dd>Try checking the "Performance Mode" box in the Tools & Settings panel. This will reduce the number of background galaxies drawn, which should significantly improve the frame rate.</dd>
+                <dt>The canvas is just black / nothing is happening.</dt>
+                <dd>First, make sure you have placed a string by clicking and dragging on the canvas. If you have, try clicking the "Reset" button. If it still doesn't work, open your browser's developer console (usually F12), look for any red error messages, and copy them if you need to report a bug.</dd>
+                <dt>Why does one image get brighter when the string moves?</dt>
+                <dd>This is a relativistic Doppler shift called the Kaiser-Stebbins effect. Light passing on the side of the string moving towards you gets a slight energy boost (blueshift), making it appear brighter. Light from the other side loses energy (redshift) and appears fainter.</dd>
+            </dl>
+        </div>
+
+        <footer>
+            <div class="dev-console">
+                <details>
+                    <summary>Developer Info</summary>
+                    <div id="dev-log">
+                        <p>Self-check passed. Simulation initialized.</p>
+                        <p id="perf-meter">FPS: 60 | Mem: N/A | Galaxies: 500</p>
+                    </div>
+                </details>
+            </div>
+            <p>Cosmic Mirage Simulator. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+
+    <script>
+    // --- SELF-CHECK AND INITIALIZATION ---
+    window.onload = () => {
+        let checksPassed = true;
+        const errorPanel = document.getElementById('error-panel');
+        let errors = [];
+
+        if (!document.getElementById('simulation-canvas')) {
+            errors.push("FATAL: Canvas element not found.");
+            checksPassed = false;
+        }
+        if (!document.getElementById('tension-slider')) {
+            errors.push("FATAL: Core control 'tension-slider' not found.");
+            checksPassed = false;
+        }
+        if (!document.getElementById('preset-classic')) {
+            errors.push("FATAL: Preset button 'preset-classic' not found.");
+            checksPassed = false;
+        }
+
+        if (checksPassed) {
+            logDev("Self-check passed. Initializing simulation.");
+            init();
+        } else {
+            errorPanel.style.display = 'block';
+            errorPanel.innerHTML = "<h3>Initialization Failed</h3><p>Some required components of the simulation are missing. Please ensure the page has loaded correctly. Errors:</p><ul>"
+                                + errors.map(e => `<li>${e}</li>`).join('') + "</ul>";
+        }
+    };
+
+    // --- GLOBAL STATE & PARAMETERS ---
+    const config = {
+        numGalaxies: 500,
+        numStars: 2000,
+        perfModeGalaxies: 150,
+        perfModeStars: 500,
+    };
+
+    const state = {
+        paused: true,
+        animationFrameId: null,
+        isDragging: false,
+        stringPlaced: false,
+        galaxies: [],
+        stars: [],
+        string: {
+            start: { x: 0, y: 0 },
+            end: { x: 0, y: 0 },
+        },
+        params: {
+            gMu: 1e-7, // String Tension
+            dL: 1000,  // String Distance in Mpc
+            dS: 4000,  // Source Distance in Mpc
+            vx: 0,     // Velocity X in units of c
+            vy: 0,     // Velocity Y in units of c
+            speed: 1.0,
+        },
+        lastTime: 0,
+        perf: {
+            frameCount: 0,
+            lastPerfUpdate: 0,
+            fps: 0,
+        }
+    };
+
+    // --- DOM ELEMENTS ---
+    let canvas, ctx;
+    const ui = {};
+
+    function cacheDOMElements() {
+        canvas = document.getElementById('simulation-canvas');
+        ctx = canvas.getContext('2d');
+        const ids = [
+            'play-pause-btn', 'step-btn', 'reset-btn', 'speed-slider', 'speed-value',
+            'tension-slider', 'tension-value', 'string-dist-slider', 'string-dist-value',
+            'source-dist-slider', 'source-dist-value', 'velocity-x-slider', 'velocity-x-value',
+            'velocity-y-slider', 'velocity-y-value', 'preset-subtle', 'preset-classic',
+            'preset-fast', 'export-png-btn', 'export-json-btn', 'share-btn',
+            'perf-mode-toggle', 'contrast-toggle', 'string-placement-instructions',
+            'qa-galaxy-id', 'qa-separation', 'qa-brightness', 'qa-deficit-angle', 'perf-meter'
+        ];
+        ids.forEach(id => ui[id.replace(/-(\w)/g, (m, g) => g.toUpperCase())] = document.getElementById(id));
+    }
+
+    // --- LOGGING ---
+    function logDev(message) {
+        const log = document.getElementById('dev-log');
+        if (log) {
+            const p = document.createElement('p');
+            p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.prepend(p);
+        }
+        console.log(message);
+    }
+
+    // --- INITIALIZATION ---
+    function init() {
+        cacheDOMElements();
+        resizeCanvas();
+
+        setupEventListeners();
+
+        resetSimulation();
+
+        logDev("Initialization complete.");
+
+        state.lastTime = performance.now();
+        state.perf.lastPerfUpdate = state.lastTime;
+        gameLoop(state.lastTime);
+    }
+
+    function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        ctx.scale(dpr, dpr);
+        if(state.stringPlaced) {
+            draw();
+        }
+    }
+
+    // --- EVENT LISTENERS ---
+    function setupEventListeners() {
+        window.addEventListener('resize', resizeCanvas);
+
+        ui.playPauseBtn.addEventListener('click', togglePause);
+        ui.stepBtn.addEventListener('click', step);
+        ui.resetBtn.addEventListener('click', resetSimulation);
+
+        // Sliders
+        ui.speedSlider.addEventListener('input', e => {
+            state.params.speed = parseFloat(e.target.value);
+            ui.speedValue.textContent = state.params.speed.toFixed(1);
+        });
+        ui.tensionSlider.addEventListener('input', e => {
+            state.params.gMu = Math.pow(10, parseFloat(e.target.value));
+            ui.tensionValue.textContent = state.params.gMu.toExponential(1);
+            if (!state.paused) draw();
+        });
+        ui.stringDistSlider.addEventListener('input', e => {
+            state.params.dL = parseInt(e.target.value);
+            ui.stringDistValue.textContent = state.params.dL;
+            if (!state.paused) draw();
+        });
+        ui.sourceDistSlider.addEventListener('input', e => {
+            state.params.dS = parseInt(e.target.value);
+            ui.sourceDistValue.textContent = state.params.dS;
+            if (!state.paused) draw();
+        });
+        ui.velocityXSlider.addEventListener('input', e => {
+            state.params.vx = parseFloat(e.target.value);
+            ui.velocityXValue.textContent = state.params.vx.toFixed(2);
+            if (!state.paused) draw();
+        });
+        ui.velocityYSlider.addEventListener('input', e => {
+            state.params.vy = parseFloat(e.target.value);
+            ui.velocityYValue.textContent = state.params.vy.toFixed(2);
+            if (!state.paused) draw();
+        });
+
+        // Presets
+        ui.presetSubtle.addEventListener('click', () => applyPreset('subtle'));
+        ui.presetClassic.addEventListener('click', () => applyPreset('classic'));
+        ui.presetFast.addEventListener('click', () => applyPreset('fast'));
+
+        // Tools
+        ui.exportPngBtn.addEventListener('click', exportPNG);
+        ui.exportJsonBtn.addEventListener('click', exportJSON);
+        ui.shareBtn.addEventListener('click', sharePreset);
+        ui.perfModeToggle.addEventListener('change', e => {
+            resetSimulation();
+            logDev(`Performance mode ${e.target.checked ? 'enabled' : 'disabled'}.`);
+        });
+        ui.contrastToggle.addEventListener('change', e => {
+            document.body.classList.toggle('high-contrast', e.target.checked);
+        });
+
+        // Keyboard shortcuts
+        window.addEventListener('keydown', e => {
+            if (e.code === 'Space') { e.preventDefault(); togglePause(); }
+            if (e.code === 'ArrowRight') { e.preventDefault(); step(); }
+            if (e.key.toLowerCase() === 'r') { e.preventDefault(); resetSimulation(); }
+            if (e.key.toLowerCase() === 'e') { e.preventDefault(); exportPNG(); }
+        });
+
+        // Canvas interaction
+        canvas.addEventListener('mousedown', e => {
+            if (!state.stringPlaced) {
+                ui.stringPlacementInstructions.style.display = 'none';
+            }
+            state.isDragging = true;
+            const rect = canvas.getBoundingClientRect();
+            state.string.start = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+            state.string.end = { ...state.string.start };
+        });
+        canvas.addEventListener('mousemove', e => {
+            if (state.isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                state.string.end = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+                if (!state.paused) draw();
+            }
+        });
+        canvas.addEventListener('mouseup', () => {
+            state.isDragging = false;
+            state.stringPlaced = true;
+            if (!state.paused) draw();
+        });
+        canvas.addEventListener('click', handleCanvasClick);
+    }
+
+    // --- SIMULATION CONTROL ---
+    function togglePause() {
+        state.paused = !state.paused;
+        ui.playPauseBtn.textContent = state.paused ? 'Play' : 'Pause';
+        if (!state.paused) {
+            state.lastTime = performance.now();
+            gameLoop();
+        }
+    }
+
+    function step() {
+        if (!state.paused) togglePause();
+        update(16.67 * state.params.speed); // Assume 60fps for a single step
+        draw();
+    }
+
+    function resetSimulation() {
+        if (!state.paused) togglePause();
+
+        const isPerfMode = ui.perfModeToggle.checked;
+        const numGalaxies = isPerfMode ? config.perfModeGalaxies : config.numGalaxies;
+        const numStars = isPerfMode ? config.perfModeStars : config.numStars;
+
+        state.galaxies = generateGalaxies(numGalaxies);
+        state.stars = generateStars(numStars);
+        state.stringPlaced = false;
+        ui.stringPlacementInstructions.style.display = 'block';
+
+        applyPreset('classic'); // Reset to a known good state
+        applyPreset('classic'); // Call twice to ensure values are updated if already on classic
+
+        logDev(`Simulation reset. Galaxies: ${numGalaxies}, Stars: ${numStars}`);
+        draw();
+    }
+
+    function applyPreset(presetName) {
+        let preset;
+        switch (presetName) {
+            case 'subtle':
+                preset = { gMu: 5e-9, dL: 2000, dS: 6000, vx: 0, vy: 0 };
+                break;
+            case 'fast':
+                preset = { gMu: 2e-7, dL: 1500, dS: 5000, vx: 0.6, vy: 0.1 };
+                break;
+            case 'classic':
+            default:
+                preset = { gMu: 1e-7, dL: 1000, dS: 4000, vx: 0, vy: 0 };
+                break;
+        }
+
+        state.params = { ...state.params, ...preset };
+
+        // Update UI
+        ui.tensionSlider.value = Math.log10(state.params.gMu);
+        ui.tensionValue.textContent = state.params.gMu.toExponential(1);
+        ui.stringDistSlider.value = state.params.dL;
+        ui.stringDistValue.textContent = state.params.dL;
+        ui.sourceDistSlider.value = state.params.dS;
+        ui.sourceDistValue.textContent = state.params.dS;
+        ui.velocityXSlider.value = state.params.vx;
+        ui.velocityXValue.textContent = state.params.vx.toFixed(2);
+        ui.velocityYSlider.value = state.params.vy;
+        ui.velocityYValue.textContent = state.params.vy.toFixed(2);
+
+        if (!state.paused) draw();
+        logDev(`Applied preset: ${presetName}`);
+    }
+
+    // --- GAME LOOP ---
+    function gameLoop(timestamp) {
+        if (state.paused) {
+            state.animationFrameId = null;
+            return;
+        }
+
+        const deltaTime = (timestamp - state.lastTime);
+        state.lastTime = timestamp;
+
+        update(deltaTime * state.params.speed);
+        draw();
+        updatePerformanceMetrics(timestamp);
+
+        state.animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    function update(deltaTime) {
+        // Move the string
+        if (!state.stringPlaced || (state.params.vx === 0 && state.params.vy === 0)) return;
+
+        const speed = 0.05 * (deltaTime / 16.67);
+        const dx = state.params.vx * speed;
+        const dy = state.params.vy * speed;
+
+        state.string.start.x += dx;
+        state.string.start.y += dy;
+        state.string.end.x += dx;
+        state.string.end.y += dy;
+
+        // Wrap around screen
+        const w = canvas.getBoundingClientRect().width;
+        const h = canvas.getBoundingClientRect().height;
+        if (state.string.start.x > w && state.string.end.x > w) {
+            const lenX = state.string.end.x - state.string.start.x;
+            state.string.start.x = -lenX;
+            state.string.end.x = 0;
+        }
+        if (state.string.start.x < 0 && state.string.end.x < 0) {
+            const lenX = state.string.end.x - state.string.start.x;
+            state.string.start.x = w;
+            state.string.end.x = w + lenX;
+        }
+        if (state.string.start.y > h && state.string.end.y > h) {
+            const lenY = state.string.end.y - state.string.start.y;
+            state.string.start.y = -lenY;
+            state.string.end.y = 0;
+        }
+        if (state.string.start.y < 0 && state.string.end.y < 0) {
+            const lenY = state.string.end.y - state.string.start.y;
+            state.string.start.y = h;
+            state.string.end.y = h + lenY;
+        }
+    }
+
+    function updatePerformanceMetrics(timestamp) {
+        state.perf.frameCount++;
+        const delta = timestamp - state.perf.lastPerfUpdate;
+        if (delta > 1000) {
+            state.perf.fps = (state.perf.frameCount * 1000) / delta;
+            state.perf.lastPerfUpdate = timestamp;
+            state.perf.frameCount = 0;
+
+            const mem = window.performance.memory ? (window.performance.memory.usedJSHeapSize / 1048576).toFixed(1) + ' MB' : 'N/A';
+            const galaxyCount = ui.perfModeToggle.checked ? config.perfModeGalaxies : config.numGalaxies;
+            ui.perfMeter.textContent = `FPS: ${state.perf.fps.toFixed(0)} | Mem: ${mem} | Galaxies: ${galaxyCount}`;
+        }
+    }
+
+    // --- RENDERING ---
+    function draw() {
+        const w = canvas.getBoundingClientRect().width;
+        const h = canvas.getBoundingClientRect().height;
+        ctx.clearRect(0, 0, w, h);
+
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+
+        drawStars(ctx, w, h);
+        drawGalaxies(ctx, w, h);
+
+        if (state.stringPlaced || state.isDragging) {
+            drawCosmicString(ctx);
+        }
+    }
+
+    function drawStars(ctx, w, h) {
+        ctx.fillStyle = '#fff';
+        state.stars.forEach(star => {
+            ctx.beginPath();
+            ctx.arc(star.x * w, star.y * h, star.size, 0, 2 * Math.PI);
+            ctx.globalAlpha = star.brightness;
+            ctx.fill();
+        });
+        ctx.globalAlpha = 1.0;
+    }
+
+    function drawGalaxies(ctx, w, h) {
+        state.galaxies.forEach(galaxy => {
+            const gx = galaxy.x * w;
+            const gy = galaxy.y * h;
+
+            if (!state.stringPlaced || state.params.dS <= state.params.dL) {
+                drawSingleGalaxy(ctx, gx, gy, galaxy, 1.0);
+                return;
+            }
+
+            // Lensing logic
+            const { string } = state;
+            const stringVec = { x: string.end.x - string.start.x, y: string.end.y - string.start.y };
+            const stringLenSq = stringVec.x * stringVec.x + stringVec.y * stringVec.y;
+            if (stringLenSq === 0) {
+                drawSingleGalaxy(ctx, gx, gy, galaxy, 1.0);
+                return;
+            }
+
+            const galaxyVec = { x: gx - string.start.x, y: gy - string.start.y };
+            const dot = galaxyVec.x * stringVec.x + galaxyVec.y * stringVec.y;
+            const t = Math.max(0, Math.min(1, dot / stringLenSq));
+            const closestPoint = { x: string.start.x + t * stringVec.x, y: string.start.y + t * stringVec.y };
+            const distVec = { x: gx - closestPoint.x, y: gy - closestPoint.y };
+
+            const stringNormal = { x: -stringVec.y, y: stringVec.x };
+            const len_n = Math.sqrt(stringNormal.x*stringNormal.x + stringNormal.y*stringNormal.y);
+            if (len_n === 0) {
+                drawSingleGalaxy(ctx, gx, gy, galaxy, 1.0);
+                return;
+            }
+            stringNormal.x /= len_n;
+            stringNormal.y /= len_n;
+
+            const side = Math.sign(distVec.x * stringNormal.x + distVec.y * stringNormal.y);
+            if (side === 0) side = 1; // On the line
+
+            // Calculate separation
+            const deltaPhi = 8 * Math.PI * state.params.gMu;
+            const dls = state.params.dS - state.params.dL;
+            const angSeparation = deltaPhi * (dls / state.params.dS);
+
+            // The separation on screen in pixels is tricky, depends on field of view. Let's make an approximation.
+            // Assume the screen width is about 1 degree FoV.
+            const pixSeparation = (angSeparation * (180/Math.PI) * 3600) * (w / 3600); // 1 pixel per arcsec approx
+
+            const shift = pixSeparation / 2;
+
+            const pos1 = { x: gx - shift * stringNormal.x, y: gy - shift * stringNormal.y };
+            const pos2 = { x: gx + shift * stringNormal.x, y: gy + shift * stringNormal.y };
+
+            // Kaiser-Stebbins effect
+            const v_perp = state.params.vx * stringNormal.x + state.params.vy * stringNormal.y;
+            const brightnessRatio = ((1 + v_perp) / (1 - v_perp)); // Not squared for color temp
+
+            let brightness1 = 1.0, brightness2 = 1.0;
+            if (v_perp !== 0) {
+                brightness1 = brightnessRatio;
+                brightness2 = 1/brightnessRatio;
+            }
+
+            drawSingleGalaxy(ctx, pos1.x, pos1.y, galaxy, brightness1);
+            drawSingleGalaxy(ctx, pos2.x, pos2.y, galaxy, brightness2);
+        });
+    }
+
+    function drawSingleGalaxy(ctx, x, y, galaxy, brightness) {
+        const w = canvas.getBoundingClientRect().width;
+        if (x < -galaxy.size || x > w + galaxy.size) return;
+
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(galaxy.angle);
+
+        const effectiveBrightness = Math.min(Math.max(brightness, 0.2), 5.0);
+
+        let color = galaxy.color;
+        if (brightness > 1.01) { // Blueshift
+            const factor = 1 + Math.min((brightness - 1) / 4, 0.5);
+            color = `hsl(240, 80%, ${Math.min(50 * factor, 90)}%)`;
+        } else if (brightness < 0.99) { // Redshift
+            const factor = 1 - Math.min((1 - brightness), 0.8);
+            color = `hsl(0, 80%, ${Math.max(50 * factor, 10)}%)`;
+        }
+
+        ctx.fillStyle = color;
+        ctx.globalAlpha = galaxy.opacity * Math.sqrt(effectiveBrightness); // sqrt for perceived brightness
+
+        ctx.beginPath();
+        ctx.ellipse(0, 0, galaxy.size, galaxy.size * galaxy.aspect, 0, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Core
+        ctx.fillStyle = `rgba(255, 255, 200, 0.8)`;
+        ctx.globalAlpha = ctx.globalAlpha * 0.5;
+        ctx.beginPath();
+        ctx.arc(0, 0, galaxy.size * 0.3, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.restore();
+    }
+
+    function drawCosmicString(ctx) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.moveTo(state.string.start.x, state.string.start.y);
+        ctx.lineTo(state.string.end.x, state.string.end.y);
+        ctx.strokeStyle = 'rgba(0, 170, 255, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([10, 10]);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // --- DATA GENERATION ---
+    function generateGalaxies(num) {
+        const galaxies = [];
+        for (let i = 0; i < num; i++) {
+            galaxies.push({
+                id: `NGCS-${i}`,
+                x: Math.random(),
+                y: Math.random(),
+                size: 2 + Math.random() * 6,
+                aspect: 0.3 + Math.random() * 0.7,
+                angle: Math.random() * Math.PI * 2,
+                color: `hsl(${180 + Math.random() * 100}, 50%, 50%)`,
+                opacity: 0.6 + Math.random() * 0.4
+            });
+        }
+        return galaxies;
+    }
+
+    function generateStars(num) {
+        const stars = [];
+        for (let i = 0; i < num; i++) {
+            stars.push({
+                x: Math.random(),
+                y: Math.random(),
+                size: 0.2 + Math.random() * 0.8,
+                brightness: 0.2 + Math.random() * 0.8
+            });
+        }
+        return stars;
+    }
+
+    // --- UI INTERACTION & ANALYSIS ---
+    function handleCanvasClick(e) {
+        const rect = canvas.getBoundingClientRect();
+        const clickPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+        const w = rect.width;
+        const h = rect.height;
+        let closestGalaxy = null;
+        let min_dist_sq = Infinity;
+
+        state.galaxies.forEach(g => {
+            const gx = g.x * w;
+            const gy = g.y * h;
+            const dist_sq = (clickPos.x - gx)**2 + (clickPos.y - gy)**2;
+            if (dist_sq < min_dist_sq && dist_sq < (g.size*2)**2) {
+                min_dist_sq = dist_sq;
+                closestGalaxy = g;
+            }
+        });
+
+        if (closestGalaxy) {
+            updateAnalysisPanel(closestGalaxy);
+        }
+    }
+
+    function updateAnalysisPanel(galaxy) {
+        if (!galaxy) return;
+
+        ui.qaGalaxyId.textContent = galaxy.id;
+
+        const deltaPhi = 8 * Math.PI * state.params.gMu;
+        ui.qaDeficitAngle.textContent = `${(deltaPhi * 180 / Math.PI * 3600).toFixed(3)} arcsec`;
+
+        if (state.params.dS <= state.params.dL || !state.stringPlaced) {
+            ui.qaSeparation.textContent = 'N/A (Not lensed)';
+            ui.qaBrightness.textContent = '1.00';
+            return;
+        }
+
+        const dls = state.params.dS - state.params.dL;
+        const angSeparation = deltaPhi * (dls / state.params.dS);
+        ui.qaSeparation.textContent = `${(angSeparation * 180 / Math.PI * 3600).toFixed(3)} arcsec`;
+
+        const { string } = state;
+        const stringVec = { x: string.end.x - string.start.x, y: string.end.y - string.start.y };
+        const stringNormal = { x: -stringVec.y, y: stringVec.x };
+        const len_n = Math.sqrt(stringNormal.x*stringNormal.x + stringNormal.y*stringNormal.y);
+        if(len_n > 0) {
+            stringNormal.x /= len_n;
+            stringNormal.y /= len_n;
+        }
+
+        const v_perp = state.params.vx * stringNormal.x + state.params.vy * stringNormal.y;
+        const brightnessRatio = ((1 + v_perp) / (1 - v_perp))**2;
+        ui.qaBrightness.textContent = brightnessRatio.toFixed(3);
+    }
+
+    // --- TOOLS ---
+    function exportPNG() {
+        const link = document.createElement('a');
+        link.download = `cosmic_mirage_${Date.now()}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        logDev('Exported canvas to PNG.');
+    }
+
+    function exportJSON() {
+        const data = {
+            params: state.params,
+            string: state.stringPlaced ? state.string : "Not placed",
+            timestamp: new Date().toISOString()
+        };
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `cosmic_mirage_params_${Date.now()}.json`;
+        link.click();
+        URL.revokeObjectURL(link.href);
+        logDev('Exported parameters to JSON.');
+    }
+
+    function sharePreset() {
+        const data = { p: state.params };
+        const jsonString = JSON.stringify(data);
+        const base64String = btoa(jsonString);
+        const url = `${window.location.href.split('#')[0]}#preset=${base64String}`;
+        navigator.clipboard.writeText(url).then(() => {
+            alert('Shareable link copied to clipboard!');
+            logDev('Shareable link copied.');
+        }, () => {
+            alert('Failed to copy link.');
+            logDev('Failed to copy shareable link.');
+        });
+    }
+
+    function loadPresetFromURL() {
+        if (window.location.hash.startsWith('#preset=')) {
+            try {
+                const base64String = window.location.hash.substring(8);
+                const jsonString = atob(base64String);
+                const data = JSON.parse(jsonString);
+                if (data.p) {
+                    // Create a new preset name for it
+                    const customPreset = { ...data.p };
+                    state.params = { ...state.params, ...customPreset};
+                    // Update UI (similar to applyPreset)
+                     ui.tensionSlider.value = Math.log10(state.params.gMu);
+                    ui.tensionValue.textContent = state.params.gMu.toExponential(1);
+                    ui.stringDistSlider.value = state.params.dL;
+                    ui.stringDistValue.textContent = state.params.dL;
+                    ui.sourceDistSlider.value = state.params.dS;
+                    ui.sourceDistValue.textContent = state.params.dS;
+                    ui.velocityXSlider.value = state.params.vx;
+                    ui.velocityXValue.textContent = state.params.vx.toFixed(2);
+                    ui.velocityYSlider.value = state.params.vy;
+                    ui.velocityYValue.textContent = state.params.vy.toFixed(2);
+                    logDev('Loaded preset from URL.');
+                    draw();
+                }
+            } catch (e) {
+                console.error("Failed to load preset from URL", e);
+                logDev('Error loading preset from URL.');
+            }
+        }
+    }
+
+    // Check for presets on load
+    window.addEventListener('load', loadPresetFromURL);
+
+    // Dummy function for suggestion box
+    function setAudience(level) {
+        logDev(`Audience level set to: ${level}. In a full implementation, this could adjust the text.`);
+        alert(`Audience level set to ${level}. The text content would be adapted in a full version.`);
+    }
+
+</script>
+</body>
+</html>

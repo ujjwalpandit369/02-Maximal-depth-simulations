@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cosmic Textures & Large-Scale Structure</title>
+    <style>
+        :root {
+            --bg-color: #0c1414;
+            --text-color: #e0e0e0;
+            --header-color: #ffffff;
+            --accent-color: #ff4500; /* OrangeRed for energy */
+            --control-bg: #2a201a;
+            --control-border: #443a33;
+            --slider-thumb: #ff4500;
+            --slider-track: #554a44;
+            --button-bg: #443a33;
+            --button-hover: #ff4500;
+            --panel-bg: #1f1811;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --code-bg: #332822;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            grid-template-areas:
+                "header header"
+                "overview overview"
+                "sim controls"
+                "guide guide"
+                "theory theory"
+                "advanced advanced"
+                "footer footer";
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "overview"
+                    "sim"
+                    "controls"
+                    "guide"
+                    "theory"
+                    "advanced"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 10px; }
+        .simulation-area { grid-area: sim; }
+        .controls-area { grid-area: controls; }
+        .overview-section { grid-area: overview; }
+        .guide-section { grid-area: guide; }
+        .theory-section { grid-area: theory; }
+        .advanced-section { grid-area: advanced; }
+        footer { grid-area: footer; text-align: center; font-size: 0.9em; padding-top: 20px; border-top: 1px solid var(--control-border); }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 300; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .sim-views {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+        }
+        .sim-views canvas {
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: #000;
+            border-radius: 8px;
+        }
+        .sim-views h4 { margin-top: 0; margin-bottom: 5px; font-weight: normal; color: #ccc; }
+
+        .control-group {
+            background-color: var(--control-bg);
+            border: 1px solid var(--control-border);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .control-group input, .control-group select {
+            width: 100%;
+        }
+        .control-group .value-display {
+            font-family: monospace;
+            color: var(--accent-color);
+            float: right;
+            font-size: 0.9em;
+        }
+        .control-group .description {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .main-controls button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--button-hover);
+            color: var(--bg-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .main-controls button:disabled {
+             background-color: var(--button-bg);
+             color: #888;
+             cursor: not-allowed;
+        }
+        .main-controls button:hover:not(:disabled) {
+            background-color: var(--header-color);
+        }
+
+        .info-panel {
+            background-color: var(--panel-bg);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 3px solid var(--accent-color);
+        }
+        #commentary-panel {
+            font-family: monospace;
+            height: 120px;
+            overflow-y: auto;
+            background: var(--code-bg);
+            padding: 10px;
+        }
+
+        .analysis-plots {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        .analysis-plots .plot-item { text-align: center; }
+        .analysis-plots canvas {
+            width: 100%;
+            height: 150px;
+            background: var(--code-bg);
+            border-radius: 4px;
+        }
+        .analysis-plots h4 { margin-top: 0; margin-bottom: 5px; font-weight: normal; color: #ccc; }
+        #cmb-signature {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--code-bg);
+            border-radius: 4px;
+            height: 150px;
+            position: relative;
+        }
+        .cmb-spot { border-radius: 50%; position: absolute; }
+        .hot-spot { background: #ff8c00; width: 30px; height: 30px; z-index: 2;}
+        .cold-ring { background: #0000ff; width: 90px; height: 90px; z-index: 1;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Cosmic Textures</h1>
+            <p>Seeding Large-Scale Structure from Topological Knots</p>
+        </header>
+
+        <div class="overview-section">
+            <h2>Overview</h2>
+            <p>Beyond simple points, lines, or walls, some theories predict a fourth, more complex type of topological defect: a "texture." A texture is not a stable object but a tangled, knotted configuration of a field that fills a large region of space. These knots are unstable and can "unwind" or collapse, releasing their enormous energy in a localized, violent event. This simulation explores the fascinating hypothesis that these events, happening in the primordial universe, could have created the gravitational seeds that were needed to grow the first galaxies and clusters of galaxies, providing a link between exotic field theory and the cosmic web we see today.</p>
+        </div>
+
+        <div class="simulation-area panel">
+            <div class="sim-views">
+                <div class="view-item">
+                    <h4>Texture Field (2D Slice)</h4>
+                    <canvas id="texture-canvas"></canvas>
+                </div>
+                <div class="view-item">
+                    <h4>Dark Matter Response</h4>
+                    <canvas id="dm-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls-area">
+            <div class="panel main-controls">
+                 <button id="generate-btn">1. Create Texture Knot</button>
+                 <button id="unwind-btn" style="margin-top: 10px;">2. Trigger Unwinding</button>
+            </div>
+
+            <div class="panel">
+                <h3>Simulation Parameters</h3>
+                <div class="control-group">
+                    <label for="group-select">Symmetry Group</label>
+                    <select id="group-select">
+                        <option value="su2">SU(2)</option>
+                        <option value="so4">SO(4)</option>
+                    </select>
+                    <p class="description">Higher-order groups that produce textures (π₃ defects).</p>
+                </div>
+                <div class="control-group">
+                    <label>Texture "Knot" Complexity<span id="knot-value" class="value-display">5</span></label>
+                    <input type="range" id="knot-slider" min="1" max="10" value="5" step="1">
+                    <p class="description">Sets the initial "twistedness" of the field configuration.</p>
+                </div>
+                <div class="control-group">
+                    <label>Energy Scale η (GeV)<span id="eta-value" class="value-display">1.0e+15</span></label>
+                    <input type="range" id="eta-slider" min="13" max="16" value="15" step="0.1">
+                    <p class="description">Determines the energy released during unwinding.</p>
+                </div>
+                <div class="control-group">
+                    <label>Dark Matter Fluidity<span id="fluidity-value" class="value-display">0.5</span></label>
+                    <input type="range" id="fluidity-slider" min="0.1" max="1.0" value="0.5" step="0.05">
+                    <p class="description">How quickly DM responds to the gravitational potential.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-section">
+            <div class="panel">
+                <h3>What Am I Seeing? (Live Commentary)</h3>
+                <div id="commentary-panel">
+                    <p>STATUS: Waiting for texture generation...</p>
+                </div>
+            </div>
+            <div class="panel analysis-plots">
+                <h3>Quantitative Analysis</h3>
+                <div class="plot-item">
+                    <h4>Gravitational Potential (1D Slice)</h4>
+                    <canvas id="potential-canvas"></canvas>
+                </div>
+                <div class="plot-item">
+                    <h4>Dark Matter Density Profile</h4>
+                    <canvas id="density-canvas"></canvas>
+                </div>
+                <div class="plot-item">
+                    <h4>Predicted CMB Signature</h4>
+                    <div id="cmb-signature">
+                        <div class="cold-ring cmb-spot"></div>
+                        <div class="hot-spot cmb-spot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>The Physics of Textures</h2>
+
+            <h3>Part A: Homotopy Group π₃ - Knots in Spacetime</h3>
+            <p>Textures are the most elusive class of topological defects. Unlike monopoles (points), strings (lines), or walls (surfaces), textures are transient, volume-filling configurations of a field. They are predicted by theories where the vacuum manifold V has a non-trivial "third homotopy group," written as π₃(V) ≠ 0. This mathematical statement has a surprisingly intuitive physical meaning.</p>
+
+            <p><strong>The Core Analogy: The Self-Untangling Yarn Ball.</strong>
+            Imagine you have an enormous, infinitely tangled ball of yarn. This represents the initial, high-energy state of the texture field. There are no "ends" to the yarn; it's a closed, knotted mess. This knot is stable only because of its topology—the way it's tangled.
+            However, unlike a real yarn ball, this one is made of a field that "wants" to be straight and uniform (the low-energy vacuum state). The tangled configuration stores a huge amount of energy. A texture is a region of space where the field is tied in such a knot.
+            The key property of a texture is that this knot can be undone without cutting. You can, in theory, find one "loop" of the yarn and pull it through the rest of the tangle, causing the entire ball to rapidly and violently unravel into a straight line. This "unwinding" is the collapse of the texture. It's a global event; you can't just untangle one piece at a time. The entire knotted region must collapse together.</p>
+
+            <p>Mathematically, this corresponds to mapping a 3-sphere (a sphere in 4D space) from our universe onto a vacuum manifold that is also a 3-sphere (like the group SU(2)). Just as you can't smoothly shrink a sphere wrapped around another sphere to a point (that's a monopole, π₂), you can't smoothly undo a 3-sphere wrapped around another 3-sphere. This "wrapped" configuration is the texture. But unlike the lower-order defects, this configuration is not truly stable—it can collapse and annihilate with itself.</p>
+
+            <h3>Part B: The Unwinding Event - A Cosmic Implosion</h3>
+            <p>The collapse of a texture is a remarkable event. When a sufficiently large region of the field is in a knotted configuration, it can become energetically favorable for the entire structure to collapse.
+            <ol>
+                <li><strong>Contraction:</strong> The unwinding begins. The tangled region of the field starts to contract, pulling itself together at nearly the speed of light. As it contracts, the field vectors within the region rapidly try to align with the vacuum outside the texture.</li>
+                <li><strong>Energy Release:</strong> At the moment of final collapse, all the energy stored in the knotted field configuration is released at a single point. This creates an immense, positive energy density spike.</li>
+                <li><strong>Expanding Shell:</strong> The aftermath is just as important. The collapse produces an expanding shell of energy, but with a crucial difference. The shell has a complex structure, often described as a positive energy pulse followed by an expanding shell of negative energy. This is not "negative mass," but rather a region where the gravitational field is repulsive.</li>
+            </ol>
+            This unique signature—a powerful energy release followed by a complex expanding shell—creates a very specific type of gravitational potential that is unlike a simple explosion or a black hole.</p>
+
+            <h3>Part C: Seeding Structure Formation</h3>
+            <p>Standard cosmology, based on inflation, does a fantastic job of explaining the large-scale structure of the universe. It posits that tiny quantum fluctuations were stretched to cosmic scales, providing the initial seeds for gravity to work on.
+            Texture theory offers an alternative or complementary mechanism. The gravitational potential created by a texture unwinding event is significant. The deep, transient potential well can act as a powerful "seed."
+            <strong>How it works:</strong>
+            <ol>
+                <li>A texture collapses, creating a temporary, deep gravitational well.</li>
+                <li>Dark matter particles, which were previously distributed almost uniformly, are immediately attracted to this new potential well. They begin to fall into it.</li>
+                <li>Even after the texture event is over and the potential well has dissipated, the dark matter now has momentum directed towards that central point. It overshoots, turns around, and eventually settles into a stable, gravitationally bound "halo."</li>
+            </pre>
+            <p>This process can form dark matter halos much earlier and more massive than predicted by standard inflationary models. If textures existed, they could be responsible for the formation of the first quasars or the giant superclusters of galaxies. The search for their unique hot-and-cold spot signatures in the Cosmic Microwave Background (CMB) is an active area of research.</p>
+        </div>
+
+        <div class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+
+            <h3>1. The Texture Power Spectrum</h3>
+            <p>While this simulation focuses on a single event, a realistic cosmological model would have a whole field of textures constantly forming and collapsing. The combined effect of all these events would produce a spectrum of density perturbations across the sky.
+            <strong>Comparison to Inflation:</strong> The power spectrum from inflation is nearly "scale-invariant," meaning the fluctuations have similar strength on all size scales, and it's "Gaussian," meaning the perturbations have a random phase distribution. A texture-seeded power spectrum is fundamentally different. It is "non-Gaussian" because the perturbations are not random but are caused by discrete, localized, and highly correlated events (the unwindings). This would lead to specific signatures in the statistical properties of the CMB and galaxy surveys, such as the bispectrum and trispectrum, which are actively being searched for by cosmologists.</p>
+
+            <h3>2. Interaction with Other Defects</h3>
+            <p>What happens if a cosmic string, formed in an earlier phase transition, passes through a region of space where a texture is trying to form? The string is itself a line of high energy density where the texture-forming field might be "stuck" or unable to settle into the vacuum.
+            <strong>Catalyzing Collapse:</strong> It's plausible that a string could act as a "nucleon" or seed for texture collapse. The string's presence breaks the symmetry that supports the texture, potentially creating an instability along its length that triggers the unwinding event prematurely. Simulating this would involve initializing a texture field and then moving a "line defect" (the string) through it, watching to see if the collapse consistently begins near the string's path.</p>
+
+            <h3>3. Dark Matter Back-Reaction</h3>
+            <p>Our simulation assumes a one-way street: the texture creates a potential, and dark matter responds. But what happens after a dense dark matter halo has formed? This halo now has its own significant gravitational potential.
+            <strong>Re-inducing a Configuration:</strong> It's conceivable that the deep potential well of the newly-formed halo could "hold" the scalar field in a specific configuration. While it might not recreate a fully knotted texture (which requires specific topology), it could prevent the field from relaxing to a true vacuum state in that region. The halo could become "dressed" in a scalar field overdensity. This back-reaction could lead to interesting late-time physics, potentially affecting the properties of the halo or even leading to further, smaller-scale energy releases from the "frustrated" scalar field.</p>
+        </div>
+
+        <footer>
+            <p>Cosmic Texture Simulator. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+
+    <script>
+    window.onload = init;
+
+    let textureCanvas, textureCtx, dmCanvas, dmCtx, potentialCanvas, potentialCtx, densityCanvas, densityCtx;
+    const ui = {};
+
+    const state = {
+        phase: 'SETUP', // SETUP, GENERATED, UNWINDING, COLLAPSED
+        gridSize: 32,
+        textureField: [],
+        dmParticles: [],
+        unwindProgress: 0,
+        time: 0,
+        params: {
+            knotComplexity: 5,
+            eta: 1e15,
+            fluidity: 0.5,
+        },
+        potential: [],
+    };
+
+    function init() {
+        cacheDOMElements();
+        setupEventListeners();
+        resetSimulation();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function cacheDOMElements() {
+        textureCanvas = document.getElementById('texture-canvas');
+        textureCtx = textureCanvas.getContext('2d');
+        dmCanvas = document.getElementById('dm-canvas');
+        dmCtx = dmCanvas.getContext('2d');
+        potentialCanvas = document.getElementById('potential-canvas');
+        potentialCtx = potentialCanvas.getContext('2d');
+        densityCanvas = document.getElementById('density-canvas');
+        densityCtx = densityCanvas.getContext('2d');
+
+        const ids = [
+            'generate-btn', 'unwind-btn', 'group-select', 'knot-slider', 'knot-value',
+            'eta-slider', 'eta-value', 'fluidity-slider', 'fluidity-value', 'commentary-panel'
+        ];
+        ids.forEach(id => ui[id.replace(/-(\w)/g, (m, g) => g.toUpperCase())] = document.getElementById(id));
+    }
+
+    function setupEventListeners() {
+        ui.generateBtn.addEventListener('click', generateTexture);
+        ui.unwindBtn.addEventListener('click', triggerUnwinding);
+
+        ui.knotSlider.addEventListener('input', e => {
+            state.params.knotComplexity = parseInt(e.target.value);
+            ui.knotValue.textContent = state.params.knotComplexity;
+        });
+        ui.etaSlider.addEventListener('input', e => {
+            state.params.eta = Math.pow(10, parseFloat(e.target.value));
+            ui.etaValue.textContent = state.params.eta.toExponential(1);
+        });
+        ui.fluiditySlider.addEventListener('input', e => {
+            state.params.fluidity = parseFloat(e.target.value);
+            ui.fluidityValue.textContent = state.params.fluidity.toFixed(2);
+        });
+    }
+
+    function resetSimulation() {
+        state.phase = 'SETUP';
+        state.time = 0;
+        state.unwindProgress = 0;
+        state.potential = new Array(state.gridSize).fill(0);
+        ui.unwindBtn.disabled = true;
+
+        // Init DM particles
+        state.dmParticles = [];
+        for (let i = 0; i < 200; i++) {
+            state.dmParticles.push({
+                x: Math.random() * 2 - 1,
+                y: Math.random() * 2 - 1,
+                vx: 0,
+                vy: 0
+            });
+        }
+        addCommentary("STATUS: Awaiting texture generation...");
+    }
+
+    function generateTexture() {
+        state.phase = 'GENERATED';
+        ui.unwindBtn.disabled = false;
+
+        // Procedurally generate a "knotted" field
+        // We'll represent the field as a 3D vector (projection from S^3)
+        state.textureField = new Array(state.gridSize * state.gridSize).fill(0).map(() => ({x:0, y:0, z:0}));
+        const center = state.gridSize / 2;
+        for (let i = 0; i < state.gridSize; i++) {
+            for (let j = 0; j < state.gridSize; j++) {
+                const idx = i * state.gridSize + j;
+                const dx = (j - center) / center;
+                const dy = (i - center) / center;
+                const r = Math.sqrt(dx*dx + dy*dy);
+                const angle = Math.atan2(dy, dx) * state.params.knotComplexity;
+
+                if (r < 1) {
+                    state.textureField[idx] = {
+                        x: Math.cos(angle) * Math.sin(r * Math.PI),
+                        y: Math.sin(angle) * Math.sin(r * Math.PI),
+                        z: Math.cos(r * Math.PI)
+                    };
+                } else {
+                    state.textureField[idx] = { x: 0, y: 0, z: 1 }; // Ground state
+                }
+            }
+        }
+        addCommentary("EVENT: Knotted texture configuration generated.");
+        addCommentary("INFO: The colors represent the orientation of the field. A uniform color means the field is in its ground state.");
+    }
+
+    function triggerUnwinding() {
+        if (state.phase !== 'GENERATED') return;
+        state.phase = 'UNWINDING';
+        state.time = 0;
+        ui.unwindBtn.disabled = true;
+        addCommentary("EVENT: Texture unwinding triggered!");
+    }
+
+    function addCommentary(text) {
+        const p = document.createElement('p');
+        p.textContent = `[T+${state.time.toFixed(2)}] ${text}`;
+        ui.commentaryPanel.prepend(p);
+        if(ui.commentaryPanel.children.length > 10) {
+            ui.commentaryPanel.removeChild(ui.commentaryPanel.lastChild);
+        }
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function update() {
+        state.time += 1/60;
+        if (state.phase === 'UNWINDING') {
+            state.unwindProgress += 0.01;
+            if (state.unwindProgress >= 1) {
+                state.unwindProgress = 1;
+                state.phase = 'COLLAPSED';
+                addCommentary("EVENT: Texture has fully unwound and collapsed.");
+            }
+             // Update potential based on unwinding
+            const peakTime = 0.5;
+            const pulseWidth = 0.2;
+            const progress = state.unwindProgress;
+            const maxR = state.gridSize/2;
+            for(let r=0; r<maxR; r++) {
+                const collapseRadius = maxR * (1 - progress);
+                const distFromWave = Math.abs(r - collapseRadius);
+                if (distFromWave < 5) {
+                    const energy = state.params.eta / 1e14;
+                    state.potential[r] = -energy * Math.exp(-distFromWave*distFromWave / 10);
+                } else {
+                    state.potential[r] *= 0.95; // Damp old potential
+                }
+            }
+        } else if (state.phase === 'COLLAPSED') {
+            // Damp potential
+            state.potential = state.potential.map(p => p * 0.95);
+        }
+
+        // Update DM particles
+        state.dmParticles.forEach(p => {
+            const r = Math.sqrt(p.x*p.x + p.y*p.y);
+            if (r > 1e-6) {
+                const gridR = Math.floor(r * state.gridSize/2);
+                if (gridR < state.gridSize/2) {
+                    const forceMag = (state.potential[gridR+1] - state.potential[gridR]);
+                    const ax = forceMag * (p.x / r);
+                    const ay = forceMag * (p.y / r);
+
+                    p.vx += ax * 0.01;
+                    p.vy += ay * 0.01;
+                }
+            }
+            p.vx *= (1 - (1 - state.params.fluidity) * 0.1);
+            p.vy *= (1 - (1 - state.params.fluidity) * 0.1);
+            p.x += p.vx * 0.01;
+            p.y += p.vy * 0.01;
+
+            // Boundary
+            if (p.x < -1 || p.x > 1) p.vx *= -1;
+            if (p.y < -1 || p.y > 1) p.vy *= -1;
+        });
+    }
+
+    function draw() {
+        drawTexture();
+        drawDM();
+        drawPotential();
+        drawDensity();
+    }
+
+    function drawTexture() {
+        const w = textureCanvas.width;
+        const h = textureCanvas.height;
+        textureCtx.fillStyle = '#000';
+        textureCtx.fillRect(0,0,w,h);
+
+        const cellW = w / state.gridSize;
+        const cellH = h / state.gridSize;
+
+        const collapseRadius = state.gridSize * (1-state.unwindProgress);
+
+        for (let i = 0; i < state.gridSize; i++) {
+            for (let j = 0; j < state.gridSize; j++) {
+                const idx = i * state.gridSize + j;
+                const field = state.textureField[idx];
+
+                let r,g,b;
+                if (state.phase === 'UNWINDING' || state.phase === 'COLLAPSED') {
+                    const distFromCenter = Math.sqrt((i-state.gridSize/2)**2 + (j-state.gridSize/2)**2);
+                    if (distFromCenter < collapseRadius) {
+                        // Still knotted
+                        const hue = (Math.atan2(field.y, field.x) / (2*Math.PI) + 0.5) * 360;
+                        const lightness = (field.z + 1) / 2 * 50 + 25;
+                        textureCtx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;
+                    } else {
+                        // Collapsed
+                        textureCtx.fillStyle = `hsl(0, 0%, 80%)`;
+                    }
+                } else {
+                    const hue = (Math.atan2(field.y, field.x) / (2*Math.PI) + 0.5) * 360;
+                    const lightness = (field.z + 1) / 2 * 50 + 25;
+                    textureCtx.fillStyle = `hsl(${hue}, 100%, ${lightness}%)`;
+                }
+                textureCtx.fillRect(j * cellW, i * cellH, cellW, cellH);
+            }
+        }
+    }
+
+    function drawDM() {
+        const w = dmCanvas.width;
+        const h = dmCanvas.height;
+        dmCtx.globalAlpha = 0.8;
+        dmCtx.fillStyle = '#000';
+        dmCtx.fillRect(0,0,w,h);
+
+        dmCtx.fillStyle = 'var(--accent-color)';
+        dmCtx.globalAlpha = 0.5;
+        state.dmParticles.forEach(p => {
+            const x = (p.x + 1) / 2 * w;
+            const y = (p.y + 1) / 2 * h;
+            dmCtx.beginPath();
+            dmCtx.arc(x, y, 1.5, 0, 2*Math.PI);
+            dmCtx.fill();
+        });
+        dmCtx.globalAlpha = 1.0;
+    }
+
+    function drawPotential() {
+        const w = potentialCanvas.width;
+        const h = potentialCanvas.height;
+        potentialCtx.fillStyle = 'var(--code-bg)';
+        potentialCtx.fillRect(0,0,w,h);
+
+        potentialCtx.strokeStyle = 'var(--accent-color)';
+        potentialCtx.lineWidth = 2;
+        potentialCtx.beginPath();
+
+        const maxPot = Math.max(...state.potential.map(Math.abs), 1);
+
+        for (let i = 0; i < state.gridSize/2; i++) {
+            const x = i / (state.gridSize/2) * w;
+            const y = h/2 - (state.potential[i] / maxPot) * h/2;
+            if(i===0) potentialCtx.moveTo(x,y); else potentialCtx.lineTo(x,y);
+        }
+        potentialCtx.stroke();
+    }
+
+    function drawDensity() {
+        const w = densityCanvas.width;
+        const h = densityCanvas.height;
+        densityCtx.fillStyle = 'var(--code-bg)';
+        densityCtx.fillRect(0,0,w,h);
+
+        const numBins = 20;
+        const bins = new Array(numBins).fill(0);
+        state.dmParticles.forEach(p => {
+            const r = Math.sqrt(p.x*p.x + p.y*p.y);
+            const bin = Math.floor(r * numBins);
+            if (bin < numBins) {
+                bins[bin]++;
+            }
+        });
+
+        const maxDensity = Math.max(...bins, 1);
+        densityCtx.fillStyle = 'var(--accent-color)';
+        const binWidth = w / numBins;
+        for (let i = 0; i < numBins; i++) {
+            const barHeight = (bins[i] / maxDensity) * h;
+            densityCtx.fillRect(i * binWidth, h - barHeight, binWidth - 1, barHeight);
+        }
+    }
+
+    </script>
+</body>
+</html>

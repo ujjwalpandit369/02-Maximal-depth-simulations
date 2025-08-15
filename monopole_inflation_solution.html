@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Monopole Problem & Its Inflationary Solution</title>
+    <style>
+        :root {
+            --bg-color: #0c0c14;
+            --text-color: #e0e0e0;
+            --header-color: #ffffff;
+            --accent-color: #ffaa00;
+            --control-bg: #2a2a1a;
+            --control-border: #444433;
+            --slider-thumb: #ffaa00;
+            --slider-track: #555544;
+            --button-bg: #444433;
+            --button-hover: #ffaa00;
+            --panel-bg: #1f1f11;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --code-bg: #333322;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            grid-template-areas:
+                "header header"
+                "overview overview"
+                "sim controls"
+                "guide guide"
+                "theory theory"
+                "advanced advanced"
+                "faq faq"
+                "footer footer";
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "overview"
+                    "sim"
+                    "controls"
+                    "guide"
+                    "theory"
+                    "advanced"
+                    "faq"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 10px; }
+        .simulation-area { grid-area: sim; }
+        .controls-area { grid-area: controls; }
+        .overview-section { grid-area: overview; }
+        .guide-section { grid-area: guide; }
+        .theory-section { grid-area: theory; }
+        .advanced-section { grid-area: advanced; }
+        .faq-section { grid-area: faq; }
+        footer { grid-area: footer; text-align: center; font-size: 0.9em; padding-top: 20px; border-top: 1px solid var(--control-border); }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 300; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        #simulation-canvas {
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: #000;
+            border-radius: 8px;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        .control-group {
+            background-color: var(--control-bg);
+            border: 1px solid var(--control-border);
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .control-group input, .control-group select {
+            width: 100%;
+            cursor: pointer;
+        }
+        .control-group .value-display {
+            font-family: monospace;
+            color: var(--accent-color);
+            float: right;
+            font-size: 0.9em;
+        }
+        .control-group .description {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .main-controls button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--button-hover);
+            color: var(--bg-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        .main-controls button:hover {
+            background-color: var(--header-color);
+            border-color: var(--button-hover);
+        }
+        .main-controls button:disabled {
+            background-color: var(--button-bg);
+            color: #888;
+            cursor: not-allowed;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid var(--control-border);
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: var(--control-bg);
+            color: var(--header-color);
+        }
+
+        .info-panel {
+            background-color: var(--panel-bg);
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 3px solid var(--accent-color);
+        }
+        .info-panel blockquote {
+            font-style: italic;
+            color: #ccc;
+            border-left: 2px solid var(--accent-color);
+            padding-left: 10px;
+            margin-left: 5px;
+        }
+
+        .quantitative-report {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        .report-item {
+            background-color: var(--control-bg);
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .report-item .label {
+            font-size: 0.9em;
+            color: #ccc;
+        }
+        .report-item .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--accent-color);
+            font-family: monospace;
+        }
+        #omega-plot-canvas, #energy-pie-canvas {
+            width: 100%;
+            height: 150px;
+            background: var(--code-bg);
+            border-radius: 4px;
+        }
+        #diary-content {
+            height: 150px;
+            overflow-y: auto;
+            background-color: var(--code-bg);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Monopole Problem</h1>
+            <p>Visualizing the Inflationary Solution</p>
+        </header>
+
+        <div class="overview-section">
+            <h2>Overview</h2>
+            <p>One of the deepest puzzles in cosmology is why the universe isn't filled with magnetic monopoles—incredibly heavy, isolated north or south magnetic poles. Our best theories of particle physics predict they should have been created in abundance in the hot, early universe, so many that their gravity should have collapsed the universe billions of years ago. This glaring contradiction is the "Monopole Problem." This simulation visualizes both the problem and its leading solution: a brief, stupendous expansion of space itself, known as cosmic inflation. You will create a universe choked with monopoles, then trigger inflation to see how it "cleans house," diluting them into cosmic obscurity and saving the universe.</p>
+        </div>
+
+        <div class="simulation-area panel">
+            <canvas id="simulation-canvas"></canvas>
+        </div>
+
+        <div class="controls-area">
+            <div class="panel main-controls">
+                <button id="inflation-btn">Initiate Inflation</button>
+            </div>
+
+            <div class="panel">
+                <h3>Simulation Parameters</h3>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label>GUT Scale (GeV)<span id="gut-scale-value" class="value-display">1.0e+16</span></label>
+                        <input type="range" id="gut-scale-slider" min="14" max="18" value="16" step="0.1">
+                        <p class="description">Energy of the phase transition. Higher energy = heavier monopoles.</p>
+                    </div>
+                    <div class="control-group">
+                        <label>Initial Monopole Density<span id="density-value" class="value-display">High</span></label>
+                        <input type="range" id="density-slider" min="10" max="1000" value="1000" step="10">
+                        <p class="description">Number of monopoles created per unit volume.</p>
+                    </div>
+                    <div class="control-group">
+                        <label>Inflationary e-folds (N)<span id="efolds-value" class="value-display">60</span></label>
+                        <input type="range" id="efolds-slider" min="1" max="100" value="60" step="1">
+                        <p class="description">Duration/power of inflation. N=60 is the magic number.</p>
+                    </div>
+                    <div class="control-group">
+                        <label for="volume-select">Simulation Volume</label>
+                        <select id="volume-select">
+                            <option value="hubble">Our Hubble Volume</option>
+                            <option value="patch">A Small Patch</option>
+                        </select>
+                        <p class="description">Reference frame for the visualization.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>A Cosmologist's Diary</h3>
+                <div id="diary-content">
+                    <p>STATUS: Universe initialized. Awaiting phase transition...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-section">
+            <h2>Quantitative Universe Report</h2>
+            <div class="quantitative-report">
+                <div class="report-item">
+                    <div class="label">Monopoles in Observable Volume</div>
+                    <div id="monopole-count-value" class="value">0</div>
+                </div>
+                <div class="report-item">
+                    <div class="label">Avg. Monopole Separation</div>
+                    <div id="separation-value" class="value">0</div>
+                    <span style="font-size:0.8em">(in units of initial box size)</span>
+                </div>
+                <div class="report-item" style="grid-column: 1 / -1;">
+                    <div class="label">Energy Density Budget</div>
+                    <canvas id="energy-pie-canvas"></canvas>
+                </div>
+                <div class="report-item" style="grid-column: 1 / -1;">
+                    <div class="label">Density Parameter (Ω) History</div>
+                    <canvas id="omega-plot-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>The Monopole Problem & The Inflationary Fix</h2>
+
+            <h3>Part A: The Problem in Detail - A Cosmic Overdose</h3>
+            <p>To understand the monopole problem, we need to journey back to the first fractions of a second after the Big Bang. The universe was incredibly hot and dense, and the fundamental forces of nature we see today (gravity, electromagnetism, the strong and weak nuclear forces) were believed to be merged into a single "superforce." As the universe expanded and cooled, this unity shattered in a series of "phase transitions," similar to how steam condenses into water.</p>
+            <p>Many leading theories, known as <strong>Grand Unified Theories (GUTs)</strong>, propose that the strong and electroweak forces were unified at an immense energy, corresponding to a temperature of about <strong>10¹⁶ GeV</strong> (your first slider!). When the universe cooled below this point, the GUT symmetry broke. This is where the trouble starts.</p>
+
+            <p><strong>The Kibble Mechanism:</strong> A physicist named Tom Kibble realized that such a phase transition wouldn't happen neatly and uniformly everywhere at once. Instead, different regions of the universe would "choose" how to break the symmetry independently. Think of a large frozen lake. As the water freezes, ice crystals form and grow, but their crystalline axes (their orientation) are random. Where these different domains of ice meet, you get defects—cracks and boundaries.</p>
+            <p>In the early universe, where different GUT domains met, the defects created were not cracks, but incredibly stable, massive particles called <strong>magnetic monopoles</strong>. A monopole is a particle that has a net "magnetic charge"—an isolated north or south pole, something never observed in nature (a normal magnet is always a dipole, with a north and a south pole). The theory predicts that roughly one monopole should form per "causal horizon"—a region of space that was causally connected at the time. Since these regions were tiny, this leads to a catastrophic prediction: the universe should be absolutely teeming with monopoles.</p>
+
+            <p><strong>The Calculation of Doom:</strong></p>
+            <code>(Predicted Monopole Density) &times; (Predicted Monopole Mass) = Catastrophe</code>
+            <p>A single monopole is predicted to have a mass around the GUT scale, about 10¹⁶ times the mass of a proton. They are fantastically heavy. If you combine their predicted abundance with their predicted mass, you find that the total mass-energy density of monopoles should have been many, many orders of magnitude greater than the density of all the matter and radiation we see today. Such a high density would mean the universe's <strong>Omega (Ω)</strong> parameter was vastly greater than 1. The universe's own gravity would have been so strong that it would have halted the expansion and caused a "Big Crunch" when it was only a few thousand years old. Yet, here we are, 13.8 billion years later. This is the monopole problem: a direct, dramatic conflict between plausible particle physics and observed cosmology.</p>
+
+            <h3>Part B: Cosmic Inflation as the Savior</h3>
+            <p>In 1980, Alan Guth proposed a radical solution. What if, shortly after the Big Bang, the universe underwent a period of brief but astonishingly rapid, exponential expansion? This is <strong>cosmic inflation</strong>.</p>
+            <p><strong>Analogy: The Ultimate Balloon.</strong> Imagine you have a tiny, crumpled balloon with intricate drawings all over it. Now, you inflate this balloon to a colossal size—say, the size of the Earth. If you are an ant standing on the surface of this giant balloon, what do you see?
+            <ol>
+                <li><strong>It looks flat.</strong> The original curvature of the tiny balloon has been stretched out so much that your local patch appears perfectly flat. This solves the "flatness problem" in cosmology (why Ω is so close to 1).</li>
+                <li><strong>The drawings are gone.</strong> The intricate drawings that were once crowded together are now spread out over a surface area trillions of times larger. The density of drawings in your local patch has dropped to effectively zero.</li>
+            </ol>
+            </p>
+            <p>Inflation does exactly this to the universe. It takes the "drawings"—the unwanted monopoles—and spreads them out over an unimaginably vast volume. The mechanism is a hypothetical field called the "inflaton field," which for a short period of time had a large energy density that drove space to expand exponentially. The number of "e-folds" (your slider) tells you how much it expanded. To solve the monopole problem, we need about <strong>N=60 e-folds</strong>. This means the universe's size increased by a factor of e⁶⁰, or roughly 10²⁶. A single atomic nucleus would be stretched to a volume larger than our entire observable galaxy.</p>
+            <p>After this burst, inflation stops. The dense sea of monopoles still exists, but it has been diluted to almost nothing. The chance of finding a single monopole within the entire observable universe becomes vanishingly small. The problem is solved not by getting rid of the monopoles, but by making the universe so incomprehensibly huge that we are stranded in a vast, empty (of monopoles) desert.</p>
+
+            <h3>Part C: The Price of a Solution - The Multiverse</h3>
+            <p>Inflation is a powerful theory, but it comes with a mind-bending consequence. The process of inflation is driven by quantum mechanics, and it's unlikely to have stopped neatly everywhere at the same time. In most models, once inflation starts, it never completely stops. It's "eternal."</p>
+            <p>While inflation stopped in our region of space, allowing our universe to form, it continues in other regions far beyond our cosmic horizon. These regions continue to expand exponentially, and within them, new "bubble universes" can form where inflation stops locally. This picture is called <strong>eternal inflation</strong>, and it paints a picture of a "multiverse"—a possibly infinite fractal-like structure of countless universes, each potentially with different properties or even different laws of physics. Our universe is just one bubble in a vast, inflating cosmic ocean. The solution to why our home is so comfortable (flat, no monopoles) might be that we live in just one of an infinite number of universes, and we simply couldn't exist in the others.</p>
+        </div>
+
+        <div class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+
+            <h3>1. Timing is Everything: Inflation Before or After the GUT Transition?</h3>
+            <p>The standard model presented here assumes the GUT phase transition happens, creates monopoles, and *then* inflation kicks in to dilute them. But what if the timing was different?
+            <strong>If inflation happened *before* the GUT transition,</strong> the problem is avoided entirely. The universe would inflate first, then cool down to the GUT temperature. The phase transition would still occur, but in a much larger, colder, and already-flat universe. Monopoles would still form, but the post-inflationary universe is so vast that the regions of independent "choices" (the causal horizons) are enormous. The density of defects would be naturally low from the start. We might only expect a handful of monopoles in the entire observable universe, which is perfectly compatible with observations.
+            <strong>Arguments for/against:</strong> This is an elegant solution, but it requires the inflaton field and its physics to be separate from GUT physics. Many models try to tie the inflaton to GUTs, making it natural for inflation to be triggered by the GUT phase transition itself. The exact timing and relationship between the inflaton and other fields is one of the biggest open questions in theoretical physics.</p>
+
+            <h3>2. Monopole Production During Inflation</h3>
+            <p>Inflation is a quantum process. The inflaton field itself is subject to quantum fluctuations. It's possible that these fluctuations could be large enough to briefly "kick" the universe back into a state where monopoles can be created. This would lead to a very low, continuous production of monopoles *during* the inflationary epoch.
+            <strong>Modeling this:</strong> Instead of a single burst of monopoles at the beginning, you would add a small probability of a new monopole appearing at a random location in each time step of the simulation.
+            <strong>Would they be diluted?</strong> Yes, mostly. A monopole created early in inflation would be diluted away just like the primordial ones. However, a monopole created very near the *end* of inflation would not have time to be diluted significantly. This could lead to a small, but potentially detectable, residual population of monopoles. Searching for such a signature is an indirect way to probe the physics of the inflationary era itself.</p>
+
+            <h3>3. The Reheating Problem: A Monopole Encore?</h3>
+            <p>At the end of inflation, the universe is vast, flat, and empty... but it's also cold. The energy that drove inflation is stored in the inflaton field itself. This energy must be converted into the particles we see today (quarks, photons, etc.). This process is called <strong>reheating</strong>.
+            <strong>Modeling this:</strong> You would add a new phase to the simulation after inflation. The inflaton energy density (from the pie chart) would decay exponentially, while a new "Radiation" component would grow to take its place.
+            <strong>The recreated problem:</strong> What if the reheating temperature is very high? If T_reheat > T_GUT, the universe becomes hot enough to restore the GUT symmetry, only for it to break again as it cools. This would trigger a second round of monopole production *after* inflation has already ended, recreating the monopole problem all over again!
+            <strong>Proposed solutions:</strong> This possibility places tight constraints on models. Either the reheating temperature must be lower than the GUT temperature, or a second, brief period of "thermal inflation" might be required to dilute this new batch of monopoles. This shows how solving one problem in cosmology often leads to new, more subtle ones.</p>
+        </div>
+
+        <footer>
+            <p>Monopole Inflation Simulator. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+
+    <script>
+    window.onload = () => {
+        try {
+            init();
+        } catch (e) {
+            console.error("Initialization failed:", e);
+            document.body.innerHTML = "A critical error occurred during initialization. Please check the console.";
+        }
+    };
+
+    // --- GLOBAL STATE & PARAMETERS ---
+    const config = {
+        initialBoxSize: 100,
+        observableVolumeFactor: 0.1, // The central "observable" part of the box
+    };
+
+    const state = {
+        phase: 'PRE_INFLATION', // PRE_INFLATION, INFLATING, POST_INFLATION
+        monopoles: [],
+        boxSize: config.initialBoxSize,
+        currentEFolds: 0,
+        animationFrameId: null,
+        params: {
+            gutScale: 1e16,
+            initialDensity: 1000,
+            targetEFolds: 60,
+            volumeMode: 'hubble', // or 'patch'
+        },
+        omegaHistory: [],
+    };
+
+    // --- DOM ELEMENTS ---
+    let canvas, ctx, pieCanvas, pieCtx, omegaCanvas, omegaCtx;
+    const ui = {};
+
+    function cacheDOMElements() {
+        canvas = document.getElementById('simulation-canvas');
+        ctx = canvas.getContext('2d');
+        pieCanvas = document.getElementById('energy-pie-canvas');
+        pieCtx = pieCanvas.getContext('2d');
+        omegaCanvas = document.getElementById('omega-plot-canvas');
+        omegaCtx = omegaCanvas.getContext('2d');
+
+        const ids = [
+            'inflation-btn', 'gut-scale-slider', 'gut-scale-value', 'density-slider', 'density-value',
+            'efolds-slider', 'efolds-value', 'volume-select', 'diary-content',
+            'monopole-count-value', 'separation-value'
+        ];
+        ids.forEach(id => ui[id.replace(/-(\w)/g, (m, g) => g.toUpperCase())] = document.getElementById(id));
+    }
+
+    // --- INITIALIZATION ---
+    function init() {
+        cacheDOMElements();
+        setupEventListeners();
+        resetSimulation();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function setupEventListeners() {
+        ui.inflationBtn.addEventListener('click', startInflation);
+        ui.gutScaleSlider.addEventListener('input', e => {
+            state.params.gutScale = Math.pow(10, parseFloat(e.target.value));
+            ui.gutScaleValue.textContent = state.params.gutScale.toExponential(1);
+        });
+        ui.densitySlider.addEventListener('input', e => {
+            if (state.phase !== 'PRE_INFLATION') return;
+            state.params.initialDensity = parseInt(e.target.value);
+            ui.densityValue.textContent = state.params.initialDensity > 500 ? 'High' : (state.params.initialDensity > 100 ? 'Medium' : 'Low');
+            generateMonopoles();
+        });
+        ui.efoldsSlider.addEventListener('input', e => {
+            state.params.targetEFolds = parseInt(e.target.value);
+            ui.efoldsValue.textContent = state.params.targetEFolds;
+        });
+        ui.volumeSelect.addEventListener('change', e => {
+            state.params.volumeMode = e.target.value;
+        });
+    }
+
+    // --- SIMULATION LOGIC ---
+    function resetSimulation() {
+        state.phase = 'PRE_INFLATION';
+        state.boxSize = config.initialBoxSize;
+        state.currentEFolds = 0;
+        state.omegaHistory = [];
+        ui.inflationBtn.disabled = false;
+
+        generateMonopoles();
+        updateDiary("STATUS: Universe initialized. Awaiting phase transition...");
+        updateDiary("SYSTEM: GUT symmetry breaking complete. Monopoles formed.");
+        updateDiary(`WARNING: Monopole density is critically high. Ω_monopoles >> 1.`);
+        updateDiary("ADVICE: Initiate inflation to solve the problem.");
+    }
+
+    function generateMonopoles() {
+        state.monopoles = [];
+        for (let i = 0; i < state.params.initialDensity; i++) {
+            state.monopoles.push({
+                x: (Math.random() - 0.5) * state.boxSize,
+                y: (Math.random() - 0.5) * state.boxSize,
+                z: (Math.random() - 0.5) * state.boxSize,
+            });
+        }
+    }
+
+    function startInflation() {
+        if (state.phase !== 'PRE_INFLATION') return;
+        state.phase = 'INFLATING';
+        ui.inflationBtn.disabled = true;
+        updateDiary("EVENT: Inflation initiated! The fabric of space is expanding exponentially.");
+    }
+
+    function gameLoop(timestamp) {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function update() {
+        if (state.phase === 'INFLATING') {
+            const eFoldsPerSecond = 15;
+            const eFoldsThisFrame = (eFoldsPerSecond / 60); // Assuming 60fps
+
+            if (state.currentEFolds < state.params.targetEFolds) {
+                state.currentEFolds += eFoldsThisFrame;
+                const expansionFactor = Math.exp(eFoldsThisFrame);
+                state.boxSize *= expansionFactor;
+                state.monopoles.forEach(m => {
+                    m.x *= expansionFactor;
+                    m.y *= expansionFactor;
+                    m.z *= expansionFactor;
+                });
+            } else {
+                state.currentEFolds = state.params.targetEFolds;
+                state.phase = 'POST_INFLATION';
+                updateDiary("EVENT: Inflation has ended.");
+                updateDiary(`STATUS: Universe expanded by e^${Math.round(state.currentEFolds)}. Monopole density is now negligible.`);
+                updateDiary("SUCCESS: The Monopole Problem is solved.");
+            }
+        }
+
+        // Update Omega history
+        const omega = calculateOmega();
+        if (state.omegaHistory.length > 200) state.omegaHistory.shift();
+        state.omegaHistory.push(omega);
+    }
+
+    function calculateOmega() {
+        const initialVolume = config.initialBoxSize ** 3;
+        const currentVolume = state.boxSize ** 3;
+        const monopoleDensity = state.params.initialDensity / currentVolume;
+        // This is a proxy. Let's say initial density gave Omega = 1000
+        const initialOmega = (state.params.initialDensity / 10) * (state.params.gutScale / 1e16);
+        const currentOmega = initialOmega * (initialVolume / currentVolume);
+
+        // During inflation, the inflaton field dominates with Omega=1
+        if(state.phase === 'INFLATING') {
+            return 1.0 + currentOmega; // Inflaton drives it to 1, monopoles are a tiny bit extra
+        }
+        if(state.phase === 'POST_INFLATION') {
+            return 1.0; // Assume it settled perfectly
+        }
+        return initialOmega;
+    }
+
+    function updateDiary(message) {
+        const p = document.createElement('p');
+        p.textContent = message;
+        ui.diaryContent.prepend(p);
+    }
+
+    // --- DRAWING ---
+    function draw() {
+        // Main simulation canvas
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+
+        let viewScale;
+        if (state.params.volumeMode === 'hubble') {
+            // Keep the view fixed, things expand out of it
+            viewScale = canvas.width / config.initialBoxSize;
+        } else { // 'patch'
+            // Zoom out to keep the whole box in view
+            viewScale = canvas.width / state.boxSize;
+        }
+
+        drawGrid(centerX, centerY, viewScale);
+        drawMonopoles(centerX, centerY, viewScale);
+
+        if (state.params.volumeMode === 'hubble') {
+            drawObservableVolume(centerX, centerY);
+        }
+
+        // Update report
+        updateReport();
+
+        // Draw charts
+        drawOmegaPlot();
+        drawEnergyPie();
+    }
+
+    function project(x, y, z, scale) {
+        const perspective = 1.5;
+        const f = (canvas.width / 2) / (z + canvas.width / 2);
+        return {
+            x: x * f * scale,
+            y: y * f * scale,
+            f: f
+        };
+    }
+
+    function drawGrid(cx, cy, scale) {
+        ctx.strokeStyle = 'rgba(255, 170, 0, 0.2)';
+        ctx.lineWidth = 1;
+        const lines = 10;
+        const step = state.boxSize / lines;
+
+        for (let i = 0; i <= lines; i++) {
+            const p = (i - lines / 2) * step;
+            // Lines in X-Y plane
+            const p1 = project(p, -state.boxSize/2, -state.boxSize/2, scale);
+            const p2 = project(p, state.boxSize/2, -state.boxSize/2, scale);
+            ctx.beginPath();
+            ctx.moveTo(cx + p1.x, cy + p1.y);
+            ctx.lineTo(cx + p2.x, cy + p2.y);
+            ctx.stroke();
+
+            const p3 = project(-state.boxSize/2, p, -state.boxSize/2, scale);
+            const p4 = project(state.boxSize/2, p, -state.boxSize/2, scale);
+            ctx.beginPath();
+            ctx.moveTo(cx + p3.x, cy + p3.y);
+            ctx.lineTo(cx + p4.x, cy + p4.y);
+            ctx.stroke();
+        }
+    }
+
+    function drawMonopoles(cx, cy, scale) {
+        state.monopoles.sort((a,b) => b.z - a.z); // Draw distant ones first
+
+        state.monopoles.forEach(m => {
+            const p = project(m.x, m.y, m.z, scale);
+            const radius = 2 * p.f;
+
+            // Culling
+            if (cx + p.x < 0 || cx + p.x > canvas.width || cy + p.y < 0 || cy + p.y > canvas.height) {
+                return;
+            }
+
+            ctx.beginPath();
+            ctx.arc(cx + p.x, cy + p.y, radius, 0, 2 * Math.PI);
+            ctx.fillStyle = `rgba(255, 170, 0, ${Math.max(0.2, p.f)})`;
+            ctx.fill();
+        });
+    }
+
+    function drawObservableVolume(cx, cy) {
+        ctx.strokeStyle = 'rgba(0, 170, 255, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        const size = canvas.width * config.observableVolumeFactor;
+        ctx.strokeRect(cx - size / 2, cy - size / 2, size, size);
+        ctx.setLineDash([]);
+    }
+
+    function updateReport() {
+        // Monopole Count
+        const obsSize = config.initialBoxSize * config.observableVolumeFactor;
+        const count = state.monopoles.filter(m =>
+            Math.abs(m.x) < obsSize/2 && Math.abs(m.y) < obsSize/2 && Math.abs(m.z) < obsSize/2
+        ).length;
+        ui.monopoleCountValue.textContent = count;
+
+        // Avg Separation
+        const separation = state.boxSize / Math.pow(state.params.initialDensity, 1/3);
+        ui.separationValue.textContent = (separation / config.initialBoxSize).toExponential(2);
+    }
+
+    function drawOmegaPlot() {
+        omegaCtx.fillStyle = '#222233';
+        omegaCtx.fillRect(0, 0, omegaCanvas.width, omegaCanvas.height);
+
+        omegaCtx.strokeStyle = 'rgba(255, 170, 0, 0.8)';
+        omegaCtx.lineWidth = 2;
+        omegaCtx.beginPath();
+
+        state.omegaHistory.forEach((omega, i) => {
+            const x = (i / state.omegaHistory.length) * omegaCanvas.width;
+            const logMax = Math.log(1000);
+            const y = omegaCanvas.height - (Math.log(omega) / logMax) * omegaCanvas.height;
+            if (i === 0) omegaCtx.moveTo(x, y);
+            else omegaCtx.lineTo(x, y);
+        });
+        omegaCtx.stroke();
+
+        // Line for Omega = 1
+        omegaCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        omegaCtx.lineWidth = 1;
+        omegaCtx.setLineDash([2,2]);
+        const y1 = omegaCanvas.height - (Math.log(1) / logMax) * omegaCanvas.height;
+        omegaCtx.beginPath();
+        omegaCtx.moveTo(0, y1);
+        omegaCtx.lineTo(omegaCanvas.width, y1);
+        omegaCtx.stroke();
+        omegaCtx.setLineDash([]);
+    }
+
+    function drawEnergyPie() {
+        pieCtx.clearRect(0, 0, pieCanvas.width, pieCanvas.height);
+        const cx = pieCanvas.width / 2;
+        const cy = pieCanvas.height / 2;
+        const radius = Math.min(cx, cy) * 0.8;
+
+        let monopoleFraction = 0.999;
+        if (state.phase === 'INFLATING') {
+            const initialOmega = (state.params.initialDensity / 10) * (state.params.gutScale / 1e16);
+            monopoleFraction = initialOmega / Math.exp(state.currentEFolds * 3);
+            monopoleFraction = Math.min(monopoleFraction, 1);
+        } else if (state.phase === 'POST_INFLATION') {
+            monopoleFraction = 0;
+        }
+
+        // Monopole slice
+        pieCtx.beginPath();
+        pieCtx.moveTo(cx, cy);
+        pieCtx.arc(cx, cy, radius, 0, monopoleFraction * 2 * Math.PI);
+        pieCtx.closePath();
+        pieCtx.fillStyle = '#ffaa00';
+        pieCtx.fill();
+
+        // Inflaton/radiation slice
+        pieCtx.beginPath();
+        pieCtx.moveTo(cx, cy);
+        pieCtx.arc(cx, cy, radius, monopoleFraction * 2 * Math.PI, 2 * Math.PI);
+        pieCtx.closePath();
+        pieCtx.fillStyle = '#00aaff';
+        pieCtx.fill();
+    }
+
+    </script>
+</body>
+</html>

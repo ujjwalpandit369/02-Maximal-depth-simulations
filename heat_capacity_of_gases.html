@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Cosmic Boiler: Degrees of Freedom & Heat Capacity</title>
+    <style>
+        :root {
+            --bg-color: #14140c;
+            --text-color: #e0e0e0;
+            --header-color: #ffffff;
+            --accent-color: #4caf50; /* Green for thermal/energy */
+            --control-bg: #2a2a1a;
+            --control-border: #444433;
+            --slider-thumb: #4caf50;
+            --slider-track: #555544;
+            --button-bg: #444433;
+            --button-hover: #4caf50;
+            --panel-bg: #1f1f11;
+            --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --code-bg: #333322;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            grid-template-areas:
+                "header header"
+                "overview overview"
+                "sim controls"
+                "guide guide"
+                "theory theory"
+                "advanced advanced"
+                "footer footer";
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "overview"
+                    "sim"
+                    "controls"
+                    "guide"
+                    "theory"
+                    "advanced"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 10px; }
+        .simulation-area { grid-area: sim; }
+        .controls-area { grid-area: controls; }
+        .overview-section { grid-area: overview; }
+        .guide-section { grid-area: guide; }
+        .theory-section { grid-area: theory; }
+        .advanced-section { grid-area: advanced; }
+        footer { grid-area: footer; text-align: center; font-size: 0.9em; padding-top: 20px; border-top: 1px solid var(--control-border); }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 300; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        #simulation-canvas {
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: #000;
+            border-radius: 8px;
+            border: 2px solid var(--control-border);
+        }
+
+        .control-group {
+            background-color: var(--control-bg);
+            border: 1px solid var(--control-border);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        .control-group label {
+            display: block;
+            font-weight: bold;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .control-group input, .control-group select {
+            width: 100%;
+        }
+        .control-group .value-display {
+            font-family: monospace;
+            color: var(--accent-color);
+            float: right;
+            font-size: 0.9em;
+        }
+        .control-group .description {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .toggle-button {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .toggle-button.active {
+            background-color: var(--button-hover);
+            color: var(--bg-color);
+            font-weight: bold;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        .dashboard-item { text-align: center; }
+        .dashboard-item canvas {
+            width: 100%;
+            height: 200px;
+            background: var(--code-bg);
+            border-radius: 4px;
+        }
+        .dashboard-item h4 { margin-top: 0; margin-bottom: 5px; font-weight: normal; color: #ccc; }
+
+        #thermo-analysis {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: center;
+        }
+        .thermo-item .label { font-size: 0.9em; color: #ccc; }
+        .thermo-item .value { font-size: 1.5em; font-weight: bold; color: var(--accent-color); font-family: monospace;}
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Cosmic Boiler</h1>
+            <p>Degrees of Freedom & Heat Capacity</p>
+        </header>
+
+        <div class="overview-section">
+            <h2>Overview</h2>
+            <p>Why does it take more energy to heat up a cup of water than a cup of copper? The answer lies deep in the microscopic structure of matter. This simulation explores the profound connection between an object's microscopic "degrees of freedom"—the various ways its molecules can move, rotate, and vibrate—and its macroscopic heat capacity. You will fill a virtual container with different gases and discover why a simple monatomic gas is "cheaper" to heat than a complex diatomic one. Crucially, you will see how the strange rules of quantum mechanics "freeze out" degrees of freedom at low temperatures, a phenomenon that baffled 19th-century physicists and paved the way for the quantum revolution.</p>
+        </div>
+
+        <div class="simulation-area panel">
+            <canvas id="simulation-canvas"></canvas>
+        </div>
+
+        <div class="controls-area">
+            <div class="panel">
+                <h3>System Setup</h3>
+                <div class="control-group">
+                    <label for="gas-type-select">Gas Molecule Type</label>
+                    <select id="gas-type-select">
+                        <option value="monatomic">Monatomic (e.g., Helium)</option>
+                        <option value="diatomic">Diatomic (e.g., N₂)</option>
+                        <option value="polyatomic">Polyatomic (e.g., CH₄)</option>
+                    </select>
+                    <p class="description">Each type has different ways to store energy.</p>
+                </div>
+                <div class="control-group">
+                    <label>System Temperature (K)<span id="temp-value" class="value-display">300</span></label>
+                    <input type="range" id="temp-slider" min="1" max="10000" value="300" step="1">
+                    <p class="description">Controls the total energy of the system. Logarithmic scale.</p>
+                </div>
+                 <div class="control-group">
+                    <label>Quantum Effects</label>
+                    <button id="quantum-toggle" class="toggle-button active">Quantum Freezing: ON</button>
+                    <p class="description">Toggles between realistic quantum and classical models.</p>
+                </div>
+            </div>
+             <div class="panel">
+                <h3>Thermodynamic Analysis</h3>
+                <div id="thermo-analysis">
+                    <div class="thermo-item">
+                        <div class="label">Internal Energy (U)</div>
+                        <div id="internal-energy-value" class="value">0</div>
+                    </div>
+                    <div class="thermo-item">
+                        <div class="label">Pressure (P)</div>
+                        <div id="pressure-value" class="value">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="guide-section dashboard">
+            <div class="dashboard-item">
+                <h4>Energy Distribution</h4>
+                <canvas id="energy-pie-canvas"></canvas>
+            </div>
+            <div class="dashboard-item">
+                <h4>Heat Capacity (Cᵥ vs T)</h4>
+                <canvas id="cv-plot-canvas"></canvas>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>The Physics of Heat: Equipartition and Quantization</h2>
+
+            <h3>Part A: The Equipartition Theorem - A Fair Share of Energy</h3>
+            <p>In the 19th century, physicists developed a powerful idea called the <strong>Equipartition Theorem</strong>. It's a cornerstone of classical statistical mechanics and provides a surprisingly simple rule for understanding thermal energy. The theorem states:
+            <blockquote>In thermal equilibrium, the total energy of a system is shared equally among all its accessible quadratic degrees of freedom.</blockquote>
+            Each of these "degrees of freedom" (DoF) gets, on average, an amount of energy equal to <strong>½k<sub>B</sub>T</strong>, where k<sub>B</sub> is the Boltzmann constant and T is the temperature.</p>
+
+            <p><strong>Analogy: Pockets for Energy.</strong> Think of a molecule as a person and energy as money. A "degree of freedom" is like a pocket.
+            <ul>
+                <li>A simple, spherical <strong>monatomic gas</strong> atom is like a person with only 3 pockets, one for motion in each direction (X, Y, Z). These are <strong>translational</strong> DoF.</li>
+                <li>A <strong>diatomic molecule</strong> (like N₂) is a more complex person. It has the same 3 pockets for translational motion. But it can also spin like a baton (not along its own axis, so that's 2 <strong>rotational</strong> DoF) and the bond between its atoms can vibrate like a spring (1 pocket for kinetic vibrational energy, 1 for potential vibrational energy). This person has 3 + 2 + 2 = 7 pockets in total.</li>
+            </ul>
+            The Equipartition Theorem says that when you add heat (money) to a room full of these people, the money is distributed equally among all available pockets. Since the diatomic people have more pockets, they can hold more money for the same level of "excitement" (temperature). This means it takes more energy to raise the temperature of a diatomic gas than a monatomic gas. Its <strong>heat capacity</strong> is higher.</p>
+
+            <h3>Part B: A DoF Census</h3>
+            <p>The heat capacity of a gas is directly related to its total number of active degrees of freedom (f). The internal energy (U) of one mole of the gas is U = (f/2)RT, and the molar heat capacity at constant volume (Cᵥ) is the derivative of this with respect to temperature, so <strong>Cᵥ = (f/2)R</strong>, where R is the ideal gas constant.
+            <br>Let's count the classical degrees of freedom:
+            <ul>
+                <li><strong>Monatomic Gas:</strong> 3 translational DoF. Classically, f=3. Predicted Cᵥ = 3/2 R. (Correct!)</li>
+                <li><strong>Diatomic Gas:</strong> 3 translational + 2 rotational + 2 vibrational. Classically, f=7. Predicted Cᵥ = 7/2 R. (Wrong at room temp!)</li>
+                <li><strong>Polyatomic Gas (non-linear, e.g., CH₄):</strong> 3 translational + 3 rotational + many vibrational. Predicted Cᵥ is very high.</li>
+            </ul>
+            For over 50 years, there was a major problem: experiments showed that for N₂ at room temperature, Cᵥ ≈ 5/2 R, not 7/2 R. It seemed the vibrational degrees of freedom were mysteriously "missing." This was a major failure of classical physics.</p>
+
+            <h3>Part C: The Quantum Revolution - Freezing Freedom</h3>
+            <p>The solution came from the quantum revolution. Max Planck and Albert Einstein showed that energy is not continuous; it comes in discrete packets, or "quanta." A molecule cannot rotate or vibrate with just any amount of energy. It must absorb a minimum, fixed quantum of energy to get to the first excited rotational or vibrational state.
+            <br>The average thermal energy available to a molecule is roughly k<sub>B</sub>T.
+            <ul>
+                <li><strong>Rotational Levels:</strong> The energy gaps between rotational states are very small. Even at low temperatures, k<sub>B</sub>T is much larger than the energy needed to rotate, so rotational DoF are easily activated. (Characteristic rotational temperature, T_rot, is ~2 K for N₂).</li>
+                <li><strong>Vibrational Levels:</strong> The energy gaps between vibrational states are much larger. The bond is stiff! At room temperature (~300 K), the average thermal energy k<sub>B</sub>T is much *less* than the energy needed to excite the first vibrational state. The molecules simply don't have enough energy to activate this DoF. It is "frozen out." (Characteristic vibrational temperature, T_vib, is ~2000 K for N₂).</li>
+            </ul>
+            This is the key insight! Degrees of freedom are not always accessible. They only "turn on" when the temperature is high enough to overcome their quantum energy gap.
+            <br>This explains the experimental result for N₂:
+            <ul>
+                <li>At low T (< 50 K): Only translation is active. f=3, Cᵥ = 3/2 R.</li>
+                <li>At room T: Translation and rotation are active. f=3+2=5, Cᵥ = 5/2 R.</li>
+                <li>At high T (> 2000 K): Translation, rotation, and vibration are active. f=3+2+2=7, Cᵥ = 7/2 R.</li>
+            </ul>
+            The heat capacity comes in steps! You can see this directly on the Cᵥ vs. T plot in the simulation when "Quantum Freezing" is enabled.</p>
+        </div>
+
+        <div class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+
+            <h3>1. Solids and the Dulong-Petit Law</h3>
+            <p>What about a solid crystal, like copper? In a simple model, each atom in the crystal lattice is an independent oscillator. It can vibrate in 3 dimensions (X, Y, Z). For each dimension, it has one degree of freedom for kinetic energy and one for potential energy. So, each atom has 3 (dimensions) &times; 2 (KE+PE) = 6 degrees of freedom.
+            By the Equipartition Theorem, the internal energy per mole should be U = (6/2)RT = 3RT. The heat capacity is therefore predicted to be <strong>Cᵥ ≈ 3R</strong>. This is the <strong>Dulong-Petit Law</strong>, and it works remarkably well for many solids at room temperature.
+            However, just like with gases, this classical law fails at low temperatures. As T → 0, Cᵥ also goes to 0. The reason is the same: the vibrational modes are "frozen out." The <strong>Einstein model</strong> treated the atoms as independent quantum oscillators and correctly predicted the drop in Cᵥ, but didn't perfectly match experiments. The later <strong>Debye model</strong> improved this by treating the vibrations not as independent atoms, but as collective modes (phonons) in the crystal, which gave an excellent prediction of Cᵥ ∝ T³ at low temperatures.</p>
+
+            <h3>2. Relativistic Effects</h3>
+            <p>The Equipartition Theorem relies on the energy of each DoF being a quadratic function of some variable (e.g., E = ½mv², E = ½Iω²). But at extremely high temperatures, where particles move at speeds close to the speed of light, the kinetic energy is given by the relativistic formula E = &gamma;mc² - mc², which is not quadratic in velocity.
+            As T approaches mc²/k<sub>B</sub>, the equipartition theorem breaks down. The heat capacity of a relativistic gas no longer stays constant but continues to rise with temperature. The degrees of freedom can absorb more and more energy, as there is no upper limit to a particle's kinetic energy. This is relevant in extreme astrophysical environments like the cores of neutron stars or the very early universe.</p>
+
+            <h3>3. The Electron Gas in a Metal</h3>
+            <p>A block of metal has atoms locked in a lattice, but it also has a "gas" of free-moving electrons. Classically, these electrons should behave like a monatomic gas, contributing 3/2 R to the total heat capacity. But experiments show they contribute almost nothing, except at very low temperatures. Why?
+            The reason is the <strong>Pauli Exclusion Principle</strong> and <strong>Fermi-Dirac statistics</strong>. Electrons are fermions, meaning no two electrons can occupy the same quantum state. At zero temperature, the electrons fill up all available energy levels up to a maximum energy called the <strong>Fermi energy (E_F)</strong>. To excite an electron, you have to give it enough energy to jump to an *unoccupied* state above E_F. For most electrons, buried deep in this "Fermi sea," there are no nearby empty states to jump to, so they are "frozen." Only the electrons very near the Fermi energy can be thermally excited. Because only a tiny fraction of electrons can participate, their contribution to the heat capacity is heavily suppressed until the temperature becomes comparable to the Fermi temperature (T_F = E_F/k<sub>B</sub>), which is often thousands of Kelvin.</p>
+        </div>
+
+        <footer>
+            <p>Cosmic Boiler Simulator. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+
+    <script>
+    // --- Simulation ---
+    window.onload = init;
+
+    let canvas, ctx, pieCanvas, pieCtx, cvCanvas, cvCtx;
+    const ui = {};
+
+    const state = {
+        phase: 'RUNNING',
+        molecules: [],
+        gasType: 'diatomic',
+        temp: 300,
+        useQuantum: true,
+        totalEnergy: 0,
+        dof: { trans: 0, rot: 0, vib: 0 },
+        numMolecules: 30,
+    };
+
+    // Constants for N2 (Diatomic)
+    const T_ROT = 5; // K
+    const T_VIB = 2000; // K
+
+    function init() {
+        cacheDOMElements();
+        setupEventListeners();
+        resetSimulation();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function cacheDOMElements() {
+        canvas = document.getElementById('simulation-canvas');
+        ctx = canvas.getContext('2d');
+        pieCanvas = document.getElementById('energy-pie-canvas');
+        pieCtx = pieCanvas.getContext('2d');
+        cvCanvas = document.getElementById('cv-plot-canvas');
+        cvCtx = cvCanvas.getContext('2d');
+
+        const ids = [
+            'gas-type-select', 'temp-slider', 'temp-value', 'quantum-toggle',
+            'internal-energy-value', 'pressure-value'
+        ];
+        ids.forEach(id => ui[id.replace(/-(\w)/g, (m, g) => g.toUpperCase())] = document.getElementById(id));
+    }
+
+    function setupEventListeners() {
+        ui.gasTypeSelect.addEventListener('change', e => {
+            state.gasType = e.target.value;
+            resetSimulation();
+        });
+        ui.tempSlider.addEventListener('input', e => {
+            // Use logarithmic scale
+            const minp = Math.log(1);
+            const maxp = Math.log(10000);
+            const scale = (maxp - minp) / (10000 - 1);
+            state.temp = Math.exp(minp + scale * (e.target.value - 1));
+            ui.tempValue.textContent = Math.round(state.temp);
+            updateSystem();
+        });
+        ui.quantumToggle.addEventListener('click', () => {
+            state.useQuantum = !state.useQuantum;
+            ui.quantumToggle.textContent = `Quantum Freezing: ${state.useQuantum ? 'ON' : 'OFF'}`;
+            ui.quantumToggle.classList.toggle('active', state.useQuantum);
+            updateSystem();
+        });
+    }
+
+    function resetSimulation() {
+        state.molecules = [];
+        for (let i = 0; i < state.numMolecules; i++) {
+            state.molecules.push(createMolecule());
+        }
+        updateSystem();
+    }
+
+    function createMolecule() {
+        return {
+            pos: { x: Math.random()*2-1, y: Math.random()*2-1, z: Math.random()*2-1 },
+            vel: { x: 0, y: 0, z: 0 },
+            orientation: { x: 0, y: 0, z: 0, w: 1 }, // Quaternion
+            angularVel: { x: 0, y: 0, z: 0 },
+            vibPhase: Math.random() * 2 * Math.PI,
+            vibAmp: 0
+        };
+    }
+
+    function updateSystem() {
+        // 1. Calculate active DoF
+        let f_trans = 3;
+        let f_rot = 0;
+        let f_vib = 0;
+
+        if (state.gasType === 'diatomic') {
+            f_rot = 2;
+            f_vib = 2;
+        } else if (state.gasType === 'polyatomic') {
+            f_rot = 3;
+            f_vib = 2 * (3 * 5 - 6); // Approximation for CH4 (5 atoms)
+        }
+
+        let active_f_rot = state.useQuantum ? (state.temp > T_ROT ? f_rot : 0) : f_rot;
+        let active_f_vib = state.useQuantum ? (state.temp > T_VIB ? f_vib : 0) : f_vib;
+
+        state.dof.trans = f_trans;
+        state.dof.rot = active_f_rot;
+        state.dof.vib = active_f_vib;
+
+        const total_f = state.dof.trans + state.dof.rot + state.dof.vib;
+
+        // 2. Calculate total energy U = f/2 * N * k * T
+        // Using arbitrary units where N*k = 1
+        state.totalEnergy = total_f * state.temp / 2;
+
+        // 3. Partition energy into molecule properties
+        const energyPerDof = state.totalEnergy / (total_f > 0 ? total_f * state.numMolecules : 1);
+
+        state.molecules.forEach(m => {
+            // Translation
+            const transE = state.dof.trans * energyPerDof;
+            const speed = Math.sqrt(2 * transE); // E = 1/2 v^2
+            m.vel = {
+                x: (Math.random()-0.5) * speed,
+                y: (Math.random()-0.5) * speed,
+                z: (Math.random()-0.5) * speed,
+            };
+
+            // Rotation
+            const rotE = state.dof.rot * energyPerDof;
+            const angularSpeed = Math.sqrt(2 * rotE);
+            m.angularVel = {
+                x: (Math.random()-0.5) * angularSpeed,
+                y: (Math.random()-0.5) * angularSpeed,
+                z: (Math.random()-0.5) * angularSpeed,
+            };
+
+            // Vibration
+            const vibE = state.dof.vib * energyPerDof;
+            m.vibAmp = Math.sqrt(2 * vibE);
+        });
+
+        // Update thermo analysis
+        ui.internalEnergyValue.textContent = state.totalEnergy.toExponential(2);
+        ui.pressureValue.textContent = (state.totalEnergy * 2/3).toExponential(2); // P ~ U/V
+    }
+
+    function gameLoop(timestamp) {
+        updateMolecules();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function updateMolecules() {
+        const dt = 0.01;
+        state.molecules.forEach(m => {
+            // Move
+            m.pos.x += m.vel.x * dt;
+            m.pos.y += m.vel.y * dt;
+            m.pos.z += m.vel.z * dt;
+
+            // Bounce off walls
+            if (Math.abs(m.pos.x) > 1) { m.pos.x = Math.sign(m.pos.x); m.vel.x *= -1; }
+            if (Math.abs(m.pos.y) > 1) { m.pos.y = Math.sign(m.pos.y); m.vel.y *= -1; }
+            if (Math.abs(m.pos.z) > 1) { m.pos.z = Math.sign(m.pos.z); m.vel.z *= -1; }
+
+            // Rotate (quaternion integration)
+            const q = m.orientation;
+            const av = m.angularVel;
+            const q_dot = {
+                w: -0.5 * (av.x * q.x + av.y * q.y + av.z * q.z),
+                x:  0.5 * (av.x * q.w + av.y * q.z - av.z * q.y),
+                y:  0.5 * (av.y * q.w + av.z * q.x - av.x * q.z),
+                z:  0.5 * (av.z * q.w + av.x * q.y - av.y * q.x)
+            };
+            q.w += q_dot.w * dt;
+            q.x += q_dot.x * dt;
+            q.y += q_dot.y * dt;
+            q.z += q_dot.z * dt;
+            const mag = Math.sqrt(q.w*q.w + q.x*q.x + q.y*q.y + q.z*q.z);
+            q.w /= mag; q.x /= mag; q.y /= mag; q.z /= mag;
+
+            // Vibrate
+            m.vibPhase += Math.sqrt(m.vibAmp) * dt * 50;
+        });
+    }
+
+    function draw() {
+        // Main sim canvas
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(canvas.width / 2, canvas.height / 2);
+
+        const sortedMolecules = state.molecules.slice().sort((a,b) => a.pos.z - b.pos.z);
+
+        sortedMolecules.forEach(m => {
+            const p = project(m.pos);
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            drawMolecule(m, p.scale);
+            ctx.restore();
+        });
+
+        ctx.restore();
+
+        // Dashboards
+        drawPieChart();
+        drawCvPlot();
+    }
+
+    function project(pos) {
+        const f = 250 / (250 + pos.z * 100);
+        return {
+            x: pos.x * f * 150,
+            y: pos.y * f * 150,
+            scale: f
+        };
+    }
+
+    function drawMolecule(m, scale) {
+        if (state.gasType === 'monatomic') {
+            ctx.fillStyle = 'var(--accent-color)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 5 * scale, 0, 2*Math.PI);
+            ctx.fill();
+        } else if (state.gasType === 'diatomic') {
+            const bondLength = 10 * scale * (1 + 0.2 * m.vibAmp * Math.sin(m.vibPhase));
+            const p1 = {x: -bondLength/2, y: 0, z: 0};
+            const p2 = {x: bondLength/2, y: 0, z: 0};
+
+            const rotatedP1 = rotate(p1, m.orientation);
+            const rotatedP2 = rotate(p2, m.orientation);
+
+            ctx.strokeStyle = '#aaa';
+            ctx.lineWidth = 2 * scale;
+            ctx.beginPath();
+            ctx.moveTo(rotatedP1.x, rotatedP1.y);
+            ctx.lineTo(rotatedP2.x, rotatedP2.y);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ff6347'; // Tomato
+            ctx.beginPath();
+            ctx.arc(rotatedP1.x, rotatedP1.y, 5 * scale, 0, 2*Math.PI);
+            ctx.fill();
+
+            ctx.fillStyle = '#4682b4'; // SteelBlue
+            ctx.beginPath();
+            ctx.arc(rotatedP2.x, rotatedP2.y, 5 * scale, 0, 2*Math.PI);
+            ctx.fill();
+        } else { // Polyatomic
+             const p = [
+                {x: 0, y:0, z:0},
+                {x: 1, y:1, z:1}, {x: 1, y:-1, z:-1},
+                {x: -1, y:1, z:-1}, {x: -1, y:-1, z:1}
+             ].map(v => rotate(v, m.orientation));
+
+            ctx.fillStyle = 'var(--accent-color)';
+            ctx.beginPath();
+            ctx.arc(p[0].x*10*scale, p[0].y*10*scale, 6 * scale, 0, 2*Math.PI);
+            ctx.fill();
+
+            ctx.fillStyle = '#fff';
+            for(let i=1; i<5; i++) {
+                ctx.beginPath();
+                ctx.arc(p[i].x*10*scale, p[i].y*10*scale, 3 * scale, 0, 2*Math.PI);
+                ctx.fill();
+            }
+        }
+    }
+
+    function rotate(p, q) {
+        const q_inv = { w: q.w, x: -q.x, y: -q.y, z: -q.z };
+        const p_q = { w: 0, x: p.x, y: p.y, z: p.z };
+        const temp = quat_mul(q, p_q);
+        const final = quat_mul(temp, q_inv);
+        return { x: final.x, y: final.y, z: final.z };
+    }
+
+    function quat_mul(q1, q2) {
+        return {
+            w: q1.w*q2.w - q1.x*q2.x - q1.y*q2.y - q1.z*q2.z,
+            x: q1.w*q2.x + q1.x*q2.w + q1.y*q2.z - q1.z*q2.y,
+            y: q1.w*q2.y - q1.x*q2.z + q1.y*q2.w + q1.z*q2.x,
+            z: q1.w*q2.z + q1.x*q2.y - q1.y*q2.x + q1.z*q2.w
+        };
+    }
+
+    function drawPieChart() {
+        const totalDof = state.dof.trans + state.dof.rot + state.dof.vib;
+        if (totalDof === 0) return;
+
+        const data = [
+            { label: 'Translation', value: state.dof.trans, color: '#4caf50' },
+            { label: 'Rotation', value: state.dof.rot, color: '#ffc107' },
+            { label: 'Vibration', value: state.dof.vib, color: '#f44336' },
+        ];
+
+        const w = pieCanvas.width;
+        const h = pieCanvas.height;
+        pieCtx.clearRect(0,0,w,h);
+
+        const cx = w/2;
+        const cy = h/2 - 20;
+        const radius = Math.min(w,h) / 2.5;
+
+        let startAngle = -Math.PI / 2;
+        let legendY = cy + radius + 30;
+
+        data.forEach(slice => {
+            if (slice.value === 0) return;
+
+            const sliceAngle = (slice.value / totalDof) * 2 * Math.PI;
+            pieCtx.fillStyle = slice.color;
+            pieCtx.beginPath();
+            pieCtx.moveTo(cx, cy);
+            pieCtx.arc(cx, cy, radius, startAngle, startAngle + sliceAngle);
+            pieCtx.closePath();
+            pieCtx.fill();
+
+            // Legend
+            pieCtx.fillRect(20, legendY, 15, 15);
+            pieCtx.fillStyle = '#fff';
+            pieCtx.font = '14px sans-serif';
+            pieCtx.fillText(`${slice.label} (${((slice.value/totalDof)*100).toFixed(0)}%)`, 45, legendY + 13);
+            legendY += 25;
+
+            startAngle += sliceAngle;
+        });
+    }
+
+    function drawCvPlot() {
+        const w = cvCanvas.width;
+        const h = cvCanvas.height;
+        cvCtx.fillStyle = 'var(--code-bg)';
+        cvCtx.fillRect(0,0,w,h);
+
+        cvCtx.strokeStyle = 'var(--accent-color)';
+        cvCtx.lineWidth = 2;
+        cvCtx.beginPath();
+
+        const R = 8.314;
+        const maxCv = 4 * R;
+
+        const plotPoints = 200;
+        for(let i=0; i<plotPoints; i++) {
+            const temp = Math.pow(10, (i/plotPoints)*4); // 1K to 10000K
+
+            let f = 3; // translation
+            if (state.gasType === 'diatomic') {
+                if (!state.useQuantum || temp > T_ROT) f += 2;
+                if (!state.useQuantum || temp > T_VIB) f += 2;
+            } else if (state.gasType === 'polyatomic') {
+                 if (!state.useQuantum || temp > T_ROT) f += 3;
+                 if (!state.useQuantum || temp > T_VIB) f += 2 * (3 * 5 - 6);
+            }
+
+            const cv = (f/2) * R;
+            const x = (Math.log10(temp) / 4) * w;
+            const y = h - (cv / maxCv) * h;
+
+            if(i === 0) cvCtx.moveTo(x,y); else cvCtx.lineTo(x,y);
+        }
+        cvCtx.stroke();
+
+        // Current temp marker
+        const currentX = (Math.log10(state.temp) / 4) * w;
+        cvCtx.fillStyle = '#ffeb3b';
+        cvCtx.beginPath();
+        cvCtx.arc(currentX, 10, 5, 0, 2*Math.PI);
+        cvCtx.fill();
+    }
+
+    </script>
+</body>
+</html>
