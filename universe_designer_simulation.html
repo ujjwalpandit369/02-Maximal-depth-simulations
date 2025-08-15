@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Architect of Eternity: A de Sitter Universe Designer</title>
+    <style>
+        :root {
+            --bg-color: #111827;
+            --text-color: #9ca3af;
+            --header-color: #f9fafb;
+            --accent-color: #818cf8; /* Indigo */
+            --control-bg: #1f2937;
+            --control-border: #374151;
+            --button-bg: #374151;
+            --button-hover: #6366f1;
+            --button-text-hover: #ffffff;
+            --panel-bg: #1f2937;
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .master-container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        header { text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 15px; margin-bottom: 20px;}
+        h1, h2, h3 { color: var(--header-color); font-weight: 500; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            grid-template-rows: auto 1fr;
+            grid-template-areas:
+                "controls main"
+                "story main";
+            gap: 20px;
+            height: 80vh;
+        }
+
+        .main-view-grid {
+            grid-area: main;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel h4 {
+            margin: 0 0 10px 0;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--control-border);
+            color: var(--header-color);
+            font-weight: 500;
+        }
+
+        .panel canvas {
+            flex-grow: 1;
+            width: 100%;
+            background-color: #000;
+            border-radius: 4px;
+        }
+
+        #controls-panel { grid-area: controls; overflow-y: auto; }
+        #story-panel { grid-area: story; }
+        #cosmic-story-content {
+            font-family: monospace;
+            flex-grow: 1;
+            overflow-y: auto;
+            background: var(--bg-color);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .slider-group { margin-bottom: 15px; }
+        .slider-group label {
+            display: block;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .slider-group input[type="range"] { width: 100%; }
+        .slider-group .value-display {
+            color: var(--accent-color);
+            float: right;
+            font-family: monospace;
+        }
+
+        .toggle-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .toggle-grid button {
+            padding: 8px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+        }
+        .toggle-grid button.active {
+            background-color: var(--accent-color);
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .big-button {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.2em;
+            font-weight: bold;
+            background-color: var(--button-hover);
+            color: var(--button-text-hover);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="master-container">
+        <header>
+            <h1>The Architect of Eternity</h1>
+            <p>A de Sitter Universe Designer</p>
+        </header>
+
+        <div class="dashboard">
+            <div id="controls-panel" class="panel">
+                <h4>Cosmology Control Panel</h4>
+
+                <div class="slider-group">
+                    <label>Cosmological Constant (Λ)<span id="lambda-value" class="value-display">1.0</span></label>
+                    <input type="range" id="lambda-slider" min="-10" max="10" value="1" step="0.1">
+                </div>
+
+                <h4>Inflaton Potential</h4>
+                <div class="slider-group">
+                    <label>Plateau Height (Early Λ)<span id="plateau-value" class="value-display">100</span></label>
+                    <input type="range" id="plateau-slider" min="10" max="1000" value="100" step="10">
+                </div>
+
+                <h4>Initial Content</h4>
+                <div class="slider-group">
+                    <label>Matter Density (ρ_m)<span id="matter-value" class="value-display">0.3</span></label>
+                    <input type="range" id="matter-slider" min="0" max="1" value="0.3" step="0.01">
+                </div>
+                <div class="slider-group">
+                    <label>Radiation Density (ρ_r)<span id="radiation-value" class="value-display">0.01</span></label>
+                    <input type="range" id="radiation-slider" min="0" max="1" value="0.01" step="0.001">
+                </div>
+
+                <h4>Physics Toggles</h4>
+                <div id="physics-toggles" class="toggle-grid">
+                    <button data-toggle="baryogenesis">Baryogenesis</button>
+                    <button data-toggle="defects">Defects</button>
+                    <button data-toggle="proton_decay">Proton Decay</button>
+                    <button data-toggle="hawking">Hawking Rad.</button>
+                </div>
+
+                <hr style="border-color: var(--control-border); margin: 20px 0;">
+                <button class="big-button" id="run-sim-btn">Design & Run Universe</button>
+            </div>
+
+            <div id="story-panel" class="panel">
+                <h4>The Cosmic Story</h4>
+                <div id="cosmic-story-content">
+                    <p>Awaiting universe design parameters...</p>
+                </div>
+            </div>
+
+            <div class="main-view-grid">
+                <div id="main-3d-view" class="panel">
+                    <h4>Cosmic Evolution</h4>
+                    <canvas id="main-3d-canvas"></canvas>
+                </div>
+                <div id="penrose-view" class="panel">
+                    <h4>Spacetime Geometry (Penrose Diagram)</h4>
+                    <canvas id="penrose-canvas"></canvas>
+                </div>
+                <div id="energy-pie-view" class="panel">
+                    <h4>Energy Density</h4>
+                    <canvas id="energy-pie-canvas"></canvas>
+                </div>
+                <div id="cmb-view" class="panel">
+                    <h4>Cosmic Microwave Background (CMB)</h4>
+                    <canvas id="cmb-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div id="observational-consequences">
+             <h2>Observational Consequences</h2>
+             <div class="panel">
+                <h4>CMB Power Spectrum</h4>
+                <canvas id="cmb-spectrum-canvas" style="height:300px;"></canvas>
+             </div>
+        </div>
+
+        <div id="universal-laws" class="theory-section">
+            <h2>The Universal Laws (Encyclopedia)</h2>
+            <div class="panel">
+                <!-- Nav buttons will be generated here -->
+                <div id="encyclopedia-nav"></div>
+                <!-- Content will be loaded here -->
+                <div id="encyclopedia-content" style="margin-top: 15px; border-top: 1px solid var(--control-border); padding-top: 10px;">
+                    <p>Click a topic to learn more.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="advanced" class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+            <div class="panel">
+                <!-- Advanced content will go here -->
+            </div>
+        </div>
+
+        <footer>
+            <p>Universe Designer. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+    <script>
+    // --- Global State & Setup ---
+    let canvases = {};
+    const ui = {};
+    const state = {
+        params: {
+            lambda: 1.0,
+            plateau: 100,
+            matter: 0.3,
+            radiation: 0.01,
+            toggles: {},
+        },
+        history: null, // Will hold the solved evolution { t, a, H, densities }
+        time: 0,
+        isPlaying: false,
+    };
+
+    window.onload = init;
+
+    function init() {
+        // Cache DOM elements
+        const canvasIds = ['main-3d-canvas', 'penrose-canvas', 'energy-pie-canvas', 'cmb-canvas', 'cmb-spectrum-canvas'];
+        canvasIds.forEach(id => {
+            const canvas = document.getElementById(id);
+            canvases[id] = { canvas: canvas, ctx: canvas.getContext('2d') };
+        });
+
+        const controlIds = [
+            'lambda-slider', 'lambda-value', 'plateau-slider', 'plateau-value',
+            'matter-slider', 'matter-value', 'radiation-slider', 'radiation-value',
+            'physics-toggles', 'run-sim-btn', 'cosmic-story-content'
+        ];
+        controlIds.forEach(id => {
+            const key = id.replace(/-(\w)/g, (m, g) => g.toUpperCase());
+            ui[key] = document.getElementById(id);
+        });
+
+        setupEventListeners();
+        gameLoop();
+    }
+
+    function setupEventListeners() {
+        ui.runSimBtn.addEventListener('click', runSimulation);
+
+        ui.lambdaSlider.addEventListener('input', e => {
+            ui.lambdaValue.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+        ui.plateauSlider.addEventListener('input', e => {
+            ui.plateauValue.textContent = parseFloat(e.target.value).toFixed(0);
+        });
+        ui.matterSlider.addEventListener('input', e => {
+            ui.matterValue.textContent = parseFloat(e.target.value).toFixed(2);
+        });
+        ui.radiationSlider.addEventListener('input', e => {
+            ui.radiationValue.textContent = parseFloat(e.target.value).toFixed(3);
+        });
+
+        ui.physicsToggles.addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                const toggleKey = e.target.dataset.toggle;
+                state.params.toggles[toggleKey] = !state.params.toggles[toggleKey];
+                e.target.classList.toggle('active', state.params.toggles[toggleKey]);
+            }
+        });
+    }
+
+    function runSimulation() {
+        // 1. Get params from UI
+        state.params.lambda = parseFloat(ui.lambdaSlider.value);
+        state.params.plateau = parseFloat(ui.plateauSlider.value);
+        state.params.matter = parseFloat(ui.matterSlider.value);
+        state.params.radiation = parseFloat(ui.radiationSlider.value);
+
+        // 2. Solve the universe's history
+        state.history = solveUniverseEvolution(state.params);
+
+        // 3. Reset time and start playing
+        state.time = 0;
+        state.isPlaying = true;
+    }
+
+    // --- Universe Evolution Engine ---
+    function solveUniverseEvolution(params) {
+        const history = {
+            t: [], a: [], H: [], densities: { rad: [], mat: [], inf: [], lam: [] },
+            epochs: { inflation_end: 0, rad_mat_eq: 0, mat_lam_eq: 0 },
+            power_spectrum: [],
+            structure: [],
+        };
+
+        // --- Inflation Module ---
+        const fluctuations = [];
+        const numFluctuations = 100;
+        for (let i = 0; i < numFluctuations; i++) {
+            fluctuations.push({
+                k: 0.01 + Math.random() * 10,
+                amplitude: (0.8 + Math.random() * 0.4) * (1 + params.plateau / 1000),
+                phase: Math.random() * 2 * Math.PI,
+                frozen: false,
+            });
+        }
+
+        let a = 1e-30; // Initial scale factor
+        let t = 0;
+        const dt = 0.01; // Timestep
+        let H;
+
+        // Simplified units where 8piG/3 = 1
+        const rho_rad_0 = params.radiation;
+        const rho_mat_0 = params.matter;
+        const rho_lam = params.lambda;
+
+        // Inflation phase
+        const inflation_duration = 60; // 60 e-folds
+        let inflation_t = 0;
+        while(inflation_t < inflation_duration) {
+            const rho_inf = params.plateau;
+            H = Math.sqrt(rho_inf);
+            a += a * H * dt;
+            t += dt;
+            inflation_t += H * dt;
+
+            // Check for fluctuation freeze-out
+            const horizon_size = 1 / H;
+            fluctuations.forEach(f => {
+                if (f.frozen) return;
+                const physical_wavelength = (2 * Math.PI / f.k) / a; // Comoving k, so wavelength is 1/k * a
+                if (physical_wavelength > horizon_size) {
+                    f.frozen = true;
+                    history.power_spectrum.push({ k: f.k, Pk: Math.pow(f.amplitude, 2) });
+                }
+            });
+
+            history.t.push(t);
+            history.a.push(a);
+            history.H.push(H);
+            history.densities.inf.push(rho_inf);
+            history.densities.rad.push(0);
+            history.densities.mat.push(0);
+            history.densities.lam.push(0);
+        }
+        history.epochs.inflation_end = t;
+
+        // --- Structure Formation Module Setup ---
+        const num_particles = 200;
+        for (let i=0; i<num_particles; i++) {
+            history.structure.push({
+                x: (Math.random() - 0.5) * 20,
+                y: (Math.random() - 0.5) * 20,
+                z: (Math.random() - 0.5) * 20,
+                vx: 0, vy: 0, vz: 0,
+            });
+        }
+
+        // Main evolution
+        const t_max = 1000;
+        while(t < t_max) {
+            const rho_rad = rho_rad_0 / (a*a*a*a);
+            const rho_mat = rho_mat_0 / (a*a*a);
+            const rho_total = rho_rad + rho_mat + rho_lam;
+
+            if (rho_total < 0) { // Big Crunch
+                break;
+            }
+
+            H = Math.sqrt(rho_total);
+            a += a * H * dt;
+            t += dt;
+
+            // Evolve structure
+            const G_eff = 0.01; // Effective gravity
+            history.structure.forEach(p => {
+                // Simplified gravity from perturbations
+                let force_x = 0, force_y = 0, force_z = 0;
+                history.power_spectrum.forEach(ps => {
+                    force_x += Math.sin(p.x * ps.k) * ps.Pk;
+                    force_y += Math.sin(p.y * ps.k) * ps.Pk;
+                    force_z += Math.sin(p.z * ps.k) * ps.Pk;
+                });
+
+                p.vx += force_x * G_eff * dt;
+                p.vy += force_y * G_eff * dt;
+                p.vz += force_z * G_eff * dt;
+
+                // Hubble drag
+                p.vx -= H * p.vx * dt;
+                p.vy -= H * p.vy * dt;
+                p.vz -= H * p.vz * dt;
+
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.z += p.vz * dt;
+            });
+
+            // Record history
+            history.t.push(t);
+            history.a.push(a);
+            history.H.push(H);
+            history.densities.rad.push(rho_rad);
+            history.densities.mat.push(rho_mat);
+            history.densities.inf.push(0);
+            history.densities.lam.push(rho_lam);
+
+            // Check for epoch transitions
+            if (!history.epochs.rad_mat_eq && rho_rad < rho_mat) {
+                history.epochs.rad_mat_eq = t;
+            }
+            if (!history.epochs.mat_lam_eq && rho_mat < rho_lam) {
+                history.epochs.mat_lam_eq = t;
+            }
+        }
+
+        return history;
+    }
+
+    // --- Main Loop & Drawing ---
+    function gameLoop() {
+        if (state.isPlaying && state.history) {
+            state.time += 0.5;
+            if (state.time >= state.history.t.length - 1) {
+                state.time = state.history.t.length - 1;
+                state.isPlaying = false;
+            }
+        }
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function draw() {
+        if (!state.history) {
+            // Draw placeholder text if sim hasn't run
+            const { ctx, canvas } = canvases['main-3d-canvas'];
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#fff';
+            ctx.textAlign = 'center';
+            ctx.fillText("Design a universe and press Run", canvas.width/2, canvas.height/2);
+            return;
+        }
+
+        // Main visualizations
+        draw3DView();
+        drawPenrose();
+        drawEnergyPie();
+        drawCMB();
+
+        // Analysis panels
+        updateStoryPanel();
+        drawCmbSpectrum();
+    }
+
+    // --- Visualization Modules ---
+
+    function draw3DView() {
+        const { ctx, canvas } = canvases['main-3d-canvas'];
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+
+        const time_index = Math.floor(state.time);
+        const a = state.history.a[time_index];
+        const particles = state.history.structure;
+
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+
+        // Simple 3D projection
+        particles.forEach(p => {
+            const scale = 10 * a;
+            const x = p.x * scale;
+            const y = p.y * scale;
+            const z = p.z * scale;
+
+            const perspective = 150 / (150 + z);
+            const screenX = x * perspective;
+            const screenY = y * perspective;
+
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, perspective, 0, 2 * Math.PI);
+            ctx.fillStyle = `rgba(255, 255, 255, ${perspective*0.8})`;
+            ctx.fill();
+        });
+        ctx.restore();
+    }
+
+    function drawPenrose() {
+        const { ctx, canvas } = canvases['penrose-canvas'];
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = 'var(--accent-color)';
+        ctx.lineWidth = 2;
+        ctx.textAlign = 'center';
+        ctx.fillStyle = 'var(--text-color)';
+
+        ctx.beginPath();
+        if (state.params.lambda > 0) { // de Sitter
+            ctx.moveTo(w/2, 10);
+            ctx.lineTo(w-10, h/2);
+            ctx.lineTo(w/2, h-10);
+            ctx.lineTo(10, h/2);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fillText("de Sitter", w/2, h/2);
+        } else if (state.params.lambda < 0) { // Anti-de Sitter
+            ctx.moveTo(10, 10);
+            ctx.lineTo(w-10, 10);
+            ctx.lineTo(w-10, h-10);
+            ctx.lineTo(10, h-10);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fillText("AdS", w/2, h/2);
+        } else { // Flat
+            ctx.moveTo(w/2, 10);
+            ctx.lineTo(w-10, h-10);
+            ctx.lineTo(10, h-10);
+            ctx.closePath();
+            ctx.stroke();
+            ctx.fillText("Minkowski", w/2, h/2);
+        }
+    }
+
+    function drawEnergyPie() {
+        const { ctx, canvas } = canvases['energy-pie-canvas'];
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+
+        const time_index = Math.floor(state.time);
+        const densities = state.history.densities;
+        const rad = densities.rad[time_index] || 0;
+        const mat = densities.mat[time_index] || 0;
+        const inf = densities.inf[time_index] || 0;
+        const lam = densities.lam[time_index] || 0;
+        const total = rad + mat + inf + lam;
+
+        if (total === 0) return;
+
+        const fractions = {
+            rad: rad/total, mat: mat/total, inf: inf/total, lam: lam/total
+        };
+
+        const colors = { rad: '#dc2626', mat: '#2563eb', inf: '#db2777', lam: '#4b5563' };
+
+        let currentAngle = -Math.PI / 2;
+        const cx = w/2;
+        const cy = h/2;
+        const radius = Math.min(w,h) * 0.4;
+
+        for (const [key, frac] of Object.entries(fractions)) {
+            if (frac === 0) continue;
+            const sliceAngle = frac * 2 * Math.PI;
+            ctx.fillStyle = colors[key];
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.arc(cx, cy, radius, currentAngle, currentAngle + sliceAngle);
+            ctx.closePath();
+            ctx.fill();
+            currentAngle += sliceAngle;
+        }
+    }
+
+    function drawCMB() {
+        const { ctx, canvas } = canvases['cmb-canvas'];
+        const w = canvas.width;
+        const h = canvas.height;
+
+        // This function should only run once after the sim is calculated
+        if (canvas.dataset.drawn) return;
+
+        const h = canvas.height;
+        // Generate a CMB map based on the power spectrum
+        const Pk_total = state.history.power_spectrum.reduce((acc, ps) => acc + ps.Pk, 0);
+        const noise_amplitude = Math.log(Pk_total + 1) * 0.1;
+
+        const imageData = ctx.createImageData(w, h);
+        for (let i = 0; i < imageData.data.length; i += 4) {
+            const noise = (Math.random() - 0.5) * noise_amplitude;
+            const temp = 128 + noise * 1000;
+            imageData.data[i] = temp > 128 ? temp : 50;
+            imageData.data[i+1] = 0;
+            imageData.data[i+2] = temp < 128 ? 255 - temp : 50;
+            imageData.data[i+3] = 255;
+        }
+        ctx.putImageData(imageData, 0, 0);
+        canvas.dataset.drawn = true;
+    }
+    // --- Informational & Analysis Panels ---
+
+    function updateStoryPanel() {
+        const time_index = Math.floor(state.time);
+        const t = state.history.t[time_index];
+        const epochs = state.history.epochs;
+        let story = '';
+
+        if (t < epochs.inflation_end) {
+            story = `INFLATION [t=${t.toExponential(1)}]: The universe is expanding exponentially, driven by the inflaton field. Quantum fluctuations are being stretched to cosmic scales.`;
+        } else if (t < epochs.rad_mat_eq) {
+            story = `RADIATION DOMINATION [t=${t.toExponential(1)}]: The universe is a hot, dense plasma of radiation. Structure cannot grow yet.`;
+        } else if (t < epochs.mat_lam_eq) {
+            story = `MATTER DOMINATION [t=${t.toExponential(1)}]: Matter is now the dominant component. Gravity begins to pull matter into the perturbations left by inflation, forming the cosmic web.`;
+        } else {
+            story = `DARK ENERGY DOMINATION [t=${t.toExponential(1)}]: The cosmological constant Λ is now dominant, driving a new phase of accelerated expansion. The ultimate fate is set.`;
+        }
+
+        if (time_index >= state.history.t.length -1) {
+            if (state.params.lambda < 0) {
+                story += "\n\nFINAL FATE: BIG CRUNCH. The negative cosmological constant has overwhelmed all else, causing the universe to recollapse."
+            } else {
+                story += "\n\nFINAL FATE: HEAT DEATH. The universe will expand forever, becoming cold and empty."
+            }
+        }
+
+        ui.cosmicStoryContent.textContent = story;
+    }
+
+    function drawCmbSpectrum() {
+        const { ctx, canvas } = canvases['cmb-spectrum-canvas'];
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0,0,w,h);
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0,0,w,h);
+
+        if (!state.history || state.history.power_spectrum.length === 0) return;
+
+        // Simplified procedural generation of acoustic peaks
+        const Pk = state.history.power_spectrum;
+        const overall_amp = Math.log(Pk.reduce((a,b)=>a+b.Pk,0)) * 2;
+
+        ctx.strokeStyle = 'var(--accent-color)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        for(let i=0; i<w; i++) {
+            const l = (i/w) * 2000; // Multipole l
+            let C_l = overall_amp / Math.pow(l, 0.8); // Basic downward slope
+
+            // Add peaks
+            C_l *= (1 + 0.8 * Math.exp(-Math.pow(l-220, 2)/8000));
+            C_l *= (1 + 0.4 * Math.exp(-Math.pow(l-550, 2)/15000));
+            C_l *= (1 + 0.3 * Math.exp(-Math.pow(l-850, 2)/20000));
+
+            const x = i;
+            const y = h - C_l*2;
+            if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+    }
+
+    // Encyclopedia logic can be added here if needed, but for now we assume it's static text
+    // that would be added to the HTML directly.
+
+    </script>
+</body>
+</html>
