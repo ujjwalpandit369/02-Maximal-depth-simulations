@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Cosmic Archipelago: de Sitter Horizons</title>
+    <style>
+        :root {
+            --bg-color: #0c111c;
+            --text-color: #c0c8d4;
+            --header-color: #ffffff;
+            --accent-color: #3b82f6; /* A cosmological blue */
+            --control-bg: #171e2b;
+            --control-border: #2a3343;
+            --button-bg: #212836;
+            --button-hover: #3b82f6;
+            --button-text-hover: #ffffff;
+            --panel-bg: #171e2b;
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            --code-bg: #0c111c;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 1em;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-areas:
+                "header header"
+                "overview overview"
+                "sim controls"
+                "sim analysis"
+                "theory theory"
+                "advanced advanced"
+                "footer footer";
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas:
+                    "header"
+                    "overview"
+                    "sim"
+                    "controls"
+                    "analysis"
+                    "theory"
+                    "advanced"
+                    "footer";
+            }
+        }
+
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--control-border); padding-bottom: 10px; }
+        .simulation-area { grid-area: sim; }
+        .controls-area { grid-area: controls; }
+        .analysis-area { grid-area: analysis; }
+        .overview-section { grid-area: overview; }
+        .theory-section { grid-area: theory; }
+        .advanced-section { grid-area: advanced; }
+        footer { grid-area: footer; text-align: center; font-size: 0.9em; padding-top: 20px; border-top: 1px solid var(--control-border); }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 300; }
+        h1 { font-size: 2.5em; margin-bottom: 0; }
+        h1 + p { font-style: italic; color: var(--accent-color); margin-top: 0; }
+        h2 { font-size: 1.8em; border-bottom: 1px solid var(--accent-color); padding-bottom: 5px; margin-top: 40px; }
+        h3 { font-size: 1.4em; color: var(--accent-color); margin-top: 30px; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        #simulation-canvas {
+            width: 100%;
+            height: 100%;
+            min-height: 600px;
+            background-color: #010409;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+        .control-group h4 {
+            margin: 0 0 10px 0;
+            border-bottom: 1px solid var(--control-border);
+            padding-bottom: 5px;
+            color: var(--header-color);
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .button-grid button, .control-group button {
+            padding: 10px;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--control-border);
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .button-grid button:hover, .control-group button:hover {
+            background-color: var(--button-hover);
+            color: var(--button-text-hover);
+        }
+         .button-grid button.active, .control-group button.active {
+            background-color: var(--accent-color);
+            color: var(--button-text-hover);
+            font-weight: bold;
+        }
+
+        .slider-group label {
+            display: block;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+        }
+        .slider-group input { width: 100%; }
+        .slider-group .value-display {
+            color: var(--accent-color);
+            float: right;
+            font-family: monospace;
+        }
+
+        #commentary-panel {
+            font-family: monospace;
+            font-size: 0.9em;
+            height: 150px;
+            overflow-y: auto;
+            background: var(--code-bg);
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        #causality-matrix table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+        }
+        #causality-matrix th, #causality-matrix td {
+            border: 1px solid var(--control-border);
+            padding: 5px;
+            text-align: center;
+        }
+        #causality-matrix .status-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: auto;
+        }
+        .status-green { background-color: #28a745; }
+        .status-yellow { background-color: #ffc107; }
+        .status-red { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Cosmic Archipelago</h1>
+            <p>The Observer-Dependent Nature of de Sitter Horizons</p>
+        </header>
+
+        <div class="overview-section">
+            <h2>Overview</h2>
+            <p>In an accelerating, expanding universe (a "de Sitter" space), a strange and non-intuitive rule emerges: every observer is the center of their own private universe. Each has a "cosmological horizon"—a point of no return beyond which they can never see or interact with anything. This simulation explores this profound concept, treating observers as islands in a vast cosmic sea. You will place observers, watch them drift apart on the tide of cosmic expansion, and discover for yourself that some islands are fundamentally, permanently isolated from each other, each with its own finite "causal patch" of reality.</p>
+        </div>
+
+        <div class="controls-area panel">
+            <div class="control-group">
+                <h4>1. Universe Controls</h4>
+                <div class="slider-group">
+                    <label>Hubble Parameter (H)<span id="h-value" class="value-display">0.5</span></label>
+                    <input type="range" id="h-slider" min="0.1" max="2.0" value="0.5" step="0.05">
+                </div>
+            </div>
+            <div class="control-group">
+                <h4>2. Time Evolution</h4>
+                <div class="button-grid">
+                    <button id="play-btn">Play</button>
+                    <button id="pause-btn">Pause</button>
+                </div>
+                 <div class="slider-group" style="margin-top:15px;">
+                    <label>Time (t)<span id="time-value" class="value-display">0.0</span></label>
+                    <input type="range" id="time-slider" min="0" max="10" value="0" step="0.1">
+                </div>
+                <button id="reset-btn" style="width:100%; margin-top:10px;">Reset</button>
+            </div>
+            <div class="control-group">
+                <h4>3. Tools</h4>
+                <div id="tool-buttons" class="button-grid">
+                    <button data-tool="observer" class="active">Place Observer</button>
+                    <button data-tool="laser">Fire Laser</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="simulation-area panel">
+            <canvas id="simulation-canvas"></canvas>
+        </div>
+
+        <div class="analysis-area">
+             <div class="panel">
+                <h3>The Spacetime Social Network</h3>
+                <div id="commentary-panel">
+                    <p>STATUS: Universe at t=0. Use the 'Place Observer' tool to begin.</p>
+                </div>
+            </div>
+            <div id="causality-matrix" class="panel">
+                <h3>Causality Matrix</h3>
+                <table>
+                    <thead>
+                        <tr><th>&nbsp;</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="theory-section">
+            <h2>The Physics of Causal Patches</h2>
+            <h3>Part A: The Causal Patch Defined</h3>
+            <p>In a universe that expands forever at an accelerating rate, like de Sitter space, there is a hard limit to how much of it any single observer can ever see or interact with. This finite region of spacetime is called the <strong>causal patch</strong>. It represents an observer's entire "universe"—all the events that can affect them and all the events they can ever affect, over their entire infinite lifetime.
+            <br>The boundary of this patch is the <strong>cosmological horizon</strong>. It is not a physical wall, but a surface of frustration. It is the location of a point that is receding away from the observer at exactly the speed of light. Any light signal emitted from beyond this point will never reach the observer, because the space in between is expanding too fast for the light to overcome. It is like trying to swim upstream against a current that is faster than you can swim.
+            <br>Crucially, this horizon is observer-dependent. As this simulation shows, every observer is the center of their own horizon. An observer "Bob" might be inside "Alice's" horizon, meaning Alice can see him, but a third observer, "Carol," might be outside Alice's horizon. Alice can never see Carol, and Carol can never see Alice. They live in causally disconnected patches of the same universe.</p>
+
+            <h3>Part B: No Global Observer, No Center</h3>
+            <p>A common misconception about cosmic expansion, stemming from the "Big Bang" analogy, is that the universe is expanding from a single central point out into a pre-existing void. This is incorrect. In a homogeneous and isotropic universe, like the one described by the de Sitter model, there is no center. Every point is equivalent to every other point.
+            <br>The expansion is a stretching of spacetime itself. Every observer sees all other observers receding from them, as if they were at the center. The cosmological horizon is therefore not a global boundary of "the universe," but a private, local boundary for each observer. This is a profound consequence of Einstein's theory of general relativity. There is no privileged "god's-eye view" or absolute frame of reference from which to see the whole universe at once. Reality is composed of an infinite number of overlapping, yet limited, perspectives. This simulation makes this explicit by showing multiple observers, each with their own personal horizon, all embedded in the same expanding fabric of spacetime.</p>
+
+            <h3>Part C: Information and Entropy</h3>
+            <p>One of the most stunning discoveries of modern physics, pioneered by Jacob Bekenstein and Stephen Hawking, is that horizons have thermodynamic properties. Just like a black hole, a cosmological horizon has a temperature and an entropy associated with it. The entropy is proportional to the surface area of the horizon.
+            <br>This has a mind-bending implication: because an observer's horizon has a finite area, there is a finite maximum amount of information (entropy) that can ever be contained within their causal patch. Your personal universe has a limited hard drive capacity! This idea, known as the <strong>holographic principle</strong>, suggests that the information describing a 3D volume of space might somehow be encoded on its 2D boundary surface. It is a deep and mysterious link between gravity, thermodynamics, and quantum information theory that physicists are still struggling to fully understand.</p>
+        </div>
+
+        <div class="advanced-section">
+            <h2>Advanced Notes & Extensions</h2>
+
+            <h3>1. Horizons for Accelerating Observers</h3>
+            <p>The cosmological horizon in this simulation applies to "comoving" or inertial observers—those who are simply carried along by the flow of cosmic expansion. What if an observer has a rocket and accelerates? By constantly firing their engine, they can travel faster than the cosmic flow and reach more distant regions.
+            <br>An accelerating observer experiences a different kind of horizon, known as a <strong>Rindler horizon</strong>. This horizon is always "in front" of them. The constant acceleration means that light signals from sufficiently far behind them can never catch up. The combination of cosmic expansion and their own acceleration changes the shape and size of their causal patch. They can reach some events that an inertial observer cannot, but they lose access to others. Their "island" in the cosmic archipelago is not a perfect circle, but a distorted shape determined by their life's trajectory.</p>
+
+            <h3>2. The Complementary Patch</h3>
+            <p>If a causal patch is the set of all events an observer can ever interact with, what about the events outside it? This region is called the <strong>complementary patch</strong>. From the perspective of any single observer, this region is utterly inaccessible. No signal from it can ever reach you, and no signal you send can ever reach it.
+            <br>This raises deep philosophical and physical questions. Does the complementary patch "exist" in any meaningful sense if it is forever beyond our interaction? Quantum mechanics suggests that our causal patch might be entangled with its complement, leading to strange correlations. Some theories of quantum gravity propose that the description of reality within a causal patch is a complete description, and the complementary region is a kind of redundant or illusory construct. The nature of these inaccessible regions is a key puzzle in understanding the fundamental nature of spacetime.</p>
+
+            <h3>3. The Boltzmann Brain Paradox</h3>
+            <p>In a de Sitter universe that expands eternally, a disturbing paradox emerges. Over immense timescales, random thermal fluctuations (due to the horizon's temperature) could theoretically assemble complex structures by chance. With an infinitesimally small but non-zero probability, a fluctuation could assemble a fully formed, conscious brain, complete with memories of a life that was never lived. This is a "Boltzmann Brain."
+            <br>The paradox is this: if the universe lasts forever, an infinite number of these Boltzmann Brains will pop into existence. It's possible that they would vastly outnumber the "normal" observers who evolved through standard biological processes. This leads to the unsettling conclusion that it is statistically more likely that you are a fleeting Boltzmann Brain than a "real" person. Cosmologists are deeply troubled by this, and many believe that any fundamental theory that predicts a future dominated by Boltzmann Brains must be wrong. The concept of the finite causal patch and its finite entropy is a key ingredient in trying to resolve this paradox, as it may place limits on what can form within any single observer's world.</p>
+        </div>
+
+        <footer>
+            <p>Cosmic Archipelago Simulator. Built by Jules, an AI software engineer.</p>
+        </footer>
+    </div>
+    <script>
+    // --- Global State & Setup ---
+    let canvas, ctx;
+    const ui = {};
+    const state = {
+        H: 0.5, // Hubble Parameter
+        t: 0,   // Time
+        c: 1.5,  // Speed of light (chosen for good visualization)
+        observers: [],
+        signals: [],
+        isPlaying: false,
+        activeTool: 'observer',
+        laserSource: null,
+    };
+    const observerColors = ['#ff6347', '#4682b4', '#32cd32', '#ffc107', '#9370db'];
+
+    window.onload = init;
+
+    function init() {
+        // Cache DOM elements
+        canvas = document.getElementById('simulation-canvas');
+        ctx = canvas.getContext('2d');
+        const ids = [
+            'h-slider', 'h-value', 'play-btn', 'pause-btn', 'reset-btn',
+            'time-slider', 'time-value', 'tool-buttons', 'commentary-panel',
+            'causality-matrix'
+        ];
+        ids.forEach(id => {
+            const key = id.replace(/-(\w)/g, (m, g) => g.toUpperCase());
+            ui[key] = document.getElementById(id);
+        });
+
+        setupEventListeners();
+        gameLoop();
+    }
+
+    function setupEventListeners() {
+        // --- Controls ---
+        ui.hSlider.addEventListener('input', e => {
+            state.H = parseFloat(e.target.value);
+            ui.hValue.textContent = state.H.toFixed(2);
+        });
+
+        ui.playBtn.addEventListener('click', () => {
+            if (state.t >= ui.timeSlider.max) state.t = 0; // Reset if at end
+            state.isPlaying = true;
+            ui.playBtn.textContent = 'Playing...';
+        });
+
+        ui.pauseBtn.addEventListener('click', () => {
+            state.isPlaying = false;
+            ui.playBtn.textContent = 'Play';
+        });
+
+        ui.resetBtn.addEventListener('click', resetSimulation);
+
+        ui.timeSlider.addEventListener('input', e => {
+            state.isPlaying = false;
+            ui.playBtn.textContent = 'Play';
+            state.t = parseFloat(e.target.value);
+            ui.timeValue.textContent = state.t.toFixed(1);
+        });
+
+        // --- Tools ---
+        ui.toolButtons.addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                state.activeTool = e.target.dataset.tool;
+                state.laserSource = null; // Reset laser source when switching tools
+                ui.toolButtons.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+            }
+        });
+
+        canvas.addEventListener('click', handleCanvasClick);
+    }
+
+    function resetSimulation() {
+        state.t = 0;
+        state.isPlaying = false;
+        state.observers = [];
+        state.signals = [];
+        state.laserSource = null;
+        ui.timeSlider.value = 0;
+        ui.timeValue.textContent = '0.0';
+        ui.playBtn.textContent = 'Play';
+        // Clear analysis panels
+        ui.commentaryPanel.innerHTML = '<p>STATUS: Universe at t=0. Use the \'Place Observer\' tool to begin.</p>';
+        ui.causalityMatrix.querySelector('tbody').innerHTML = '';
+        ui.causalityMatrix.querySelector('thead tr').innerHTML = '<th>&nbsp;</th>';
+    }
+
+    function handleCanvasClick(e) {
+        if (state.t > 0) {
+            alert("Please reset the simulation to t=0 to place observers.");
+            return;
+        }
+
+        const rect = canvas.getBoundingClientRect();
+        const w = canvas.width;
+        const h = canvas.height;
+        // Convert screen coords to world coords (at t=0, viewScale = w/20)
+        const viewScale = w / 20;
+        const clickX = (e.clientX - rect.left - w / 2) / viewScale;
+        const clickY = (e.clientY - rect.top - h / 2) / viewScale;
+
+        if (state.activeTool === 'observer') {
+            const observerId = state.observers.length;
+            state.observers.push({
+                id: observerId,
+                name: String.fromCharCode(65 + observerId), // A, B, C...
+                x0: clickX,
+                y0: clickY,
+                color: observerColors[observerId % observerColors.length]
+            });
+        } else if (state.activeTool === 'laser') {
+            const clickedObserver = findClickedObserver(clickX, clickY);
+            if (!clickedObserver) {
+                state.laserSource = null;
+                return;
+            }
+
+            if (!state.laserSource) {
+                state.laserSource = clickedObserver;
+                // Maybe add a visual indicator for the source
+            } else {
+                if (state.laserSource.id !== clickedObserver.id) {
+                    state.signals.push({
+                        sourceId: state.laserSource.id,
+                        targetId: clickedObserver.id,
+                        x: state.laserSource.x0,
+                        y: state.laserSource.y0,
+                        reached: false,
+                    });
+                }
+                state.laserSource = null;
+            }
+        }
+    }
+
+    function findClickedObserver(clickX, clickY) {
+         // At t=0, physical and comoving coords are the same
+         let closestObserver = null;
+         let min_dist_sq = 0.5*0.5; // Click radius
+
+         state.observers.forEach(obs => {
+             const dist_sq = (obs.x0 - clickX)**2 + (obs.y0 - clickY)**2;
+             if (dist_sq < min_dist_sq) {
+                 min_dist_sq = dist_sq;
+                 closestObserver = obs;
+             }
+         });
+         return closestObserver;
+    }
+
+    // --- Simulation Engine ---
+    function update() {
+        if (!state.isPlaying) return;
+
+        state.t += 0.02;
+        if (state.t > ui.timeSlider.max) {
+            state.t = parseFloat(ui.timeSlider.max);
+            state.isPlaying = false;
+            ui.playBtn.textContent = 'Play';
+        }
+        ui.timeSlider.value = state.t;
+        ui.timeValue.textContent = state.t.toFixed(1);
+
+        // Update signals
+        state.signals.forEach(signal => {
+            if (signal.reached) return;
+
+            const targetObserver = state.observers.find(o => o.id === signal.targetId);
+            if (!targetObserver) return;
+
+            const expansionFactor = Math.exp(state.H * state.t);
+            const targetPos = { x: targetObserver.x0 * expansionFactor, y: targetObserver.y0 * expansionFactor };
+
+            const dx = targetPos.x - signal.x;
+            const dy = targetPos.y - signal.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+
+            if (dist < 5) {
+                signal.reached = true;
+                return;
+            }
+
+            // Move towards target at speed c, but also get carried by expansion
+            const moveX = (dx / dist) * state.c;
+            const moveY = (dy / dist) * state.c;
+
+            const expansionVelX = signal.x * state.H;
+            const expansionVelY = signal.y * state.H;
+
+            signal.x += (moveX + expansionVelX) * 0.1; // dt = 0.1 for stability
+            signal.y += (moveY + expansionVelY) * 0.1;
+        });
+    }
+
+    function gameLoop() {
+        update();
+        draw();
+        requestAnimationFrame(gameLoop);
+    }
+
+    function draw() {
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.fillStyle = 'var(--code-bg)';
+        ctx.fillRect(0, 0, w, h);
+
+        const expansionFactor = Math.exp(state.H * state.t);
+        const viewScale = w / (20 * expansionFactor); // Zoom out as universe expands
+        const horizonRadius = (state.c / state.H); // Horizon is a physical distance
+
+        ctx.save();
+        ctx.translate(w / 2, h / 2);
+
+        drawGrid(expansionFactor, viewScale);
+
+        // Draw observers and their horizons
+        state.observers.forEach(obs => {
+            const obsX = obs.x0 * expansionFactor * viewScale;
+            const obsY = obs.y0 * expansionFactor * viewScale;
+
+            // Horizon
+            ctx.fillStyle = obs.color;
+            ctx.globalAlpha = 0.15;
+            ctx.beginPath();
+            ctx.arc(obsX, obsY, horizonRadius * viewScale, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Observer
+            ctx.globalAlpha = 1.0;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(obsX, obsY, 5, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fillStyle = obs.color;
+            ctx.fill();
+            ctx.fillStyle = '#fff';
+            ctx.fillText(obs.name[0], obsX - 3, obsY + 4);
+        });
+
+        // Draw signals
+        state.signals.forEach(signal => {
+            if(signal.reached) return;
+            // Signal position is already in physical coordinates
+            const signalX = signal.x * viewScale;
+            const signalY = signal.y * viewScale;
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(signalX, signalY, 3, 0, 2 * Math.PI);
+            ctx.fill();
+        });
+
+        ctx.restore();
+
+        updateAnalysisPanels();
+    }
+
+    function drawGrid(expansionFactor, viewScale) {
+        const lines = 20;
+        ctx.strokeStyle = 'rgba(59, 130, 246, 0.2)';
+        ctx.lineWidth = 1;
+
+        for (let i = -lines; i <= lines; i++) {
+            const pos = i * expansionFactor * viewScale;
+            // Vertical
+            ctx.beginPath();
+            ctx.moveTo(pos, -canvas.height/2);
+            ctx.lineTo(pos, canvas.height/2);
+            ctx.stroke();
+            // Horizontal
+            ctx.beginPath();
+            ctx.moveTo(-canvas.width/2, pos);
+            ctx.lineTo(canvas.width/2, pos);
+            ctx.stroke();
+        }
+    }
+
+    // --- Analysis Panel Logic ---
+    let lastStatus = {};
+    function updateAnalysisPanels() {
+        if (state.observers.length === 0) return;
+
+        const matrixBody = ui.causalityMatrix.querySelector('tbody');
+        const matrixHead = ui.causalityMatrix.querySelector('thead tr');
+        let headHTML = '<th>&nbsp;</th>';
+        state.observers.forEach(obs => headHTML += `<th>${obs.name}</th>`);
+        matrixHead.innerHTML = headHTML;
+
+        let bodyHTML = '';
+        const expansionFactor = Math.exp(state.H * state.t);
+        const horizonRadius = state.c / state.H;
+
+        state.observers.forEach(obs1 => {
+            bodyHTML += `<tr><th>${obs1.name}</th>`;
+            state.observers.forEach(obs2 => {
+                if (obs1.id === obs2.id) {
+                    bodyHTML += '<td>-</td>';
+                    return;
+                }
+
+                const comovingDist = Math.sqrt((obs1.x0 - obs2.x0)**2 + (obs1.y0 - obs2.y0)**2);
+                const physicalDist = comovingDist * expansionFactor;
+
+                let status = 'red';
+                if (physicalDist < horizonRadius) {
+                    status = 'green';
+                }
+
+                const signalInTransit = state.signals.some(s =>
+                    !s.reached &&
+                    ((s.sourceId === obs1.id && s.targetId === obs2.id) || (s.sourceId === obs2.id && s.targetId === obs1.id))
+                );
+
+                if (status === 'green' && signalInTransit) {
+                    status = 'yellow';
+                }
+
+                const statusKey = `${obs1.id}-${obs2.id}`;
+                if (lastStatus[statusKey] === 'green' && status === 'red') {
+                    addCommentary(`EVENT: ${obs2.name} has just exited ${obs1.name}'s horizon!`);
+                }
+                lastStatus[statusKey] = status;
+
+                bodyHTML += `<td><div class="status-indicator status-${status}"></div></td>`;
+            });
+            bodyHTML += '</tr>';
+        });
+        matrixBody.innerHTML = bodyHTML;
+    }
+
+    function addCommentary(text) {
+        const p = document.createElement('p');
+        p.textContent = `[T=${state.t.toFixed(1)}] ${text}`;
+        ui.commentaryPanel.prepend(p);
+        if (ui.commentaryPanel.children.length > 20) {
+             ui.commentaryPanel.removeChild(ui.commentaryPanel.lastChild);
+        }
+    }
+
+    </script>
+</body>
+</html>
