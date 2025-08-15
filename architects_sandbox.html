@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Architect's Sandbox: A Universe Designer</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1d;
+            --text-color: #c5c6c7;
+            --primary-color: #66fcf1;
+            --secondary-color: #45a29e;
+            --header-color: #ffffff;
+            --panel-bg: #2b2b30;
+            --panel-border: #4f4f56;
+        }
+        body {
+            font-family: 'Roboto Mono', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 1em;
+        }
+        .container {
+            max-width: 1800px;
+            margin: auto;
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            grid-template-rows: auto 1fr;
+            grid-template-areas:
+                "header header"
+                "controls main-content"
+                "footer footer";
+            gap: 1.5rem;
+            min-height: 100vh;
+        }
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-areas: "header" "controls" "main-content" "footer";
+            }
+        }
+        header { grid-area: header; text-align: center; border-bottom: 1px solid var(--primary-color); padding-bottom: 1rem; }
+        .controls-sidebar { grid-area: controls; }
+        .main-content { grid-area: main-content; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, auto); gap: 1.5rem; }
+        footer { grid-area: footer; text-align: center; margin-top: 2rem; font-size: 0.8em; }
+
+        h1, h2, h3 { color: var(--header-color); font-weight: 500; }
+        h1 { font-size: 2.5rem; color: var(--primary-color); }
+        h2 { border-bottom: 1px solid var(--secondary-color); padding-bottom: 0.5rem; }
+
+        .panel {
+            background-color: var(--panel-bg);
+            padding: 1.5rem;
+            border-radius: 5px;
+            border: 1px solid var(--panel-border);
+        }
+        .control-group { margin-bottom: 1.5rem; }
+        .control-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; color: var(--secondary-color); }
+        .control-group input, .control-group select { width: 100%; background: var(--bg-color); color: var(--text-color); border: 1px solid var(--panel-border); padding: 0.5rem; }
+        .control-group input[type="checkbox"] { width: auto; }
+
+        #constitution-panel { grid-column: 1 / -1; } /* Spans full width of main-content */
+
+        canvas { width: 100%; height: auto; aspect-ratio: 16/10; background-color: #000; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>The Architect's Sandbox</h1>
+            <p>Design a toy universe and see the consequences.</p>
+        </header>
+
+        <aside class="controls-sidebar panel">
+            <h2>The God Panel</h2>
+            <div id="spacetime-setup" class="control-group">
+                <label>Spatial Dimensions:</label>
+                <input type="range" id="spatial-dims" min="1" max="3" value="3">
+            </div>
+            <div id="field-content" class="control-group">
+                <label>Field Content:</label>
+                <div><input type="checkbox" id="field-scalar" checked> Scalar (Higgs-like)</div>
+                <div><input type="checkbox" id="field-u1" checked> U(1) Gauge (Photon-like)</div>
+                <div><input type="checkbox" id="field-fermion" checked> Fermion (Electron-like)</div>
+            </div>
+            <div id="gravity-model" class="control-group">
+                <label>Gravity Model:</label>
+                <select id="gravity-select">
+                    <option value="gr">General Relativity</option>
+                    <option value="none">No Gravity</option>
+                </select>
+            </div>
+             <div id="initial-conditions" class="control-group">
+                <label>Inflationary e-folds:</label>
+                <input type="range" id="inflation-folds" min="0" max="60" value="50">
+            </div>
+            <button id="run-sim-btn">Build & Evolve Universe</button>
+        </aside>
+
+        <main class="main-content">
+            <div id="vis-3d-panel" class="panel">
+                <h3>Cosmic Evolution</h3>
+                <canvas id="vis-3d-canvas"></canvas>
+            </div>
+            <div id="energy-pie-panel" class="panel">
+                <h3>Energy Density Budget</h3>
+                <canvas id="energy-pie-canvas"></canvas>
+            </div>
+            <div id="cmb-panel" class="panel">
+                <h3>CMB All-Sky Map</h3>
+                <canvas id="cmb-canvas"></canvas>
+            </div>
+            <div id="report-card-panel" class="panel">
+                <h3>Universe Report Card</h3>
+                <div id="dof-census"></div>
+                <div id="stability-analysis"></div>
+            </div>
+            <div id="constitution-panel" class="panel">
+                <h2>The Universal Constitution</h2>
+                <p>This encyclopedia explains the consequences of your choices. It will update when you evolve a new universe.</p>
+                <div id="constitution-content">
+                    <!-- JS will populate this with relevant articles -->
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <div id="cosmic-log"></div>
+        </footer>
+    </div>
+
+    <script id="simulation-script">
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Parametric Engine ---
+        const DoF_Calculator = {
+            calculate: function(config) {
+                let results = [];
+                let totalDoF = 0;
+
+                // Scalar Field
+                if (config.fields.scalar) {
+                    const dof = 1;
+                    results.push({ name: 'Scalar Field', dof: dof, notes: 'A fundamental building block.' });
+                    totalDoF += dof;
+                }
+
+                // U(1) Gauge Field
+                if (config.fields.u1) {
+                    // In 3+1D, a massless vector boson has 2 DoF. Massive has 3.
+                    // This is a simplification; we'll assume 3+1D for DoF count for now.
+                    const dof = 2; // Assuming massless for now
+                    results.push({ name: 'U(1) Gauge Field (Photon-like)', dof: dof, notes: 'Mediates an EM-like force.' });
+                    totalDoF += dof;
+                }
+
+                // Fermion Field
+                if (config.fields.fermion) {
+                    const dof = 4; // 2 for particle, 2 for anti-particle
+                    results.push({ name: 'Fermion Field (Matter)', dof: dof, notes: 'Forms the "stuff" of the universe.' });
+                    totalDoF += dof;
+                }
+
+                // Gravity
+                if (config.gravity === 'gr') {
+                    let dof = 0;
+                    let notes = "No propagating gravitational waves."
+                    if (config.dims === 3) {
+                        dof = 2; // Massless spin-2 field in 3+1D
+                        notes = "Produces gravitational waves.";
+                    }
+                    results.push({ name: 'Graviton (GR)', dof: dof, notes: notes });
+                    totalDoF += dof;
+                }
+
+                return { breakdown: results, total: totalDoF };
+            }
+        };
+
+        const Thermodynamics = {
+            g_star_effective: function(T, field_list) {
+                let g_star = 0;
+                field_list.forEach(field => {
+                    // Simplified: all bosons contribute, fermions only if T > their mass
+                    // In reality, it's a more gradual cutoff.
+                    const mass = field.mass || 0;
+                    if (T > mass) {
+                        g_star += field.dof;
+                    }
+                });
+                return g_star;
+            }
+        };
+
+        const CosmologicalEvolver = {
+            evolve: function(config, physics) {
+                let history = [];
+                let T = 1e15; // Start hot
+                const T_final = 1; // End cold
+
+                // Attach placeholder masses
+                physics.breakdown.forEach(f => {
+                    if(f.name.includes('Fermion')) f.mass = 1e6;
+                    else f.mass = 0;
+                });
+
+                while(T > T_final) {
+                    const g_star = Thermodynamics.g_star_effective(T, physics.breakdown);
+                    const rho_rad = g_star * Math.pow(T, 4); // Simplified units
+                    // In a real sim, matter and dark energy would be added here
+                    history.push({ T: T, g_star: g_star, rho_rad: rho_rad });
+                    T /= 1.5; // Cool down in logarithmic steps
+                }
+                return history;
+            }
+        };
+
+        // --- Visualization Modules ---
+        const PieChart = {
+            draw: function(canvasId, data) {
+                const canvas = document.getElementById(canvasId);
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                const w = canvas.width, h = canvas.height;
+                const total = data.rad + data.mat + data.de;
+                let startAngle = -Math.PI / 2;
+
+                // Radiation
+                let sliceAngle = (data.rad / total) * 2 * Math.PI;
+                ctx.fillStyle = '#ff6b6b';
+                ctx.beginPath();
+                ctx.moveTo(w/2, h/2);
+                ctx.arc(w/2, h/2, h/3, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+                startAngle += sliceAngle;
+
+                // Matter
+                sliceAngle = (data.mat / total) * 2 * Math.PI;
+                ctx.fillStyle = '#45a29e';
+                ctx.beginPath();
+                ctx.moveTo(w/2, h/2);
+                ctx.arc(w/2, h/2, h/3, startAngle, startAngle + sliceAngle);
+                ctx.closePath();
+                ctx.fill();
+            }
+        };
+
+        const LinePlot = {
+            draw: function(canvasId, data, xKey, yKey) {
+                const canvas = document.getElementById(canvasId);
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+                // ... a full implementation would scale data, draw axes, etc.
+                // Simplified version:
+                ctx.strokeStyle = 'cyan';
+                ctx.beginPath();
+                data.forEach((point, i) => {
+                    const x = (Math.log10(point[xKey]) / 15) * canvas.width;
+                    const y = canvas.height - (point[yKey] / 150) * canvas.height;
+                    if(i===0) ctx.moveTo(x,y);
+                    else ctx.lineTo(x,y);
+                });
+                ctx.stroke();
+            }
+        }
+
+        const CMB = {
+            draw: function(canvasId, config) {
+                const canvas = document.getElementById(canvasId);
+                const ctx = canvas.getContext('2d');
+                // A full implementation uses Perlin noise, this is a placeholder
+                for(let i=0; i<1000; i++) {
+                    const x = Math.random() * canvas.width;
+                    const y = Math.random() * canvas.height;
+                    const temp = 1 + (Math.random() - 0.5) * (config.inflation < 40 ? 0.5 : 0.1);
+                    ctx.fillStyle = `rgb(${temp*100}, 50, ${255 - temp*100})`;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 2, 0, 2*Math.PI);
+                    ctx.fill();
+                }
+            }
+        }
+
+        // --- Main Controller ---
+        function updateUniverse() {
+            // 1. Read config from UI
+            const config = {
+                dims: parseInt(document.getElementById('spatial-dims').value),
+                fields: {
+                    scalar: document.getElementById('field-scalar').checked,
+                    u1: document.getElementById('field-u1').checked,
+                    fermion: document.getElementById('field-fermion').checked,
+                },
+                gravity: document.getElementById('gravity-select').value,
+                inflation: parseInt(document.getElementById('inflation-folds').value)
+            };
+
+            // 2. Calculate consequences
+            const physics = DoF_Calculator.calculate(config);
+            const evolution = CosmologicalEvolver.evolve(config, physics);
+
+            // 3. Update UI Panels
+            const censusPanel = document.getElementById('dof-census');
+            censusPanel.innerHTML = '<h4>DoF Census:</h4>';
+            let table = '<table><tr><th>Field</th><th>DoF</th><th>Notes</th></tr>';
+            physics.breakdown.forEach(field => {
+                table += `<tr><td>${field.name}</td><td>${field.dof}</td><td>${field.notes}</td></tr>`;
+            });
+            table += `<tr><td><strong>Total (g*) at T>>m</strong></td><td><strong>${physics.total}</strong></td><td></td></tr>`;
+            table += '</table>';
+            censusPanel.innerHTML += table;
+
+            updateConstitution(config);
+
+            // Update visualizations
+            const finalState = evolution[evolution.length-1];
+            PieChart.draw('energy-pie-canvas', { rad: finalState.rho_rad, mat: 1e6, de: 1e7 }); // Simplified matter/de
+            LinePlot.draw('vis-3d-canvas', evolution, 'T', 'g_star'); // Repurpose 3D vis for heat capacity plot
+            CMB.draw('cmb-canvas', config);
+        }
+
+        function updateConstitution(config) {
+            const articles = JSON.parse(document.getElementById('constitution-articles').textContent);
+            const contentEl = document.getElementById('constitution-content');
+            contentEl.innerHTML = ''; // Clear old articles
+
+            let html = articles.default;
+            html += articles[`dims_${config.dims}`] || "";
+            if(config.fields.scalar) html += articles.dof_scalar;
+            if(config.fields.u1) html += articles.dof_u1_massless; // simplified
+            if(config.fields.fermion) html += articles.dof_fermion;
+            if(config.gravity === 'gr') html += articles.gravity_gr;
+            if(config.inflation > 0) html += articles.inflation;
+
+            contentEl.innerHTML = html;
+        }
+
+        // --- Main Controller ---
+        function stabilityAnalysis(config, physics) {
+            let report = '<h4>Stability Analysis:</h4><ul>';
+            let stable = true;
+            if (config.inflation < 40) {
+                report += '<li><span style="color:orange;">Warning:</span> Low inflation may not solve Flatness/Horizon problems.</li>';
+                stable = false;
+            }
+            // Add more rules here based on Maximal Depth features...
+
+            if(stable) {
+                 report += '<li><span style="color:cyan;">Success:</span> Universe appears stable and consistent.</li>';
+            }
+            report += '</ul>';
+            document.getElementById('stability-analysis').innerHTML = report;
+        }
+
+        function updateUniverse() {
+            // 1. Read config from UI
+            const config = {
+                dims: parseInt(document.getElementById('spatial-dims').value),
+                fields: {
+                    scalar: document.getElementById('field-scalar').checked,
+                    u1: document.getElementById('field-u1').checked,
+                    fermion: document.getElementById('field-fermion').checked,
+                },
+                gravity: document.getElementById('gravity-select').value,
+                inflation: parseInt(document.getElementById('inflation-folds').value)
+            };
+
+            // 2. Calculate consequences
+            const physics = DoF_Calculator.calculate(config);
+            const evolution = CosmologicalEvolver.evolve(config, physics);
+
+            // 3. Update UI Panels
+            const censusPanel = document.getElementById('dof-census');
+            censusPanel.innerHTML = '<h4>DoF Census:</h4>';
+            let table = '<table><thead><tr><th>Field</th><th>DoF</th><th>Notes</th></tr></thead><tbody>';
+            physics.breakdown.forEach(field => {
+                table += `<tr><td>${field.name}</td><td>${field.dof}</td><td>${field.notes}</td></tr>`;
+            });
+            table += `<tr><td><strong>Total (g*) at T>>m</strong></td><td><strong>${physics.total}</strong></td><td></td></tr>`;
+            table += '</tbody></table>';
+            censusPanel.innerHTML += table;
+
+            updateConstitution(config);
+            stabilityAnalysis(config, physics);
+
+            // Update visualizations
+            const finalState = evolution[evolution.length-1];
+            PieChart.draw('energy-pie-canvas', { rad: finalState.rho_rad, mat: 1e6, de: 1e7 }); // Simplified matter/de
+            LinePlot.draw('vis-3d-canvas', evolution, 'T', 'g_star');
+            CMB.draw('cmb-canvas', config);
+        }
+
+        // --- Init ---
+        function init() {
+            // Add listeners to all controls to re-run the simulation on change
+            document.getElementById('run-sim-btn').addEventListener('click', updateUniverse);
+            document.getElementById('spatial-dims').addEventListener('change', updateUniverse);
+            document.getElementById('field-scalar').addEventListener('change', updateUniverse);
+            document.getElementById('field-u1').addEventListener('change', updateUniverse);
+            document.getElementById('field-fermion').addEventListener('change', updateUniverse);
+            document.getElementById('gravity-select').addEventListener('change', updateUniverse);
+            document.getElementById('inflation-folds').addEventListener('input', updateUniverse);
+
+            // Initial call to populate default state
+            updateUniverse();
+        }
+
+        init();
+    });
+    </script>
+
+    <script id="constitution-articles" type="text/template">
+        {
+            "default": "<h3>Welcome, Architect!</h3><p>Use the 'God Panel' to define the fundamental properties of a new toy universe. When you are ready, press 'Build & Evolve' to see the consequences of your choices. This encyclopedia will then update with articles relevant to the universe you have created.</p>",
+            "dims_1": "<h3>Physics in 1+1 Dimensions</h3><p>In a universe with only one spatial dimension, life is simple. There is no concept of rotation, so particles have no spin. The 'graviton' in 1+1D has no propagating degrees of freedom, meaning there are no gravitational waves. Structure formation is also trivial.</p>",
+            "dims_2": "<h3>Physics in 2+1 Dimensions</h3><p>A 2D universe is more interesting. While particles can have spin, the graviton is still a topological field with 0 propagating DoF. This means gravity exists and causes attraction, but it doesn't produce waves. Topological defects like cosmic strings are point-like in 2D space.</p>",
+            "dims_3": "<h3>Physics in 3+1 Dimensions</h3><p>This is our familiar universe. The graviton is a massless spin-2 particle and has 2 physical degrees of freedom (its two polarizations), which we observe as gravitational waves. This is the minimum number of dimensions required for gravity to have this rich structure.</p>",
+            "dof_scalar": "<h4>Scalar Field Degrees of Freedom</h4><p>A scalar field is the simplest possible field, described by a single number at each point in space, φ(x). It has no intrinsic direction. Whether massless or massive, it always has <strong>1</strong> physical degree of freedom.</p>",
+            "dof_u1_massless": "<h4>Massless U(1) Gauge Field (Photon)</h4><p>A massless vector field like the photon is described by 4 potential components (A^μ), but gauge invariance removes two DoF, leaving <strong>2</strong> physical degrees of freedom (the two transverse polarizations of light).</p>",
+            "dof_u1_massive": "<h4>Massive U(1) Gauge Field (Proca field)</h4><p>When a vector field has mass, gauge invariance is broken. The particle can now have a longitudinal polarization (in the direction of motion). This adds a degree of freedom, for a total of <strong>3</strong> physical DoF.</p>",
+            "dof_fermion": "<h4>Fermion Field (Electron)</h4><p>A Dirac fermion, like an electron, is described by a 4-component spinor. After accounting for the equations of motion, this results in <strong>4</strong> degrees of freedom: 2 for the particle (spin up/down) and 2 for its anti-particle.</p>",
+            "gravity_gr": "<h4>General Relativity</h4><p>In 3+1D, Einstein's theory describes a massless spin-2 field (the graviton) with <strong>2</strong> propagating DoF. This is the origin of gravitational waves. The number of DoF is highly dependent on dimensionality.</p>",
+            "inflation": "<h4>Cosmic Inflation</h4><p>A period of exponential expansion in the early universe, driven by a scalar field. Inflation solves several key cosmological problems by making the universe vast, flat, and smooth. It also dilutes any pre-existing relics like magnetic monopoles to near-zero density, solving the 'Monopole Problem'.</p>"
+        }
+    </script>
+</body>
+</html>
